@@ -98,8 +98,8 @@ The code is written plainly on purpose, the way a store grows
 before anyone stops to design it, and the course takes it apart
 one module at a time. Each module's starting point is a tag: `m01`
 is the code at the start of Module 1, `m02` the code at the start
-of Module 2, and so on. A tag appears here when its module is
-published.
+of Module 2, and so on. A module's tag appears once the course
+reaches that module.
 
 If you skipped a module, or your copy went astray, start the next
 module on a branch of your own made from its tag (here Module 2,
