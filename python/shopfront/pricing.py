@@ -1,0 +1,58 @@
+"""What a cart costs: the subtotal, the discount and the tax."""
+
+from dataclasses import dataclass
+from datetime import date
+
+from shopfront.cart import Cart
+from shopfront.catalog import Catalog
+from shopfront.vendor.tax_service import TaxService
+
+
+class UnknownCouponError(Exception):
+    pass
+
+
+@dataclass
+class PriceQuote:
+    subtotal_cents: int
+    discount_cents: int
+    tax_cents: int
+
+
+class PriceCalculator:
+    def __init__(self, catalog: Catalog, tax_service: TaxService) -> None:
+        self.catalog = catalog
+        self.tax_service = tax_service
+
+    def subtotal(self, cart: Cart) -> int:
+        return sum(
+            self.catalog.find(sku).price_cents * quantity
+            for sku, quantity in cart.lines.items()
+        )
+
+    def discount(
+        self, subtotal_cents: int, coupon: str | None, today: date
+    ) -> int:
+        if coupon == "WELCOME10":
+            return subtotal_cents * 10 // 100
+        elif coupon == "WINTER15":
+            if today.month != 12:
+                raise UnknownCouponError("WINTER15 is valid in December")
+            return subtotal_cents * 15 // 100
+        elif coupon is not None:
+            raise UnknownCouponError(coupon)
+        elif subtotal_cents >= 10_000:
+            return subtotal_cents * 5 // 100
+        return 0
+
+    def tax(self, amount_cents: int, country: str) -> int:
+        rate = self.tax_service.rate_for(country)
+        return (amount_cents * rate + 50) // 100
+
+    def quote(
+        self, cart: Cart, country: str, coupon: str | None, today: date
+    ) -> PriceQuote:
+        subtotal_cents = self.subtotal(cart)
+        discount_cents = self.discount(subtotal_cents, coupon, today)
+        tax_cents = self.tax(subtotal_cents - discount_cents, country)
+        return PriceQuote(subtotal_cents, discount_cents, tax_cents)

@@ -1,0 +1,16 @@
+[project]
+name = "shopfront"
+version = "1.0.0"
+description = "The project of Design Patterns in Practice, Level 1"
+requires-python = ">=3.14"
+dependencies = []
+
+[dependency-groups]
+dev = ["pytest>=9", "ruff>=0.14"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 78
