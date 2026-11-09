@@ -167,16 +167,16 @@ export function reorder(previous, orderId) {
     .country(previous.shippingCountry);
 }
 
-const FREE_SAMPLE = 'TEA-SAMPLE';
-const FREE_SAMPLE_FROM_CENTS = 4_000;
+const SAMPLE = 'TEA-SAMPLE';
+const SAMPLE_FROM_CENTS = 4_000;
 
 // What goes into the parcel, one line per product.
 export function packingSlip(order) {
   const slip = [...order.lines].map(
     ([sku, quantity]) => `${quantity} x ${sku}`,
   );
-  if (order.totalCents >= FREE_SAMPLE_FROM_CENTS) {
-    slip.push(`1 x ${FREE_SAMPLE}`);
+  if (order.totalCents >= SAMPLE_FROM_CENTS) {
+    slip.push(`1 x ${SAMPLE}`);
   }
   return slip;
 }

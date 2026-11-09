@@ -154,15 +154,15 @@ def reorder(previous: Order, order_id: str) -> OrderBuilder:
     )
 
 
-FREE_SAMPLE = "TEA-SAMPLE"
-FREE_SAMPLE_FROM_CENTS = 4_000
+SAMPLE = "TEA-SAMPLE"
+SAMPLE_FROM_CENTS = 4_000
 
 
 def packing_slip(order: Order) -> list[str]:
     """What goes into the parcel, one line per product."""
     slip = [f"{quantity} x {sku}" for sku, quantity in order.lines.items()]
-    if order.total_cents >= FREE_SAMPLE_FROM_CENTS:
-        slip.append(f"1 x {FREE_SAMPLE}")
+    if order.total_cents >= SAMPLE_FROM_CENTS:
+        slip.append(f"1 x {SAMPLE}")
     return slip
 
 
