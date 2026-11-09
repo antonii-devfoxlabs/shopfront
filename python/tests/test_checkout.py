@@ -30,6 +30,7 @@ def test_a_whole_order():
     order = Order(
         next_order_id(),
         "ada@example.com",
+        "Ada",
         cart.lines,
         quote.subtotal_cents,
         quote.discount_cents,

@@ -10,6 +10,7 @@ def a_card_order() -> Order:
     return Order(
         "SF-00007",
         "ada@example.com",
+        "Ada",
         {"MUG-01": 2},
         2_500,
         250,

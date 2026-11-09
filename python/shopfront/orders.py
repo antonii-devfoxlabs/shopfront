@@ -19,6 +19,7 @@ class Order:
         self,
         order_id: str,
         customer_email: str,
+        customer_name: str,
         lines: dict[str, int],
         subtotal_cents: int,
         discount_cents: int,
@@ -30,6 +31,7 @@ class Order:
     ) -> None:
         self.order_id = order_id
         self.customer_email = customer_email
+        self.customer_name = customer_name
         self.lines = dict(lines)
         self.subtotal_cents = subtotal_cents
         self.discount_cents = discount_cents
@@ -59,7 +61,8 @@ def place_order(
         to=order.customer_email,
         subject=f"{settings.STORE_NAME}: order {order.order_id}",
         body=(
-            f"Thank you! We have your order {order.order_id}, "
+            f"Hi {order.customer_name}, thank you! "
+            f"We have your order {order.order_id}, "
             f"{format_money(order.total_cents)} in all."
         ),
     )

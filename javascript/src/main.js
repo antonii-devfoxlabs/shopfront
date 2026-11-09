@@ -26,6 +26,7 @@ const transactionId = pay('card', totalCents, { cardToken: 'tok-4242' });
 const order = new Order(
   orderId,
   'ada@example.com',
+  'Ada',
   cart.lines,
   quote.subtotalCents,
   quote.discountCents,

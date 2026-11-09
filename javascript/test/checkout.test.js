@@ -34,6 +34,7 @@ test('a whole order', () => {
   const order = new Order(
     nextOrderId(),
     'ada@example.com',
+    'Ada',
     cart.lines,
     quote.subtotalCents,
     quote.discountCents,

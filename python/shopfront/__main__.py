@@ -30,6 +30,7 @@ def main() -> None:
     order = Order(
         order_id,
         "ada@example.com",
+        "Ada",
         cart.lines,
         quote.subtotal_cents,
         quote.discount_cents,

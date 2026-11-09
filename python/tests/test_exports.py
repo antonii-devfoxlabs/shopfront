@@ -10,6 +10,7 @@ def order(
     placed = Order(
         order_id,
         email,
+        "Ada",
         {"MUG-01": 1},
         1_250,
         0,

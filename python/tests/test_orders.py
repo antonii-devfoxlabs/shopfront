@@ -10,6 +10,7 @@ def an_order() -> Order:
     return Order(
         "SF-00007",
         "ada@example.com",
+        "Ada",
         {"MUG-01": 2},
         2_500,
         250,
@@ -36,6 +37,7 @@ def test_placing_an_order_takes_stock_emails_and_tracks():
     assert catalog.find("MUG-01").stock == 38
     assert mailer.outbox[0]["from"] == "orders@shopfront.example"
     assert mailer.outbox[0]["to"] == "ada@example.com"
+    assert mailer.outbox[0]["body"].startswith("Hi Ada, thank you!")
     assert "31.68 EUR" in mailer.outbox[0]["body"]
     assert analytics.events == [
         ("order_placed", {"order_id": "SF-00007", "total_cents": 3_168})

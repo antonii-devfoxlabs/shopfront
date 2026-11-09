@@ -12,6 +12,7 @@ function order(
   const placed = new Order(
     orderId,
     email,
+    'Ada',
     [['MUG-01', 1]],
     1_250,
     0,

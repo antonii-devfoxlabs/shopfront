@@ -15,6 +15,7 @@ function anOrder() {
   return new Order(
     'SF-00007',
     'ada@example.com',
+    'Ada',
     [['MUG-01', 2]],
     2_500,
     250,
@@ -44,6 +45,7 @@ test('placing an order takes stock, emails and tracks', () => {
   assert.equal(catalog.find('MUG-01').stock, 38);
   assert.equal(mailer.outbox[0].from, 'orders@shopfront.example');
   assert.equal(mailer.outbox[0].to, 'ada@example.com');
+  assert.match(mailer.outbox[0].body, /^Hi Ada, thank you!/);
   assert.match(mailer.outbox[0].body, /31\.68 EUR/);
   assert.deepEqual(analytics.events, [
     ['order_placed', { order_id: 'SF-00007', total_cents: 3_168 }],

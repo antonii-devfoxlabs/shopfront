@@ -13,6 +13,7 @@ export class Order {
   constructor(
     orderId,
     customerEmail,
+    customerName,
     lines,
     subtotalCents,
     discountCents,
@@ -24,6 +25,7 @@ export class Order {
   ) {
     this.orderId = orderId;
     this.customerEmail = customerEmail;
+    this.customerName = customerName;
     this.lines = new Map(lines);
     this.subtotalCents = subtotalCents;
     this.discountCents = discountCents;
@@ -52,7 +54,8 @@ export function placeOrder(order, catalog, mailer, analytics) {
     to: order.customerEmail,
     subject: `${settings.storeName}: order ${order.orderId}`,
     body:
-      `Thank you! We have your order ${order.orderId}, ` +
+      `Hi ${order.customerName}, thank you! ` +
+      `We have your order ${order.orderId}, ` +
       `${formatMoney(order.totalCents)} in all.`,
   });
   analytics.track('order_placed', {
