@@ -104,9 +104,18 @@ export class GiftCard {
 }
 
 /**
+ * Creates one way to pay from the shopper's details and the gateway
+ * it uses.
+ * @callback CreatePayment
+ * @param {object} details
+ * @param {PaymentGateway} gateway
+ * @returns {PaymentMethod}
+ */
+
+/**
  * Every way to pay, by the name the shopper picks, with the function
- * that creates it from the shopper's details and the gateway it uses.
- * @type {Map<string, (details: object, gateway: PaymentGateway) => PaymentMethod>}
+ * that creates it.
+ * @type {Map<string, CreatePayment>}
  */
 const PAYMENT_METHODS = new Map([
   [
