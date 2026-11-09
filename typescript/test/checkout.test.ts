@@ -15,14 +15,13 @@ import {
 } from '../src/orders.ts';
 import { pay } from '../src/payments.ts';
 import { PriceCalculator } from '../src/pricing.ts';
-import { DUTCH_SHOP, GERMAN_SHOP, type Settings } from '../src/settings.ts';
 import {
-  type ShippingQuote,
   boxRouteQuote,
   parcelNowQuote,
-  shippingCost,
   swiftShipQuote,
-} from '../src/shipping.ts';
+} from '../src/providers.ts';
+import { DUTCH_SHOP, GERMAN_SHOP, type Settings } from '../src/settings.ts';
+import { type ShippingQuote, shippingCost } from '../src/shipping.ts';
 import { Analytics } from '../src/vendor/analytics.ts';
 import { Mailer } from '../src/vendor/mailer.ts';
 import { ParcelNowClient } from '../src/vendor/parcelnow.ts';

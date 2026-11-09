@@ -15,13 +15,13 @@ import {
 } from '../src/orders.js';
 import { pay } from '../src/payments.js';
 import { PriceCalculator } from '../src/pricing.js';
-import { DUTCH_SHOP, GERMAN_SHOP } from '../src/settings.js';
 import {
   boxRouteQuote,
   parcelNowQuote,
-  shippingCost,
   swiftShipQuote,
-} from '../src/shipping.js';
+} from '../src/providers.js';
+import { DUTCH_SHOP, GERMAN_SHOP } from '../src/settings.js';
+import { shippingCost } from '../src/shipping.js';
 import { Analytics } from '../src/vendor/analytics.js';
 import { Mailer } from '../src/vendor/mailer.js';
 import { ParcelNowClient } from '../src/vendor/parcelnow.js';

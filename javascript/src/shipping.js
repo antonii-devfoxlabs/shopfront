@@ -1,9 +1,5 @@
 // What it costs to ship a cart.
 
-import { BoxRouteError, estimate } from './vendor/boxroute.js';
-import { ParcelNowError } from './vendor/parcelnow.js';
-import { SwiftShipError } from './vendor/swiftship.js';
-
 export class NoShippingError extends Error {
   name = 'NoShippingError';
 }
@@ -16,61 +12,6 @@ export class NoShippingError extends Error {
  * @param {string} country
  * @returns {number}
  */
-
-/**
- * ParcelNow's client, made to answer as a ShippingQuote.
- * @returns {ShippingQuote}
- */
-export function parcelNowQuote(client) {
-  return (grams, country) => {
-    try {
-      const rate = client.getRate({
-        weightKg: grams / 1000,
-        destination: country,
-      });
-      const [euros, cents] = rate.amount.split('.');
-      return Number(euros) * 100 + Number(cents);
-    } catch (error) {
-      if (error instanceof ParcelNowError) {
-        throw new NoShippingError(country, { cause: error });
-      }
-      throw error;
-    }
-  };
-}
-
-/**
- * SwiftShip's client, made to answer as a ShippingQuote.
- * @returns {ShippingQuote}
- */
-export function swiftShipQuote(client) {
-  return (grams, country) => {
-    try {
-      return client.quote({ grams, to: country });
-    } catch (error) {
-      if (error instanceof SwiftShipError) {
-        throw new NoShippingError(country, { cause: error });
-      }
-      throw error;
-    }
-  };
-}
-
-/**
- * BoxRoute's estimate, made to answer as a ShippingQuote.
- * @type {ShippingQuote}
- */
-export function boxRouteQuote(grams, country) {
-  try {
-    const price = estimate({ destination: country, kilos: grams / 1000 });
-    return price.euros * 100 + price.cents;
-  } catch (error) {
-    if (error instanceof BoxRouteError) {
-      throw new NoShippingError(country, { cause: error });
-    }
-    throw error;
-  }
-}
 
 export function cartWeightGrams(cart, catalog) {
   let grams = 0;

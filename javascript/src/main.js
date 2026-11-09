@@ -10,13 +10,13 @@ import {
 } from './orders.js';
 import { pay } from './payments.js';
 import { PriceCalculator } from './pricing.js';
-import { GERMAN_SHOP } from './settings.js';
 import {
   boxRouteQuote,
   parcelNowQuote,
-  shippingCost,
   swiftShipQuote,
-} from './shipping.js';
+} from './providers.js';
+import { GERMAN_SHOP } from './settings.js';
+import { shippingCost } from './shipping.js';
 import { Analytics } from './vendor/analytics.js';
 import { Mailer } from './vendor/mailer.js';
 import { ParcelNowClient } from './vendor/parcelnow.js';

@@ -15,14 +15,13 @@ from shopfront.orders import (
 )
 from shopfront.payments import pay
 from shopfront.pricing import PriceCalculator
-from shopfront.settings import DUTCH_SHOP, GERMAN_SHOP, Settings
-from shopfront.shipping import (
-    ShippingQuote,
+from shopfront.providers import (
     boxroute_quote,
     parcelnow_quote,
-    shipping_cost,
     swiftship_quote,
 )
+from shopfront.settings import DUTCH_SHOP, GERMAN_SHOP, Settings
+from shopfront.shipping import ShippingQuote, shipping_cost
 from shopfront.vendor.analytics import Analytics
 from shopfront.vendor.mailer import Mailer
 from shopfront.vendor.parcelnow import ParcelNowClient

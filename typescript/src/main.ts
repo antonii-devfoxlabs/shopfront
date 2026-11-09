@@ -10,13 +10,13 @@ import {
 } from './orders.ts';
 import { pay } from './payments.ts';
 import { PriceCalculator } from './pricing.ts';
-import { GERMAN_SHOP } from './settings.ts';
 import {
   boxRouteQuote,
   parcelNowQuote,
-  shippingCost,
   swiftShipQuote,
-} from './shipping.ts';
+} from './providers.ts';
+import { GERMAN_SHOP } from './settings.ts';
+import { shippingCost } from './shipping.ts';
 import { Analytics } from './vendor/analytics.ts';
 import { Mailer } from './vendor/mailer.ts';
 import { ParcelNowClient } from './vendor/parcelnow.ts';
