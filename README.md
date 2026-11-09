@@ -73,14 +73,15 @@ npm test
 
 ```bash
 cd typescript
-npm install
+npm ci
 npm start
 npm test
 ```
 
-`npm start` runs the `.ts` files directly: Node.js removes the
-types and runs what is left (without a warning since 24.11, the
-first Node.js 24 LTS release). `npm test` checks the types with
+`npm ci` installs exactly the versions `package-lock.json` names,
+and leaves that file as it is. `npm start` runs the `.ts` files
+directly: Node.js removes the types and runs what is left (without a
+warning since 24.11, the first Node.js 24 LTS release). `npm test` checks the types with
 `tsc` first, then runs the tests.
 
 Every version prints the same order:
