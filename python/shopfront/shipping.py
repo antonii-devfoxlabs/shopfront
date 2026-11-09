@@ -1,6 +1,6 @@
 """What it costs to ship a cart."""
 
-from typing import Protocol
+from collections.abc import Callable
 
 from shopfront.cart import Cart
 from shopfront.catalog import Catalog
@@ -9,41 +9,35 @@ from shopfront.vendor.boxroute import estimate
 from shopfront.vendor.parcelnow import ParcelNowClient
 from shopfront.vendor.swiftship import SwiftShip
 
-
-class ShippingQuote(Protocol):
-    def cost(self, grams: int, country: str) -> int:
-        """What one parcel costs, in cents."""
-        ...
+# Every shipping provider fills this slot: a function of a parcel's
+# grams and its country that answers what the parcel costs, in cents.
+ShippingQuote = Callable[[int, str], int]
 
 
-class ParcelNowQuote:
+def parcelnow_quote(client: ParcelNowClient) -> ShippingQuote:
     """ParcelNow's client, made to answer as a ShippingQuote."""
 
-    def __init__(self, client: ParcelNowClient) -> None:
-        self.client = client
-
-    def cost(self, grams: int, country: str) -> int:
-        rate = self.client.get_rate(grams / 1000, country)
+    def cost(grams: int, country: str) -> int:
+        rate = client.get_rate(grams / 1000, country)
         euros, cents = rate["amount"].split(".")
         return int(euros) * 100 + int(cents)
 
+    return cost
 
-class SwiftShipQuote:
+
+def swiftship_quote(client: SwiftShip) -> ShippingQuote:
     """SwiftShip's client, made to answer as a ShippingQuote."""
 
-    def __init__(self, client: SwiftShip) -> None:
-        self.client = client
+    def cost(grams: int, country: str) -> int:
+        return client.quote({"grams": grams, "to": country})
 
-    def cost(self, grams: int, country: str) -> int:
-        return self.client.quote({"grams": grams, "to": country})
+    return cost
 
 
-class BoxRouteQuote:
+def boxroute_quote(grams: int, country: str) -> int:
     """BoxRoute's estimate, made to answer as a ShippingQuote."""
-
-    def cost(self, grams: int, country: str) -> int:
-        price = estimate(country, grams / 1000)
-        return price["euros"] * 100 + price["cents"]
+    price = estimate(country, grams / 1000)
+    return price["euros"] * 100 + price["cents"]
 
 
 def cart_weight_grams(cart: Cart, catalog: Catalog) -> int:
@@ -68,4 +62,4 @@ def shipping_cost(
     elif weight_grams > 5_000:
         # Heavy parcels abroad go as freight: one flat price.
         return 3_500
-    return min(provider.cost(weight_grams, country) for provider in providers)
+    return min(provider(weight_grams, country) for provider in providers)

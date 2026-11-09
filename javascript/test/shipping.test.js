@@ -5,11 +5,11 @@ import { Cart } from '../src/cart.js';
 import { starterCatalog } from '../src/catalog.js';
 import { DUTCH_SHOP, GERMAN_SHOP } from '../src/settings.js';
 import {
-  BoxRouteQuote,
-  ParcelNowQuote,
-  SwiftShipQuote,
+  boxRouteQuote,
   cartWeightGrams,
+  parcelNowQuote,
   shippingCost,
+  swiftShipQuote,
 } from '../src/shipping.js';
 import { ParcelNowClient, ParcelNowError } from '../src/vendor/parcelnow.js';
 import { SwiftShip } from '../src/vendor/swiftship.js';
@@ -23,11 +23,9 @@ function cartOf(sku, quantity) {
 // Every shipping provider, with the shop's ParcelNow account.
 function providersFor(shop) {
   return [
-    new ParcelNowQuote(
-      new ParcelNowClient({ account: shop.parcelNowAccount }),
-    ),
-    new SwiftShipQuote(new SwiftShip()),
-    new BoxRouteQuote(),
+    parcelNowQuote(new ParcelNowClient({ account: shop.parcelNowAccount })),
+    swiftShipQuote(new SwiftShip()),
+    boxRouteQuote,
   ];
 }
 
@@ -277,32 +275,24 @@ test("ParcelNow's adapter answers in cents", () => {
     account: GERMAN_SHOP.parcelNowAccount,
   });
   // 820 g is one started kilo: ParcelNow's '4.90' to Germany.
-  assert.equal(new ParcelNowQuote(client).cost(820, 'DE'), 490);
+  const cost = parcelNowQuote(client);
+  assert.equal(cost(820, 'DE'), 490);
 });
 
 test("SwiftShip's adapter answers in cents", () => {
   // 820 g is nine started 100 g steps at 0.60.
-  assert.equal(new SwiftShipQuote(new SwiftShip()).cost(820, 'DE'), 540);
+  const cost = swiftShipQuote(new SwiftShip());
+  assert.equal(cost(820, 'DE'), 540);
 });
 
 test("BoxRoute's adapter answers in cents", () => {
   // 2,500 g is three started kilos: 4.50 and two extra kilos at 1.00.
-  assert.equal(new BoxRouteQuote().cost(2_500, 'PL'), 650);
+  assert.equal(boxRouteQuote(2_500, 'PL'), 650);
 });
 
-// A stand-in provider with one price for every parcel.
-class Fixed {
-  constructor(cents) {
-    this.cents = cents;
-  }
-
-  cost() {
-    return this.cents;
-  }
-}
-
 test('the cheapest provider wins', () => {
-  const providers = [new Fixed(700), new Fixed(450)];
+  // Two stand-in providers, each with one price for every parcel.
+  const providers = [() => 700, () => 450];
   const cart = cartOf('MUG-01', 1);
   assert.equal(
     shippingCost(cart, starterCatalog(), 'FR', 1_250, providers, GERMAN_SHOP),

@@ -17,10 +17,10 @@ import { pay } from '../src/payments.js';
 import { PriceCalculator } from '../src/pricing.js';
 import { DUTCH_SHOP, GERMAN_SHOP } from '../src/settings.js';
 import {
-  BoxRouteQuote,
-  ParcelNowQuote,
-  SwiftShipQuote,
+  boxRouteQuote,
+  parcelNowQuote,
   shippingCost,
+  swiftShipQuote,
 } from '../src/shipping.js';
 import { Analytics } from '../src/vendor/analytics.js';
 import { Mailer } from '../src/vendor/mailer.js';
@@ -32,11 +32,9 @@ import { TaxService } from '../src/vendor/taxService.js';
 // Every shipping provider, with the shop's ParcelNow account.
 function providersFor(shop) {
   return [
-    new ParcelNowQuote(
-      new ParcelNowClient({ account: shop.parcelNowAccount }),
-    ),
-    new SwiftShipQuote(new SwiftShip()),
-    new BoxRouteQuote(),
+    parcelNowQuote(new ParcelNowClient({ account: shop.parcelNowAccount })),
+    swiftShipQuote(new SwiftShip()),
+    boxRouteQuote,
   ];
 }
 

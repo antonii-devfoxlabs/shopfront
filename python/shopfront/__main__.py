@@ -14,11 +14,11 @@ from shopfront.payments import pay
 from shopfront.pricing import PriceCalculator
 from shopfront.settings import GERMAN_SHOP
 from shopfront.shipping import (
-    BoxRouteQuote,
-    ParcelNowQuote,
     ShippingQuote,
-    SwiftShipQuote,
+    boxroute_quote,
+    parcelnow_quote,
     shipping_cost,
+    swiftship_quote,
 )
 from shopfront.vendor.analytics import Analytics
 from shopfront.vendor.mailer import Mailer
@@ -33,9 +33,9 @@ def main() -> None:
     shop = GERMAN_SHOP
     gateway = PaymentGateway(merchant=shop.merchant_id)
     providers: list[ShippingQuote] = [
-        ParcelNowQuote(ParcelNowClient(account=shop.parcelnow_account)),
-        SwiftShipQuote(SwiftShip()),
-        BoxRouteQuote(),
+        parcelnow_quote(ParcelNowClient(account=shop.parcelnow_account)),
+        swiftship_quote(SwiftShip()),
+        boxroute_quote,
     ]
     catalog = starter_catalog()
     cart = Cart()

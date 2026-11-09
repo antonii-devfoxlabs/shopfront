@@ -6,12 +6,12 @@ from shopfront.cart import Cart
 from shopfront.catalog import starter_catalog
 from shopfront.settings import DUTCH_SHOP, GERMAN_SHOP, Settings
 from shopfront.shipping import (
-    BoxRouteQuote,
-    ParcelNowQuote,
     ShippingQuote,
-    SwiftShipQuote,
+    boxroute_quote,
     cart_weight_grams,
+    parcelnow_quote,
     shipping_cost,
+    swiftship_quote,
 )
 from shopfront.vendor.parcelnow import ParcelNowClient, ParcelNowError
 from shopfront.vendor.swiftship import SwiftShip
@@ -26,9 +26,9 @@ def cart_of(sku: str, quantity: int) -> Cart:
 def providers_for(shop: Settings) -> list[ShippingQuote]:
     """Every shipping provider, with the shop's ParcelNow account."""
     return [
-        ParcelNowQuote(ParcelNowClient(account=shop.parcelnow_account)),
-        SwiftShipQuote(SwiftShip()),
-        BoxRouteQuote(),
+        parcelnow_quote(ParcelNowClient(account=shop.parcelnow_account)),
+        swiftship_quote(SwiftShip()),
+        boxroute_quote,
     ]
 
 
@@ -268,31 +268,27 @@ def test_parcelnow_does_not_ship_everywhere():
 def test_parcelnows_adapter_answers_in_cents():
     client = ParcelNowClient(account=GERMAN_SHOP.parcelnow_account)
     # 820 g is one started kilo: ParcelNow's "4.90" to Germany.
-    assert ParcelNowQuote(client).cost(820, "DE") == 490
+    cost = parcelnow_quote(client)
+    assert cost(820, "DE") == 490
 
 
 def test_swiftships_adapter_answers_in_cents():
     # 820 g is nine started 100 g steps at 0.60.
-    assert SwiftShipQuote(SwiftShip()).cost(820, "DE") == 540
+    cost = swiftship_quote(SwiftShip())
+    assert cost(820, "DE") == 540
 
 
 def test_boxroutes_adapter_answers_in_cents():
     # 2,500 g is three started kilos: 4.50 and two extra kilos at 1.00.
-    assert BoxRouteQuote().cost(2_500, "PL") == 650
-
-
-class Fixed:
-    """A stand-in provider with one price for every parcel."""
-
-    def __init__(self, cents: int) -> None:
-        self.cents = cents
-
-    def cost(self, grams: int, country: str) -> int:
-        return self.cents
+    assert boxroute_quote(2_500, "PL") == 650
 
 
 def test_the_cheapest_provider_wins():
-    providers: list[ShippingQuote] = [Fixed(700), Fixed(450)]
+    # Two stand-in providers, each with one price for every parcel.
+    providers: list[ShippingQuote] = [
+        lambda grams, country: 700,
+        lambda grams, country: 450,
+    ]
     cart = cart_of("MUG-01", 1)
     assert (
         shipping_cost(

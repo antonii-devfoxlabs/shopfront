@@ -3,45 +3,44 @@
 import { estimate } from './vendor/boxroute.js';
 
 /**
- * Every shipping provider fills this slot: what one parcel costs, in
- * cents.
- * @typedef {object} ShippingQuote
- * @property {(grams: number, country: string) => number} cost
+ * Every shipping provider fills this slot: a function of a parcel's
+ * grams and its country that answers what the parcel costs, in cents.
+ * @callback ShippingQuote
+ * @param {number} grams
+ * @param {string} country
+ * @returns {number}
  */
 
-// ParcelNow's client, made to answer as a ShippingQuote.
-export class ParcelNowQuote {
-  constructor(client) {
-    this.client = client;
-  }
-
-  cost(grams, country) {
-    const rate = this.client.getRate({
+/**
+ * ParcelNow's client, made to answer as a ShippingQuote.
+ * @returns {ShippingQuote}
+ */
+export function parcelNowQuote(client) {
+  return (grams, country) => {
+    const rate = client.getRate({
       weightKg: grams / 1000,
       destination: country,
     });
     const [euros, cents] = rate.amount.split('.');
     return Number(euros) * 100 + Number(cents);
-  }
+  };
 }
 
-// SwiftShip's client, made to answer as a ShippingQuote.
-export class SwiftShipQuote {
-  constructor(client) {
-    this.client = client;
-  }
-
-  cost(grams, country) {
-    return this.client.quote({ grams, to: country });
-  }
+/**
+ * SwiftShip's client, made to answer as a ShippingQuote.
+ * @returns {ShippingQuote}
+ */
+export function swiftShipQuote(client) {
+  return (grams, country) => client.quote({ grams, to: country });
 }
 
-// BoxRoute's estimate, made to answer as a ShippingQuote.
-export class BoxRouteQuote {
-  cost(grams, country) {
-    const price = estimate({ destination: country, kilos: grams / 1000 });
-    return price.euros * 100 + price.cents;
-  }
+/**
+ * BoxRoute's estimate, made to answer as a ShippingQuote.
+ * @type {ShippingQuote}
+ */
+export function boxRouteQuote(grams, country) {
+  const price = estimate({ destination: country, kilos: grams / 1000 });
+  return price.euros * 100 + price.cents;
 }
 
 export function cartWeightGrams(cart, catalog) {
@@ -69,6 +68,6 @@ export function shippingCost(
     return 3_500;
   }
   return Math.min(
-    ...providers.map((provider) => provider.cost(weightGrams, country)),
+    ...providers.map((provider) => provider(weightGrams, country)),
   );
 }
