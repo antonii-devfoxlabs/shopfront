@@ -15,43 +15,91 @@ export const gateway = new PaymentGateway({
   merchant: settings.merchantId,
 });
 
-// Charge the shopper and return the gateway's transaction id.
-export function pay(method, amountCents, details) {
-  if (method === 'card') {
-    return gateway.chargeCard(required(details, 'cardToken'), amountCents);
-  } else if (method === 'paypal') {
-    return gateway.chargePaypal(required(details, 'payerEmail'), amountCents);
-  } else if (method === 'apple_pay') {
-    return gateway.chargeWallet(
-      'apple_pay',
-      required(details, 'walletToken'),
-      amountCents,
-    );
-  } else if (method === 'google_pay') {
-    return gateway.chargeWallet(
-      'google_pay',
-      required(details, 'walletToken'),
-      amountCents,
-    );
-  } else if (method === 'samsung_pay') {
-    return gateway.chargeWallet(
-      'samsung_pay',
-      required(details, 'walletToken'),
-      amountCents,
-    );
-  } else if (method === 'bank_transfer') {
-    const reference = `SHOPFRONT-${required(details, 'orderId')}`;
-    return gateway.expectTransfer(amountCents, reference);
-  } else if (method === 'gift_card') {
-    return gateway.redeemGiftCard(required(details, 'code'), amountCents);
-  } else {
-    throw new UnsupportedPaymentMethodError(method);
+const WALLETS = ['apple_pay', 'google_pay', 'samsung_pay'];
+
+/**
+ * Every way to pay fills this slot.
+ * @typedef {object} PaymentMethod
+ * @property {(amountCents: number) => string} charge
+ */
+
+export class Card {
+  constructor(cardToken) {
+    this.cardToken = cardToken;
+  }
+
+  charge(amountCents) {
+    return gateway.chargeCard(this.cardToken, amountCents);
   }
 }
 
+export class PayPal {
+  constructor(payerEmail) {
+    this.payerEmail = payerEmail;
+  }
+
+  charge(amountCents) {
+    return gateway.chargePaypal(this.payerEmail, amountCents);
+  }
+}
+
+export class Wallet {
+  constructor(wallet, walletToken) {
+    this.wallet = wallet;
+    this.walletToken = walletToken;
+  }
+
+  charge(amountCents) {
+    return gateway.chargeWallet(this.wallet, this.walletToken, amountCents);
+  }
+}
+
+export class BankTransfer {
+  constructor(orderId) {
+    this.orderId = orderId;
+  }
+
+  charge(amountCents) {
+    const reference = `SHOPFRONT-${this.orderId}`;
+    return gateway.expectTransfer(amountCents, reference);
+  }
+}
+
+export class GiftCard {
+  constructor(code) {
+    this.code = code;
+  }
+
+  charge(amountCents) {
+    return gateway.redeemGiftCard(this.code, amountCents);
+  }
+}
+
+// Charge the shopper and return the gateway's transaction id.
+export function pay(method, amountCents, details) {
+  /** @type {PaymentMethod} */
+  let payment;
+  if (method === 'card') {
+    payment = new Card(required(details, 'cardToken'));
+  } else if (method === 'paypal') {
+    payment = new PayPal(required(details, 'payerEmail'));
+  } else if (WALLETS.includes(method)) {
+    payment = new Wallet(method, required(details, 'walletToken'));
+  } else if (method === 'bank_transfer') {
+    payment = new BankTransfer(required(details, 'orderId'));
+  } else if (method === 'gift_card') {
+    payment = new GiftCard(required(details, 'code'));
+  } else {
+    throw new UnsupportedPaymentMethodError(method);
+  }
+  return payment.charge(amountCents);
+}
+
+// A detail set to null is as missing as one left out, as in Python.
 function required(details, name) {
-  if (details[name] === undefined) {
+  const value = details[name];
+  if (value === undefined || value === null) {
     throw new MissingPaymentDetailError(name);
   }
-  return details[name];
+  return value;
 }

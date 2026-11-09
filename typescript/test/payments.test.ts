@@ -3,8 +3,14 @@ import { test } from 'node:test';
 
 import {
   type PaymentDetails,
+  type PaymentMethod,
+  BankTransfer,
+  Card,
+  GiftCard,
   MissingPaymentDetailError,
+  PayPal,
   UnsupportedPaymentMethodError,
+  Wallet,
   gateway,
   pay,
 } from '../src/payments.ts';
@@ -32,6 +38,22 @@ for (const [method, details, detail] of EVERY_METHOD) {
       amount: 1_000,
       detail,
     });
+  });
+}
+
+const EACH_WAY: [PaymentMethod, string][] = [
+  [new Card('tok-4242'), 'card'],
+  [new PayPal('ada@example.com'), 'paypal'],
+  [new Wallet('samsung_pay', 'wallet-3'), 'samsung_pay'],
+  [new BankTransfer('SF-00042'), 'bank_transfer'],
+  [new GiftCard('GIFT-2026-0001'), 'gift_card'],
+];
+
+for (const [payment, kind] of EACH_WAY) {
+  test(`${kind} charges on its own`, () => {
+    const transactionId = payment.charge(1_000);
+    assert.equal(gateway.charges.at(-1)?.id, transactionId);
+    assert.equal(gateway.charges.at(-1)?.kind, kind);
   });
 }
 

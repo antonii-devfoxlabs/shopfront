@@ -25,36 +25,97 @@ export const gateway = new PaymentGateway({
   merchant: settings.merchantId,
 });
 
+const WALLETS = ['apple_pay', 'google_pay', 'samsung_pay'];
+
+export interface PaymentMethod {
+  charge(amountCents: number): string;
+}
+
+export class Card implements PaymentMethod {
+  readonly cardToken: string;
+
+  constructor(cardToken: string) {
+    this.cardToken = cardToken;
+  }
+
+  charge(amountCents: number): string {
+    return gateway.chargeCard(this.cardToken, amountCents);
+  }
+}
+
+export class PayPal implements PaymentMethod {
+  readonly payerEmail: string;
+
+  constructor(payerEmail: string) {
+    this.payerEmail = payerEmail;
+  }
+
+  charge(amountCents: number): string {
+    return gateway.chargePaypal(this.payerEmail, amountCents);
+  }
+}
+
+export class Wallet implements PaymentMethod {
+  readonly wallet: string;
+  readonly walletToken: string;
+
+  constructor(wallet: string, walletToken: string) {
+    this.wallet = wallet;
+    this.walletToken = walletToken;
+  }
+
+  charge(amountCents: number): string {
+    return gateway.chargeWallet(this.wallet, this.walletToken, amountCents);
+  }
+}
+
+export class BankTransfer implements PaymentMethod {
+  readonly orderId: string;
+
+  constructor(orderId: string) {
+    this.orderId = orderId;
+  }
+
+  charge(amountCents: number): string {
+    const reference = `SHOPFRONT-${this.orderId}`;
+    return gateway.expectTransfer(amountCents, reference);
+  }
+}
+
+export class GiftCard implements PaymentMethod {
+  readonly code: string;
+
+  constructor(code: string) {
+    this.code = code;
+  }
+
+  charge(amountCents: number): string {
+    return gateway.redeemGiftCard(this.code, amountCents);
+  }
+}
+
 // Charge the shopper and return the gateway's transaction id.
 export function pay(
   method: string,
   amountCents: number,
   details: PaymentDetails,
 ): string {
+  let payment: PaymentMethod;
   if (method === 'card') {
-    const cardToken = required(details.cardToken, 'cardToken');
-    return gateway.chargeCard(cardToken, amountCents);
+    payment = new Card(required(details.cardToken, 'cardToken'));
   } else if (method === 'paypal') {
-    const payerEmail = required(details.payerEmail, 'payerEmail');
-    return gateway.chargePaypal(payerEmail, amountCents);
-  } else if (method === 'apple_pay') {
+    payment = new PayPal(required(details.payerEmail, 'payerEmail'));
+  } else if (WALLETS.includes(method)) {
     const walletToken = required(details.walletToken, 'walletToken');
-    return gateway.chargeWallet('apple_pay', walletToken, amountCents);
-  } else if (method === 'google_pay') {
-    const walletToken = required(details.walletToken, 'walletToken');
-    return gateway.chargeWallet('google_pay', walletToken, amountCents);
-  } else if (method === 'samsung_pay') {
-    const walletToken = required(details.walletToken, 'walletToken');
-    return gateway.chargeWallet('samsung_pay', walletToken, amountCents);
+    payment = new Wallet(method, walletToken);
   } else if (method === 'bank_transfer') {
-    const orderId = required(details.orderId, 'orderId');
-    return gateway.expectTransfer(amountCents, `SHOPFRONT-${orderId}`);
+    payment = new BankTransfer(required(details.orderId, 'orderId'));
   } else if (method === 'gift_card') {
-    const code = required(details.code, 'code');
-    return gateway.redeemGiftCard(code, amountCents);
+    payment = new GiftCard(required(details.code, 'code'));
   } else {
     throw new UnsupportedPaymentMethodError(method);
   }
+  return payment.charge(amountCents);
 }
 
 function required(value: string | undefined, name: string): string {

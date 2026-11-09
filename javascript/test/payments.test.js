@@ -2,8 +2,13 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import {
+  BankTransfer,
+  Card,
+  GiftCard,
   MissingPaymentDetailError,
+  PayPal,
   UnsupportedPaymentMethodError,
+  Wallet,
   gateway,
   pay,
 } from '../src/payments.js';
@@ -34,6 +39,22 @@ for (const [method, details, detail] of EVERY_METHOD) {
   });
 }
 
+const EACH_WAY = [
+  [new Card('tok-4242'), 'card'],
+  [new PayPal('ada@example.com'), 'paypal'],
+  [new Wallet('samsung_pay', 'wallet-3'), 'samsung_pay'],
+  [new BankTransfer('SF-00042'), 'bank_transfer'],
+  [new GiftCard('GIFT-2026-0001'), 'gift_card'],
+];
+
+for (const [payment, kind] of EACH_WAY) {
+  test(`${kind} charges on its own`, () => {
+    const transactionId = payment.charge(1_000);
+    assert.equal(gateway.charges.at(-1).id, transactionId);
+    assert.equal(gateway.charges.at(-1).kind, kind);
+  });
+}
+
 test('a declined card throws', () => {
   assert.throws(
     () => pay('card', 1_000, { cardToken: 'declined' }),
@@ -53,6 +74,15 @@ for (const wallet of ['apple_pay', 'google_pay', 'samsung_pay']) {
 test('a missing detail is an error, not a charge', () => {
   const chargesBefore = gateway.charges.length;
   assert.throws(() => pay('card', 1_000, {}), {
+    constructor: MissingPaymentDetailError,
+    message: 'cardToken',
+  });
+  assert.equal(gateway.charges.length, chargesBefore);
+});
+
+test('a detail set to null is missing', () => {
+  const chargesBefore = gateway.charges.length;
+  assert.throws(() => pay('card', 1_000, { cardToken: null }), {
     constructor: MissingPaymentDetailError,
     message: 'cardToken',
   });

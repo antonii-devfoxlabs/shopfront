@@ -2,8 +2,13 @@ import pytest
 
 from shopfront import payments
 from shopfront.payments import (
+    BankTransfer,
+    Card,
+    GiftCard,
     MissingPaymentDetailError,
+    PayPal,
     UnsupportedPaymentMethodError,
+    Wallet,
     pay,
 )
 from shopfront.vendor.payment_gateway import (
@@ -36,6 +41,22 @@ def test_every_method_charges_the_gateway(method, details, detail):
         "amount": 1_000,
         "detail": detail,
     }
+
+
+@pytest.mark.parametrize(
+    ("payment", "kind"),
+    [
+        (Card("tok-4242"), "card"),
+        (PayPal("ada@example.com"), "paypal"),
+        (Wallet("samsung_pay", "wallet-3"), "samsung_pay"),
+        (BankTransfer("SF-00042"), "bank_transfer"),
+        (GiftCard("GIFT-2026-0001"), "gift_card"),
+    ],
+)
+def test_each_way_to_pay_charges_on_its_own(payment, kind):
+    transaction_id = payment.charge(1_000)
+    assert last_charge()["id"] == transaction_id
+    assert last_charge()["kind"] == kind
 
 
 def test_a_declined_card_raises():
