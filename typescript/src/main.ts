@@ -21,7 +21,10 @@ cart.add('MUG-01', 2);
 cart.add('TEA-02');
 
 const calculator = new PriceCalculator(catalog, new TaxService());
-const quote = calculator.quote(cart, 'DE', 'WELCOME10', new Date());
+const quote = calculator.quote(cart, 'DE', {
+  today: new Date(),
+  coupon: 'WELCOME10',
+});
 const paidCents = quote.subtotalCents - quote.discountCents;
 const shippingCents = shippingCost(cart, catalog, 'DE', paidCents);
 const totalCents = paidCents + quote.taxCents + shippingCents;

@@ -25,7 +25,9 @@ def main() -> None:
     cart.add("TEA-02")
 
     calculator = PriceCalculator(catalog, TaxService())
-    quote = calculator.quote(cart, "DE", "WELCOME10", date.today())
+    quote = calculator.quote(
+        cart, "DE", today=date.today(), coupon="WELCOME10"
+    )
     paid_cents = quote.subtotal_cents - quote.discount_cents
     shipping_cents = shipping_cost(cart, catalog, "DE", paid_cents)
     total_cents = paid_cents + quote.tax_cents + shipping_cents

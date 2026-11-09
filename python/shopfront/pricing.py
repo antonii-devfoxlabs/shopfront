@@ -54,8 +54,9 @@ class PriceCalculator:
         self,
         cart: Cart,
         country: str,
-        coupon: str | None,
+        *,
         today: date,
+        coupon: str | None = None,
         vat_id: str | None = None,
     ) -> PriceQuote:
         subtotal_cents = self.subtotal(cart)

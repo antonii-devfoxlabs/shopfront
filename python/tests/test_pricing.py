@@ -53,7 +53,10 @@ def test_tax_is_the_country_rate_rounded_to_the_cent():
 
 def test_a_quote_puts_it_together():
     quote = calculator().quote(
-        cart_of({"MUG-01": 2, "TEA-02": 1}), "DE", "WELCOME10", A_JUNE_DAY
+        cart_of({"MUG-01": 2, "TEA-02": 1}),
+        "DE",
+        today=A_JUNE_DAY,
+        coupon="WELCOME10",
     )
     assert (quote.subtotal_cents, quote.discount_cents) == (3_390, 339)
     assert quote.tax_cents == 580
@@ -61,14 +64,20 @@ def test_a_quote_puts_it_together():
 
 def test_a_business_abroad_pays_no_vat():
     quote = calculator().quote(
-        cart_of({"MUG-01": 40}), "FR", None, A_JUNE_DAY, "FR12345678901"
+        cart_of({"MUG-01": 40}),
+        "FR",
+        today=A_JUNE_DAY,
+        vat_id="FR12345678901",
     )
     assert quote.tax_cents == 0
 
 
 def test_a_business_at_home_pays_vat():
     quote = calculator().quote(
-        cart_of({"MUG-01": 40}), "DE", None, A_JUNE_DAY, "DE123456789"
+        cart_of({"MUG-01": 40}),
+        "DE",
+        today=A_JUNE_DAY,
+        vat_id="DE123456789",
     )
     assert quote.tax_cents == 9_025
 
@@ -77,7 +86,7 @@ def test_every_quote_asks_the_tax_service_again():
     tax_service = TaxService()
     prices = PriceCalculator(starter_catalog(), tax_service)
     for _ in range(3):
-        prices.quote(cart_of({"MUG-01": 1}), "DE", None, A_JUNE_DAY)
+        prices.quote(cart_of({"MUG-01": 1}), "DE", today=A_JUNE_DAY)
     assert tax_service.lookups == 3
 
 

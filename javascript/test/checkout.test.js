@@ -25,12 +25,10 @@ test('a whole order', () => {
   cart.add('TEA-02');
 
   const calculator = new PriceCalculator(catalog, new TaxService());
-  const quote = calculator.quote(
-    cart,
-    'DE',
-    'WELCOME10',
-    new Date(2026, 5, 15),
-  );
+  const quote = calculator.quote(cart, 'DE', {
+    today: new Date(2026, 5, 15),
+    coupon: 'WELCOME10',
+  });
   const paidCents = quote.subtotalCents - quote.discountCents;
   const shippingCents = shippingCost(cart, catalog, 'DE', paidCents);
   const totalCents = paidCents + quote.taxCents + shippingCents;
@@ -79,7 +77,9 @@ test('ordering again', () => {
   const country = previous.shippingCountry;
 
   const calculator = new PriceCalculator(catalog, new TaxService());
-  const quote = calculator.quote(cart, country, null, new Date(2026, 6, 15));
+  const quote = calculator.quote(cart, country, {
+    today: new Date(2026, 6, 15),
+  });
   builder.subtotal(quote.subtotalCents);
   builder.discount(quote.discountCents);
   builder.tax(quote.taxCents);

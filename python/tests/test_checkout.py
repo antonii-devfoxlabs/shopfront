@@ -26,7 +26,9 @@ def test_a_whole_order():
     cart.add("TEA-02")
 
     calculator = PriceCalculator(catalog, TaxService())
-    quote = calculator.quote(cart, "DE", "WELCOME10", date(2026, 6, 15))
+    quote = calculator.quote(
+        cart, "DE", today=date(2026, 6, 15), coupon="WELCOME10"
+    )
     paid_cents = quote.subtotal_cents - quote.discount_cents
     shipping_cents = shipping_cost(cart, catalog, "DE", paid_cents)
     total_cents = paid_cents + quote.tax_cents + shipping_cents
@@ -77,7 +79,7 @@ def test_ordering_again():
     country = previous.shipping_country
 
     calculator = PriceCalculator(catalog, TaxService())
-    quote = calculator.quote(cart, country, None, date(2026, 7, 15))
+    quote = calculator.quote(cart, country, today=date(2026, 7, 15))
     builder.subtotal(quote.subtotal_cents)
     builder.discount(quote.discount_cents)
     builder.tax(quote.tax_cents)

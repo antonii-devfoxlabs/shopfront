@@ -15,6 +15,12 @@ export type PriceQuote = {
   taxCents: number;
 };
 
+export type QuoteOptions = {
+  today: Date;
+  coupon?: string | null;
+  vatId?: string | null;
+};
+
 export class PriceCalculator {
   readonly catalog: Catalog;
   readonly taxService: TaxService;
@@ -60,9 +66,7 @@ export class PriceCalculator {
   quote(
     cart: Cart,
     country: string,
-    coupon: string | null,
-    today: Date,
-    vatId: string | null = null,
+    { today, coupon = null, vatId = null }: QuoteOptions,
   ): PriceQuote {
     const subtotalCents = this.subtotal(cart);
     const discountCents = this.discount(subtotalCents, coupon, today);

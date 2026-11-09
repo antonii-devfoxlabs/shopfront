@@ -41,7 +41,7 @@ export class PriceCalculator {
     return Math.floor((amountCents * rate + 50) / 100);
   }
 
-  quote(cart, country, coupon, today, vatId = null) {
+  quote(cart, country, { today, coupon = null, vatId = null }) {
     const subtotalCents = this.subtotal(cart);
     const discountCents = this.discount(subtotalCents, coupon, today);
     // A business in another EU country pays the VAT at home.

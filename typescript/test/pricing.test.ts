@@ -58,7 +58,10 @@ test('tax is the country rate rounded to the cent', () => {
 
 test('a quote puts it together', () => {
   const cart = cartOf({ 'MUG-01': 2, 'TEA-02': 1 });
-  const quote = calculator().quote(cart, 'DE', 'WELCOME10', A_JUNE_DAY);
+  const quote = calculator().quote(cart, 'DE', {
+    today: A_JUNE_DAY,
+    coupon: 'WELCOME10',
+  });
   assert.deepEqual(quote, {
     subtotalCents: 3_390,
     discountCents: 339,
@@ -68,25 +71,19 @@ test('a quote puts it together', () => {
 
 test('a business abroad pays no VAT', () => {
   const cart = cartOf({ 'MUG-01': 40 });
-  const quote = calculator().quote(
-    cart,
-    'FR',
-    null,
-    A_JUNE_DAY,
-    'FR12345678901',
-  );
+  const quote = calculator().quote(cart, 'FR', {
+    today: A_JUNE_DAY,
+    vatId: 'FR12345678901',
+  });
   assert.equal(quote.taxCents, 0);
 });
 
 test('a business at home pays VAT', () => {
   const cart = cartOf({ 'MUG-01': 40 });
-  const quote = calculator().quote(
-    cart,
-    'DE',
-    null,
-    A_JUNE_DAY,
-    'DE123456789',
-  );
+  const quote = calculator().quote(cart, 'DE', {
+    today: A_JUNE_DAY,
+    vatId: 'DE123456789',
+  });
   assert.equal(quote.taxCents, 9_025);
 });
 
@@ -94,7 +91,7 @@ test('every quote asks the tax service again', () => {
   const taxService = new TaxService();
   const prices = new PriceCalculator(starterCatalog(), taxService);
   for (let round = 0; round < 3; round += 1) {
-    prices.quote(cartOf({ 'MUG-01': 1 }), 'DE', null, A_JUNE_DAY);
+    prices.quote(cartOf({ 'MUG-01': 1 }), 'DE', { today: A_JUNE_DAY });
   }
   assert.equal(taxService.lookups, 3);
 });
