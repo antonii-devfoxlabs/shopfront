@@ -3,10 +3,10 @@
 import { OrderBook, type Order } from './orders.ts';
 import {
   payment,
+  type Gateway,
   type PaymentDetails,
   type PaymentMethod,
 } from './payments.ts';
-import type { PaymentGateway } from './vendor/paymentGateway.ts';
 
 export class ReturnRefusedError extends Error {
   override name = 'ReturnRefusedError';
@@ -16,13 +16,9 @@ export class ReturnRefusedError extends Error {
 export class Return {
   readonly order: Order;
   readonly details: PaymentDetails;
-  readonly gateway: PaymentGateway;
+  readonly gateway: Gateway;
 
-  constructor(
-    order: Order,
-    details: PaymentDetails,
-    gateway: PaymentGateway,
-  ) {
+  constructor(order: Order, details: PaymentDetails, gateway: Gateway) {
     this.order = order;
     this.details = details;
     this.gateway = gateway;
@@ -57,7 +53,7 @@ export class GiftReturn extends Return {
 export function returnOrder(
   orderId: string,
   details: PaymentDetails,
-  gateway: PaymentGateway,
+  gateway: Gateway,
 ): string {
   const order = OrderBook.instance().find(orderId);
   return new Return(order, details, gateway).process();

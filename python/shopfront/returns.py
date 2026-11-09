@@ -1,8 +1,7 @@
 """Orders sent back, and the money that goes back with them."""
 
 from shopfront.orders import Order, OrderBook
-from shopfront.payments import PaymentMethod, payment
-from shopfront.vendor.payment_gateway import PaymentGateway
+from shopfront.payments import Gateway, PaymentMethod, payment
 
 
 class ReturnRefusedError(Exception):
@@ -12,9 +11,7 @@ class ReturnRefusedError(Exception):
 class Return:
     """The shopper who paid sends the order back."""
 
-    def __init__(
-        self, order: Order, details: dict, gateway: PaymentGateway
-    ) -> None:
+    def __init__(self, order: Order, details: dict, gateway: Gateway) -> None:
         self.order = order
         self.details = details
         self.gateway = gateway
@@ -41,9 +38,7 @@ class GiftReturn(Return):
         return payment("gift_card", self.details, self.gateway)
 
 
-def return_order(
-    order_id: str, details: dict, gateway: PaymentGateway
-) -> str:
+def return_order(order_id: str, details: dict, gateway: Gateway) -> str:
     """Send back an order that the shopper names by its number."""
     order = OrderBook.instance().find(order_id)
     return Return(order, details, gateway).process()

@@ -4,6 +4,7 @@ from datetime import date
 
 from shopfront.cart import Cart
 from shopfront.catalog import starter_catalog
+from shopfront.gateways import TimedGateway
 from shopfront.orders import (
     OrderBuilder,
     format_money,
@@ -31,7 +32,8 @@ from shopfront.vendor.tax_service import TaxService
 def main() -> None:
     # The one place that picks the shop, and hands it to every part.
     shop = GERMAN_SHOP
-    gateway = PaymentGateway(merchant=shop.merchant_id)
+    # Every call to the payment gateway is timed and logged.
+    gateway = TimedGateway(PaymentGateway(merchant=shop.merchant_id), print)
     providers: list[ShippingQuote] = [
         parcelnow_quote(ParcelNowClient(account=shop.parcelnow_account)),
         swiftship_quote(SwiftShip()),

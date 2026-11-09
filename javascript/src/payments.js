@@ -1,7 +1,5 @@
 // Taking the money, and giving it back, in whichever way the shopper chose.
 
-/** @import { PaymentGateway } from './vendor/paymentGateway.js' */
-
 export class UnsupportedPaymentMethodError extends Error {
   name = 'UnsupportedPaymentMethodError';
 }
@@ -9,6 +7,21 @@ export class UnsupportedPaymentMethodError extends Error {
 export class MissingPaymentDetailError extends Error {
   name = 'MissingPaymentDetailError';
 }
+
+/**
+ * The ways to pay's slot for the payment gateway; its SDK fills it.
+ * @typedef {object} Gateway
+ * @property {(cardToken: string, amountCents: number) => string} chargeCard
+ * @property {(payerEmail: string, amountCents: number) => string} chargePaypal
+ * @property {(wallet: string, walletToken: string, amountCents: number) => string} chargeWallet
+ * @property {(amountCents: number, reference: string) => string} expectTransfer
+ * @property {(code: string, amountCents: number) => string} redeemGiftCard
+ * @property {(cardToken: string, amountCents: number) => string} refundCard
+ * @property {(payerEmail: string, amountCents: number) => string} refundPaypal
+ * @property {(wallet: string, walletToken: string, amountCents: number) => string} refundWallet
+ * @property {(amountCents: number, reference: string) => string} sendTransfer
+ * @property {(code: string, amountCents: number) => string} topUpGiftCard
+ */
 
 /**
  * Every way to pay fills this slot.
@@ -24,22 +37,11 @@ export class Card {
   }
 
   charge(amountCents) {
-    const started = performance.now();
-    const transactionId = this.gateway.chargeCard(
-      this.cardToken,
-      amountCents,
-    );
-    const tookMs = performance.now() - started;
-    console.log(`gateway chargeCard in ${tookMs.toFixed(0)} ms`);
-    return transactionId;
+    return this.gateway.chargeCard(this.cardToken, amountCents);
   }
 
   refund(amountCents) {
-    const started = performance.now();
-    const refundId = this.gateway.refundCard(this.cardToken, amountCents);
-    const tookMs = performance.now() - started;
-    console.log(`gateway refundCard in ${tookMs.toFixed(0)} ms`);
-    return refundId;
+    return this.gateway.refundCard(this.cardToken, amountCents);
   }
 }
 
@@ -50,22 +52,11 @@ export class PayPal {
   }
 
   charge(amountCents) {
-    const started = performance.now();
-    const transactionId = this.gateway.chargePaypal(
-      this.payerEmail,
-      amountCents,
-    );
-    const tookMs = performance.now() - started;
-    console.log(`gateway chargePaypal in ${tookMs.toFixed(0)} ms`);
-    return transactionId;
+    return this.gateway.chargePaypal(this.payerEmail, amountCents);
   }
 
   refund(amountCents) {
-    const started = performance.now();
-    const refundId = this.gateway.refundPaypal(this.payerEmail, amountCents);
-    const tookMs = performance.now() - started;
-    console.log(`gateway refundPaypal in ${tookMs.toFixed(0)} ms`);
-    return refundId;
+    return this.gateway.refundPaypal(this.payerEmail, amountCents);
   }
 }
 
@@ -77,27 +68,19 @@ export class Wallet {
   }
 
   charge(amountCents) {
-    const started = performance.now();
-    const transactionId = this.gateway.chargeWallet(
+    return this.gateway.chargeWallet(
       this.wallet,
       this.walletToken,
       amountCents,
     );
-    const tookMs = performance.now() - started;
-    console.log(`gateway chargeWallet in ${tookMs.toFixed(0)} ms`);
-    return transactionId;
   }
 
   refund(amountCents) {
-    const started = performance.now();
-    const refundId = this.gateway.refundWallet(
+    return this.gateway.refundWallet(
       this.wallet,
       this.walletToken,
       amountCents,
     );
-    const tookMs = performance.now() - started;
-    console.log(`gateway refundWallet in ${tookMs.toFixed(0)} ms`);
-    return refundId;
   }
 }
 
@@ -109,20 +92,12 @@ export class BankTransfer {
 
   charge(amountCents) {
     const reference = `SHOPFRONT-${this.orderId}`;
-    const started = performance.now();
-    const transactionId = this.gateway.expectTransfer(amountCents, reference);
-    const tookMs = performance.now() - started;
-    console.log(`gateway expectTransfer in ${tookMs.toFixed(0)} ms`);
-    return transactionId;
+    return this.gateway.expectTransfer(amountCents, reference);
   }
 
   refund(amountCents) {
     const reference = `SHOPFRONT-${this.orderId}`;
-    const started = performance.now();
-    const refundId = this.gateway.sendTransfer(amountCents, reference);
-    const tookMs = performance.now() - started;
-    console.log(`gateway sendTransfer in ${tookMs.toFixed(0)} ms`);
-    return refundId;
+    return this.gateway.sendTransfer(amountCents, reference);
   }
 }
 
@@ -133,19 +108,11 @@ export class GiftCard {
   }
 
   charge(amountCents) {
-    const started = performance.now();
-    const transactionId = this.gateway.redeemGiftCard(this.code, amountCents);
-    const tookMs = performance.now() - started;
-    console.log(`gateway redeemGiftCard in ${tookMs.toFixed(0)} ms`);
-    return transactionId;
+    return this.gateway.redeemGiftCard(this.code, amountCents);
   }
 
   refund(amountCents) {
-    const started = performance.now();
-    const refundId = this.gateway.topUpGiftCard(this.code, amountCents);
-    const tookMs = performance.now() - started;
-    console.log(`gateway topUpGiftCard in ${tookMs.toFixed(0)} ms`);
-    return refundId;
+    return this.gateway.topUpGiftCard(this.code, amountCents);
   }
 }
 
@@ -154,7 +121,7 @@ export class GiftCard {
  * it uses.
  * @callback CreatePayment
  * @param {object} details
- * @param {PaymentGateway} gateway
+ * @param {Gateway} gateway
  * @returns {PaymentMethod}
  */
 

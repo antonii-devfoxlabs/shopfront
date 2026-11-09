@@ -1,7 +1,5 @@
 // Taking the money, and giving it back, in whichever way the shopper chose.
 
-import type { PaymentGateway } from './vendor/paymentGateway.ts';
-
 export class UnsupportedPaymentMethodError extends Error {
   override name = 'UnsupportedPaymentMethodError';
 }
@@ -20,6 +18,28 @@ export type PaymentDetails = {
   code?: string;
 };
 
+// The ways to pay's slot for the payment gateway; its SDK fills it.
+export interface Gateway {
+  chargeCard(cardToken: string, amountCents: number): string;
+  chargePaypal(payerEmail: string, amountCents: number): string;
+  chargeWallet(
+    wallet: string,
+    walletToken: string,
+    amountCents: number,
+  ): string;
+  expectTransfer(amountCents: number, reference: string): string;
+  redeemGiftCard(code: string, amountCents: number): string;
+  refundCard(cardToken: string, amountCents: number): string;
+  refundPaypal(payerEmail: string, amountCents: number): string;
+  refundWallet(
+    wallet: string,
+    walletToken: string,
+    amountCents: number,
+  ): string;
+  sendTransfer(amountCents: number, reference: string): string;
+  topUpGiftCard(code: string, amountCents: number): string;
+}
+
 export interface PaymentMethod {
   charge(amountCents: number): string;
   refund(amountCents: number): string;
@@ -27,149 +47,103 @@ export interface PaymentMethod {
 
 export class Card implements PaymentMethod {
   readonly cardToken: string;
-  readonly gateway: PaymentGateway;
+  readonly gateway: Gateway;
 
-  constructor(cardToken: string, gateway: PaymentGateway) {
+  constructor(cardToken: string, gateway: Gateway) {
     this.cardToken = cardToken;
     this.gateway = gateway;
   }
 
   charge(amountCents: number): string {
-    const started = performance.now();
-    const transactionId = this.gateway.chargeCard(
-      this.cardToken,
-      amountCents,
-    );
-    const tookMs = performance.now() - started;
-    console.log(`gateway chargeCard in ${tookMs.toFixed(0)} ms`);
-    return transactionId;
+    return this.gateway.chargeCard(this.cardToken, amountCents);
   }
 
   refund(amountCents: number): string {
-    const started = performance.now();
-    const refundId = this.gateway.refundCard(this.cardToken, amountCents);
-    const tookMs = performance.now() - started;
-    console.log(`gateway refundCard in ${tookMs.toFixed(0)} ms`);
-    return refundId;
+    return this.gateway.refundCard(this.cardToken, amountCents);
   }
 }
 
 export class PayPal implements PaymentMethod {
   readonly payerEmail: string;
-  readonly gateway: PaymentGateway;
+  readonly gateway: Gateway;
 
-  constructor(payerEmail: string, gateway: PaymentGateway) {
+  constructor(payerEmail: string, gateway: Gateway) {
     this.payerEmail = payerEmail;
     this.gateway = gateway;
   }
 
   charge(amountCents: number): string {
-    const started = performance.now();
-    const transactionId = this.gateway.chargePaypal(
-      this.payerEmail,
-      amountCents,
-    );
-    const tookMs = performance.now() - started;
-    console.log(`gateway chargePaypal in ${tookMs.toFixed(0)} ms`);
-    return transactionId;
+    return this.gateway.chargePaypal(this.payerEmail, amountCents);
   }
 
   refund(amountCents: number): string {
-    const started = performance.now();
-    const refundId = this.gateway.refundPaypal(this.payerEmail, amountCents);
-    const tookMs = performance.now() - started;
-    console.log(`gateway refundPaypal in ${tookMs.toFixed(0)} ms`);
-    return refundId;
+    return this.gateway.refundPaypal(this.payerEmail, amountCents);
   }
 }
 
 export class Wallet implements PaymentMethod {
   readonly wallet: string;
   readonly walletToken: string;
-  readonly gateway: PaymentGateway;
+  readonly gateway: Gateway;
 
-  constructor(wallet: string, walletToken: string, gateway: PaymentGateway) {
+  constructor(wallet: string, walletToken: string, gateway: Gateway) {
     this.wallet = wallet;
     this.walletToken = walletToken;
     this.gateway = gateway;
   }
 
   charge(amountCents: number): string {
-    const started = performance.now();
-    const transactionId = this.gateway.chargeWallet(
+    return this.gateway.chargeWallet(
       this.wallet,
       this.walletToken,
       amountCents,
     );
-    const tookMs = performance.now() - started;
-    console.log(`gateway chargeWallet in ${tookMs.toFixed(0)} ms`);
-    return transactionId;
   }
 
   refund(amountCents: number): string {
-    const started = performance.now();
-    const refundId = this.gateway.refundWallet(
+    return this.gateway.refundWallet(
       this.wallet,
       this.walletToken,
       amountCents,
     );
-    const tookMs = performance.now() - started;
-    console.log(`gateway refundWallet in ${tookMs.toFixed(0)} ms`);
-    return refundId;
   }
 }
 
 export class BankTransfer implements PaymentMethod {
   readonly orderId: string;
-  readonly gateway: PaymentGateway;
+  readonly gateway: Gateway;
 
-  constructor(orderId: string, gateway: PaymentGateway) {
+  constructor(orderId: string, gateway: Gateway) {
     this.orderId = orderId;
     this.gateway = gateway;
   }
 
   charge(amountCents: number): string {
     const reference = `SHOPFRONT-${this.orderId}`;
-    const started = performance.now();
-    const transactionId = this.gateway.expectTransfer(amountCents, reference);
-    const tookMs = performance.now() - started;
-    console.log(`gateway expectTransfer in ${tookMs.toFixed(0)} ms`);
-    return transactionId;
+    return this.gateway.expectTransfer(amountCents, reference);
   }
 
   refund(amountCents: number): string {
     const reference = `SHOPFRONT-${this.orderId}`;
-    const started = performance.now();
-    const refundId = this.gateway.sendTransfer(amountCents, reference);
-    const tookMs = performance.now() - started;
-    console.log(`gateway sendTransfer in ${tookMs.toFixed(0)} ms`);
-    return refundId;
+    return this.gateway.sendTransfer(amountCents, reference);
   }
 }
 
 export class GiftCard implements PaymentMethod {
   readonly code: string;
-  readonly gateway: PaymentGateway;
+  readonly gateway: Gateway;
 
-  constructor(code: string, gateway: PaymentGateway) {
+  constructor(code: string, gateway: Gateway) {
     this.code = code;
     this.gateway = gateway;
   }
 
   charge(amountCents: number): string {
-    const started = performance.now();
-    const transactionId = this.gateway.redeemGiftCard(this.code, amountCents);
-    const tookMs = performance.now() - started;
-    console.log(`gateway redeemGiftCard in ${tookMs.toFixed(0)} ms`);
-    return transactionId;
+    return this.gateway.redeemGiftCard(this.code, amountCents);
   }
 
   refund(amountCents: number): string {
-    const started = performance.now();
-    const refundId = this.gateway.topUpGiftCard(this.code, amountCents);
-    const tookMs = performance.now() - started;
-    console.log(`gateway topUpGiftCard in ${tookMs.toFixed(0)} ms`);
-    return refundId;
+    return this.gateway.topUpGiftCard(this.code, amountCents);
   }
 }
 
@@ -177,7 +151,7 @@ export class GiftCard implements PaymentMethod {
 // that creates it from the shopper's details and the gateway it uses.
 const PAYMENT_METHODS = new Map<
   string,
-  (details: PaymentDetails, gateway: PaymentGateway) => PaymentMethod
+  (details: PaymentDetails, gateway: Gateway) => PaymentMethod
 >([
   [
     'card',
@@ -232,7 +206,7 @@ const PAYMENT_METHODS = new Map<
 export function payment(
   method: string,
   details: PaymentDetails,
-  gateway: PaymentGateway,
+  gateway: Gateway,
 ): PaymentMethod {
   const create = PAYMENT_METHODS.get(method);
   if (create === undefined) {
@@ -251,7 +225,7 @@ export function pay(
   method: string,
   amountCents: number,
   details: PaymentDetails,
-  gateway: PaymentGateway,
+  gateway: Gateway,
 ): string {
   return payment(method, details, gateway).charge(amountCents);
 }
@@ -261,7 +235,7 @@ export function refund(
   method: string,
   amountCents: number,
   details: PaymentDetails,
-  gateway: PaymentGateway,
+  gateway: Gateway,
 ): string {
   return payment(method, details, gateway).refund(amountCents);
 }

@@ -2,6 +2,7 @@
 
 import { Cart } from './cart.js';
 import { starterCatalog } from './catalog.js';
+import { TimedGateway } from './gateways.js';
 import {
   OrderBuilder,
   formatMoney,
@@ -27,7 +28,11 @@ import { TaxService } from './vendor/taxService.js';
 
 // The one place that picks the shop, and hands it to every part.
 const shop = GERMAN_SHOP;
-const gateway = new PaymentGateway({ merchant: shop.merchantId });
+// Every call to the payment gateway is timed and logged.
+const gateway = new TimedGateway(
+  new PaymentGateway({ merchant: shop.merchantId }),
+  console.log,
+);
 const providers = [
   parcelNowQuote(new ParcelNowClient({ account: shop.parcelNowAccount })),
   swiftShipQuote(new SwiftShip()),
