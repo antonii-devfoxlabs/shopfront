@@ -1,5 +1,5 @@
 // The edge: every shipping provider's SDK, made to fit ShippingQuote.
-// This is the only module that names a shipping provider's SDK. Each
+// This is the only module that calls a shipping provider's SDK. Each
 // adapter converts Shopfront's question into its SDK's call, the answer
 // into cents, and the SDK's "we do not ship there" into NoShippingError.
 
