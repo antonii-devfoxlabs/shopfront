@@ -8,10 +8,6 @@ class ReturnRefusedError(Exception):
     pass
 
 
-class UnsupportedReturnError(Exception):
-    pass
-
-
 class Return:
     """The shopper who paid sends the order back."""
 
@@ -39,17 +35,3 @@ class GiftReturn(Return):
 
     def destination(self) -> PaymentMethod:
         return payment("gift_card", self.details)
-
-
-RETURNS: dict[str, type[Return]] = {
-    "standard": Return,
-    "gift": GiftReturn,
-}
-
-
-def return_for(kind: str, order: Order, details: dict) -> Return:
-    """Create the return that the kind's name stands for."""
-    create = RETURNS.get(kind)
-    if create is None:
-        raise UnsupportedReturnError(kind)
-    return create(order, details)

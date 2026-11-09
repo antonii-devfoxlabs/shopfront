@@ -11,10 +11,6 @@ export class ReturnRefusedError extends Error {
   override name = 'ReturnRefusedError';
 }
 
-export class UnsupportedReturnError extends Error {
-  override name = 'UnsupportedReturnError';
-}
-
 // The shopper who paid sends the order back.
 export class Return {
   readonly order: Order;
@@ -48,22 +44,4 @@ export class GiftReturn extends Return {
   override destination(): PaymentMethod {
     return payment('gift_card', this.details);
   }
-}
-
-const RETURNS = new Map<string, typeof Return>([
-  ['standard', Return],
-  ['gift', GiftReturn],
-]);
-
-// Create the return that the kind's name stands for.
-export function returnFor(
-  kind: string,
-  order: Order,
-  details: PaymentDetails,
-): Return {
-  const ReturnClass = RETURNS.get(kind);
-  if (ReturnClass === undefined) {
-    throw new UnsupportedReturnError(kind);
-  }
-  return new ReturnClass(order, details);
 }
