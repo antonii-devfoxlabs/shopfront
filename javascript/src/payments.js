@@ -15,18 +15,6 @@ export const gateway = new PaymentGateway({
   merchant: settings.merchantId,
 });
 
-const WALLETS = ['apple_pay', 'google_pay', 'samsung_pay'];
-
-const ACCEPTED = [
-  'card',
-  'paypal',
-  'apple_pay',
-  'google_pay',
-  'samsung_pay',
-  'bank_transfer',
-  'gift_card',
-];
-
 /**
  * Every way to pay fills this slot.
  * @typedef {object} PaymentMethod
@@ -108,28 +96,47 @@ export class GiftCard {
 }
 
 /**
+ * Every way to pay, by the name the shopper picks, with the function
+ * that creates it from the shopper's details.
+ * @type {Map<string, (details: object) => PaymentMethod>}
+ */
+export const PAYMENT_METHODS = new Map([
+  ['card', (details) => new Card(required(details, 'cardToken'))],
+  ['paypal', (details) => new PayPal(required(details, 'payerEmail'))],
+  [
+    'apple_pay',
+    (details) => new Wallet('apple_pay', required(details, 'walletToken')),
+  ],
+  [
+    'google_pay',
+    (details) => new Wallet('google_pay', required(details, 'walletToken')),
+  ],
+  [
+    'samsung_pay',
+    (details) => new Wallet('samsung_pay', required(details, 'walletToken')),
+  ],
+  [
+    'bank_transfer',
+    (details) => new BankTransfer(required(details, 'orderId')),
+  ],
+  ['gift_card', (details) => new GiftCard(required(details, 'code'))],
+]);
+
+/**
  * Create the way to pay that the method's name stands for.
  * @returns {PaymentMethod}
  */
 export function payment(method, details) {
-  if (method === 'card') {
-    return new Card(required(details, 'cardToken'));
-  } else if (method === 'paypal') {
-    return new PayPal(required(details, 'payerEmail'));
-  } else if (WALLETS.includes(method)) {
-    return new Wallet(method, required(details, 'walletToken'));
-  } else if (method === 'bank_transfer') {
-    return new BankTransfer(required(details, 'orderId'));
-  } else if (method === 'gift_card') {
-    return new GiftCard(required(details, 'code'));
-  } else {
+  const create = PAYMENT_METHODS.get(method);
+  if (create === undefined) {
     throw new UnsupportedPaymentMethodError(method);
   }
+  return create(details);
 }
 
 // The names of the ways to pay, in the order checkout shows them.
 export function accepted() {
-  return [...ACCEPTED];
+  return [...PAYMENT_METHODS.keys()];
 }
 
 // Charge the shopper and return the gateway's transaction id.

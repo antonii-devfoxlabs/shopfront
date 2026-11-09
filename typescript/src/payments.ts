@@ -12,7 +12,7 @@ export class MissingPaymentDetailError extends Error {
 }
 
 // Every way to pay needs something different, so every field is
-// optional and each branch checks the one it needs.
+// optional and each row of PAYMENT_METHODS checks the one it needs.
 export type PaymentDetails = {
   cardToken?: string;
   payerEmail?: string;
@@ -24,18 +24,6 @@ export type PaymentDetails = {
 export const gateway = new PaymentGateway({
   merchant: settings.merchantId,
 });
-
-const WALLETS = ['apple_pay', 'google_pay', 'samsung_pay'];
-
-const ACCEPTED = [
-  'card',
-  'paypal',
-  'apple_pay',
-  'google_pay',
-  'samsung_pay',
-  'bank_transfer',
-  'gift_card',
-];
 
 export interface PaymentMethod {
   charge(amountCents: number): string;
@@ -126,30 +114,54 @@ export class GiftCard implements PaymentMethod {
   }
 }
 
+// Every way to pay, by the name the shopper picks, with the function
+// that creates it from the shopper's details.
+export const PAYMENT_METHODS = new Map<
+  string,
+  (details: PaymentDetails) => PaymentMethod
+>([
+  ['card', (details) => new Card(required(details.cardToken, 'cardToken'))],
+  [
+    'paypal',
+    (details) => new PayPal(required(details.payerEmail, 'payerEmail')),
+  ],
+  [
+    'apple_pay',
+    (details) =>
+      new Wallet('apple_pay', required(details.walletToken, 'walletToken')),
+  ],
+  [
+    'google_pay',
+    (details) =>
+      new Wallet('google_pay', required(details.walletToken, 'walletToken')),
+  ],
+  [
+    'samsung_pay',
+    (details) =>
+      new Wallet('samsung_pay', required(details.walletToken, 'walletToken')),
+  ],
+  [
+    'bank_transfer',
+    (details) => new BankTransfer(required(details.orderId, 'orderId')),
+  ],
+  ['gift_card', (details) => new GiftCard(required(details.code, 'code'))],
+]);
+
 // Create the way to pay that the method's name stands for.
 export function payment(
   method: string,
   details: PaymentDetails,
 ): PaymentMethod {
-  if (method === 'card') {
-    return new Card(required(details.cardToken, 'cardToken'));
-  } else if (method === 'paypal') {
-    return new PayPal(required(details.payerEmail, 'payerEmail'));
-  } else if (WALLETS.includes(method)) {
-    const walletToken = required(details.walletToken, 'walletToken');
-    return new Wallet(method, walletToken);
-  } else if (method === 'bank_transfer') {
-    return new BankTransfer(required(details.orderId, 'orderId'));
-  } else if (method === 'gift_card') {
-    return new GiftCard(required(details.code, 'code'));
-  } else {
+  const create = PAYMENT_METHODS.get(method);
+  if (create === undefined) {
     throw new UnsupportedPaymentMethodError(method);
   }
+  return create(details);
 }
 
 // The names of the ways to pay, in the order checkout shows them.
 export function accepted(): string[] {
-  return [...ACCEPTED];
+  return [...PAYMENT_METHODS.keys()];
 }
 
 // Charge the shopper and return the gateway's transaction id.

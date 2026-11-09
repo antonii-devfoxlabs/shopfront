@@ -1,5 +1,6 @@
 """Taking the money, and giving it back, in whichever way the shopper chose."""
 
+from collections.abc import Callable
 from typing import Protocol
 
 from shopfront import settings
@@ -15,18 +16,6 @@ class MissingPaymentDetailError(Exception):
 
 
 gateway = PaymentGateway(merchant=settings.MERCHANT_ID)
-
-WALLETS = ("apple_pay", "google_pay", "samsung_pay")
-
-ACCEPTED = (
-    "card",
-    "paypal",
-    "apple_pay",
-    "google_pay",
-    "samsung_pay",
-    "bank_transfer",
-    "gift_card",
-)
 
 
 class PaymentMethod(Protocol):
@@ -97,25 +86,36 @@ class GiftCard:
         return gateway.top_up_gift_card(self.code, amount_cents)
 
 
+PAYMENT_METHODS: dict[str, Callable[[dict], PaymentMethod]] = {
+    "card": lambda details: Card(required(details, "card_token")),
+    "paypal": lambda details: PayPal(required(details, "payer_email")),
+    "apple_pay": lambda details: Wallet(
+        "apple_pay", required(details, "wallet_token")
+    ),
+    "google_pay": lambda details: Wallet(
+        "google_pay", required(details, "wallet_token")
+    ),
+    "samsung_pay": lambda details: Wallet(
+        "samsung_pay", required(details, "wallet_token")
+    ),
+    "bank_transfer": lambda details: BankTransfer(
+        required(details, "order_id")
+    ),
+    "gift_card": lambda details: GiftCard(required(details, "code")),
+}
+
+
 def payment(method: str, details: dict) -> PaymentMethod:
     """Create the way to pay that the method's name stands for."""
-    if method == "card":
-        return Card(required(details, "card_token"))
-    elif method == "paypal":
-        return PayPal(required(details, "payer_email"))
-    elif method in WALLETS:
-        return Wallet(method, required(details, "wallet_token"))
-    elif method == "bank_transfer":
-        return BankTransfer(required(details, "order_id"))
-    elif method == "gift_card":
-        return GiftCard(required(details, "code"))
-    else:
+    create = PAYMENT_METHODS.get(method)
+    if create is None:
         raise UnsupportedPaymentMethodError(method)
+    return create(details)
 
 
 def accepted() -> list[str]:
     """The names of the ways to pay, in the order checkout shows them."""
-    return list(ACCEPTED)
+    return list(PAYMENT_METHODS)
 
 
 def pay(method: str, amount_cents: int, details: dict) -> str:

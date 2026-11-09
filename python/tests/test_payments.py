@@ -136,12 +136,4 @@ def test_an_unknown_method_is_an_error():
 
 
 def test_checkout_offers_every_way_to_pay():
-    assert accepted() == [
-        "card",
-        "paypal",
-        "apple_pay",
-        "google_pay",
-        "samsung_pay",
-        "bank_transfer",
-        "gift_card",
-    ]
+    assert accepted() == [method for method, details, detail in EVERY_METHOD]
