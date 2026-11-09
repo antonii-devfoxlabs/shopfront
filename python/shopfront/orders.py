@@ -166,10 +166,35 @@ def packing_slip(order: Order) -> list[str]:
     return slip
 
 
+class UnknownOrderError(Exception):
+    pass
+
+
+class OrderBook:
+    """Every order the store has placed, found by its number."""
+
+    def __init__(self) -> None:
+        self._orders: dict[str, Order] = {}
+
+    def add(self, order: Order) -> None:
+        self._orders[order.order_id] = order
+
+    def find(self, order_id: str) -> Order:
+        order = self._orders.get(order_id)
+        if order is None:
+            raise UnknownOrderError(order_id)
+        return order
+
+
+# The one order book: every part that records or finds orders uses it.
+book = OrderBook()
+
+
 def place_order(
     order: Order, catalog: Catalog, mailer: Mailer, analytics: Analytics
 ) -> None:
     catalog.take_all_from_stock(order.lines)
+    book.add(order)
     mailer.send(
         sender=settings.current.store_email,
         to=order.customer_email,

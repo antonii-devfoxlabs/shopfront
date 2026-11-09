@@ -1,6 +1,6 @@
 """Orders sent back, and the money that goes back with them."""
 
-from shopfront.orders import Order
+from shopfront.orders import Order, book
 from shopfront.payments import PaymentMethod, payment
 
 
@@ -35,3 +35,8 @@ class GiftReturn(Return):
 
     def destination(self) -> PaymentMethod:
         return payment("gift_card", self.details)
+
+
+def return_order(order_id: str, details: dict) -> str:
+    """Send back an order that the shopper names by its number."""
+    return Return(book.find(order_id), details).process()

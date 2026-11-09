@@ -1,5 +1,6 @@
 // Orders sent back, and the money that goes back with them.
 
+import { book } from './orders.js';
 import { payment } from './payments.js';
 
 export class ReturnRefusedError extends Error {
@@ -36,4 +37,9 @@ export class GiftReturn extends Return {
   destination() {
     return payment('gift_card', this.details);
   }
+}
+
+// Send back an order that the shopper names by its number.
+export function returnOrder(orderId, details) {
+  return new Return(book.find(orderId), details).process();
 }

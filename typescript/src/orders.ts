@@ -196,6 +196,28 @@ export function packingSlip(order: Order): string[] {
   return slip;
 }
 
+export class UnknownOrderError extends Error {
+  override name = 'UnknownOrderError';
+}
+
+// Every order the store has placed, found by its number.
+export class OrderBook {
+  readonly #orders: Map<string, Order> = new Map();
+
+  add(order: Order): void {
+    this.#orders.set(order.orderId, order);
+  }
+
+  find(orderId: string): Order {
+    const order = this.#orders.get(orderId);
+    if (order === undefined) throw new UnknownOrderError(orderId);
+    return order;
+  }
+}
+
+// The one order book: every part that records or finds orders uses it.
+export const book = new OrderBook();
+
 export function placeOrder(
   order: Order,
   catalog: Catalog,
@@ -203,6 +225,7 @@ export function placeOrder(
   analytics: Analytics,
 ): void {
   catalog.takeAllFromStock(order.lines);
+  book.add(order);
   mailer.send({
     from: settings.current.storeEmail,
     to: order.customerEmail,

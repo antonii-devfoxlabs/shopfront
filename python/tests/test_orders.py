@@ -6,6 +6,8 @@ from shopfront.orders import (
     IncompleteOrderError,
     Order,
     OrderBuilder,
+    UnknownOrderError,
+    book,
     format_money,
     next_order_id,
     packing_slip,
@@ -107,6 +109,17 @@ def test_placing_an_order_takes_stock_emails_and_tracks():
     assert analytics.events == [
         ("order_placed", {"order_id": "SF-00007", "total_cents": 3_168})
     ]
+
+
+def test_a_placed_order_is_in_the_order_book():
+    order = an_order()
+    place_order(order, starter_catalog(), Mailer(), Analytics())
+    assert book.find("SF-00007") is order
+
+
+def test_an_unknown_order_number_is_refused():
+    with pytest.raises(UnknownOrderError, match="SF-99999"):
+        book.find("SF-99999")
 
 
 def test_the_dutch_shop_emails_from_its_own_address(monkeypatch):

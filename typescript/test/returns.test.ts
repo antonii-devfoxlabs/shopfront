@@ -1,9 +1,12 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { OrderBuilder } from '../src/orders.ts';
+import { starterCatalog } from '../src/catalog.ts';
+import { OrderBuilder, placeOrder } from '../src/orders.ts';
 import { Card, GiftCard, gateway } from '../src/payments.ts';
-import { GiftReturn, Return } from '../src/returns.ts';
+import { GiftReturn, Return, returnOrder } from '../src/returns.ts';
+import { Analytics } from '../src/vendor/analytics.ts';
+import { Mailer } from '../src/vendor/mailer.ts';
 
 function aCardOrder() {
   return new OrderBuilder('SF-00007')
@@ -29,6 +32,14 @@ test('a return refunds the way the shopper paid', () => {
     amount: 3_168,
     detail: null,
   });
+  assert.equal(order.status, 'returned');
+});
+
+test('an order is returned by its number', () => {
+  const order = aCardOrder();
+  placeOrder(order, starterCatalog(), new Mailer(), new Analytics());
+  const refundId = returnOrder('SF-00007', { cardToken: 'tok-4242' });
+  assert.equal(gateway.refunds.at(-1)?.id, refundId);
   assert.equal(order.status, 'returned');
 });
 

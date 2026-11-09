@@ -1,9 +1,17 @@
 import pytest
 
 from shopfront import payments
-from shopfront.orders import Order, OrderBuilder
+from shopfront.catalog import starter_catalog
+from shopfront.orders import Order, OrderBuilder, place_order
 from shopfront.payments import Card, GiftCard
-from shopfront.returns import GiftReturn, Return, ReturnRefusedError
+from shopfront.returns import (
+    GiftReturn,
+    Return,
+    ReturnRefusedError,
+    return_order,
+)
+from shopfront.vendor.analytics import Analytics
+from shopfront.vendor.mailer import Mailer
 
 
 def a_card_order() -> Order:
@@ -32,6 +40,14 @@ def test_a_return_refunds_the_way_the_shopper_paid():
         "amount": 3_168,
         "detail": None,
     }
+    assert order.status == "returned"
+
+
+def test_an_order_is_returned_by_its_number():
+    order = a_card_order()
+    place_order(order, starter_catalog(), Mailer(), Analytics())
+    refund_id = return_order("SF-00007", {"card_token": "tok-4242"})
+    assert payments.gateway.refunds[-1]["id"] == refund_id
     assert order.status == "returned"
 
 

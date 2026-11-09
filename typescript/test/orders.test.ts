@@ -4,6 +4,8 @@ import { test } from 'node:test';
 import { OutOfStockError, starterCatalog } from '../src/catalog.ts';
 import {
   OrderBuilder,
+  UnknownOrderError,
+  book,
   formatMoney,
   nextOrderId,
   packingSlip,
@@ -111,6 +113,16 @@ test('placing an order takes stock, emails and tracks', () => {
   assert.deepEqual(analytics.events, [
     ['order_placed', { order_id: 'SF-00007', total_cents: 3_168 }],
   ]);
+});
+
+test('a placed order is in the order book', () => {
+  const order = anOrder();
+  placeOrder(order, starterCatalog(), new Mailer(), new Analytics());
+  assert.equal(book.find('SF-00007'), order);
+});
+
+test('an unknown order number is refused', () => {
+  assert.throws(() => book.find('SF-99999'), UnknownOrderError);
 });
 
 test('the Dutch shop emails from its own address', (context) => {
