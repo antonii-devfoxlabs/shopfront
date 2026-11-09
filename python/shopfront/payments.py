@@ -1,5 +1,6 @@
 """Taking the money, and giving it back, in whichever way the shopper chose."""
 
+import time
 from collections.abc import Callable
 from typing import Protocol
 
@@ -26,10 +27,20 @@ class Card:
         self.gateway = gateway
 
     def charge(self, amount_cents: int) -> str:
-        return self.gateway.charge_card(self.card_token, amount_cents)
+        started = time.perf_counter()
+        transaction_id = self.gateway.charge_card(
+            self.card_token, amount_cents
+        )
+        took_ms = (time.perf_counter() - started) * 1000
+        print(f"gateway charge_card in {took_ms:.0f} ms")
+        return transaction_id
 
     def refund(self, amount_cents: int) -> str:
-        return self.gateway.refund_card(self.card_token, amount_cents)
+        started = time.perf_counter()
+        refund_id = self.gateway.refund_card(self.card_token, amount_cents)
+        took_ms = (time.perf_counter() - started) * 1000
+        print(f"gateway refund_card in {took_ms:.0f} ms")
+        return refund_id
 
 
 class PayPal:
@@ -38,10 +49,20 @@ class PayPal:
         self.gateway = gateway
 
     def charge(self, amount_cents: int) -> str:
-        return self.gateway.charge_paypal(self.payer_email, amount_cents)
+        started = time.perf_counter()
+        transaction_id = self.gateway.charge_paypal(
+            self.payer_email, amount_cents
+        )
+        took_ms = (time.perf_counter() - started) * 1000
+        print(f"gateway charge_paypal in {took_ms:.0f} ms")
+        return transaction_id
 
     def refund(self, amount_cents: int) -> str:
-        return self.gateway.refund_paypal(self.payer_email, amount_cents)
+        started = time.perf_counter()
+        refund_id = self.gateway.refund_paypal(self.payer_email, amount_cents)
+        took_ms = (time.perf_counter() - started) * 1000
+        print(f"gateway refund_paypal in {took_ms:.0f} ms")
+        return refund_id
 
 
 class Wallet:
@@ -53,14 +74,22 @@ class Wallet:
         self.gateway = gateway
 
     def charge(self, amount_cents: int) -> str:
-        return self.gateway.charge_wallet(
+        started = time.perf_counter()
+        transaction_id = self.gateway.charge_wallet(
             self.wallet, self.wallet_token, amount_cents
         )
+        took_ms = (time.perf_counter() - started) * 1000
+        print(f"gateway charge_wallet in {took_ms:.0f} ms")
+        return transaction_id
 
     def refund(self, amount_cents: int) -> str:
-        return self.gateway.refund_wallet(
+        started = time.perf_counter()
+        refund_id = self.gateway.refund_wallet(
             self.wallet, self.wallet_token, amount_cents
         )
+        took_ms = (time.perf_counter() - started) * 1000
+        print(f"gateway refund_wallet in {took_ms:.0f} ms")
+        return refund_id
 
 
 class BankTransfer:
@@ -70,11 +99,19 @@ class BankTransfer:
 
     def charge(self, amount_cents: int) -> str:
         reference = f"SHOPFRONT-{self.order_id}"
-        return self.gateway.expect_transfer(amount_cents, reference)
+        started = time.perf_counter()
+        transaction_id = self.gateway.expect_transfer(amount_cents, reference)
+        took_ms = (time.perf_counter() - started) * 1000
+        print(f"gateway expect_transfer in {took_ms:.0f} ms")
+        return transaction_id
 
     def refund(self, amount_cents: int) -> str:
         reference = f"SHOPFRONT-{self.order_id}"
-        return self.gateway.send_transfer(amount_cents, reference)
+        started = time.perf_counter()
+        refund_id = self.gateway.send_transfer(amount_cents, reference)
+        took_ms = (time.perf_counter() - started) * 1000
+        print(f"gateway send_transfer in {took_ms:.0f} ms")
+        return refund_id
 
 
 class GiftCard:
@@ -83,10 +120,20 @@ class GiftCard:
         self.gateway = gateway
 
     def charge(self, amount_cents: int) -> str:
-        return self.gateway.redeem_gift_card(self.code, amount_cents)
+        started = time.perf_counter()
+        transaction_id = self.gateway.redeem_gift_card(
+            self.code, amount_cents
+        )
+        took_ms = (time.perf_counter() - started) * 1000
+        print(f"gateway redeem_gift_card in {took_ms:.0f} ms")
+        return transaction_id
 
     def refund(self, amount_cents: int) -> str:
-        return self.gateway.top_up_gift_card(self.code, amount_cents)
+        started = time.perf_counter()
+        refund_id = self.gateway.top_up_gift_card(self.code, amount_cents)
+        took_ms = (time.perf_counter() - started) * 1000
+        print(f"gateway top_up_gift_card in {took_ms:.0f} ms")
+        return refund_id
 
 
 PAYMENT_METHODS: dict[

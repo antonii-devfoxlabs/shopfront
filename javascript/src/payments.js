@@ -24,11 +24,22 @@ export class Card {
   }
 
   charge(amountCents) {
-    return this.gateway.chargeCard(this.cardToken, amountCents);
+    const started = performance.now();
+    const transactionId = this.gateway.chargeCard(
+      this.cardToken,
+      amountCents,
+    );
+    const tookMs = performance.now() - started;
+    console.log(`gateway chargeCard in ${tookMs.toFixed(0)} ms`);
+    return transactionId;
   }
 
   refund(amountCents) {
-    return this.gateway.refundCard(this.cardToken, amountCents);
+    const started = performance.now();
+    const refundId = this.gateway.refundCard(this.cardToken, amountCents);
+    const tookMs = performance.now() - started;
+    console.log(`gateway refundCard in ${tookMs.toFixed(0)} ms`);
+    return refundId;
   }
 }
 
@@ -39,11 +50,22 @@ export class PayPal {
   }
 
   charge(amountCents) {
-    return this.gateway.chargePaypal(this.payerEmail, amountCents);
+    const started = performance.now();
+    const transactionId = this.gateway.chargePaypal(
+      this.payerEmail,
+      amountCents,
+    );
+    const tookMs = performance.now() - started;
+    console.log(`gateway chargePaypal in ${tookMs.toFixed(0)} ms`);
+    return transactionId;
   }
 
   refund(amountCents) {
-    return this.gateway.refundPaypal(this.payerEmail, amountCents);
+    const started = performance.now();
+    const refundId = this.gateway.refundPaypal(this.payerEmail, amountCents);
+    const tookMs = performance.now() - started;
+    console.log(`gateway refundPaypal in ${tookMs.toFixed(0)} ms`);
+    return refundId;
   }
 }
 
@@ -55,19 +77,27 @@ export class Wallet {
   }
 
   charge(amountCents) {
-    return this.gateway.chargeWallet(
+    const started = performance.now();
+    const transactionId = this.gateway.chargeWallet(
       this.wallet,
       this.walletToken,
       amountCents,
     );
+    const tookMs = performance.now() - started;
+    console.log(`gateway chargeWallet in ${tookMs.toFixed(0)} ms`);
+    return transactionId;
   }
 
   refund(amountCents) {
-    return this.gateway.refundWallet(
+    const started = performance.now();
+    const refundId = this.gateway.refundWallet(
       this.wallet,
       this.walletToken,
       amountCents,
     );
+    const tookMs = performance.now() - started;
+    console.log(`gateway refundWallet in ${tookMs.toFixed(0)} ms`);
+    return refundId;
   }
 }
 
@@ -79,12 +109,20 @@ export class BankTransfer {
 
   charge(amountCents) {
     const reference = `SHOPFRONT-${this.orderId}`;
-    return this.gateway.expectTransfer(amountCents, reference);
+    const started = performance.now();
+    const transactionId = this.gateway.expectTransfer(amountCents, reference);
+    const tookMs = performance.now() - started;
+    console.log(`gateway expectTransfer in ${tookMs.toFixed(0)} ms`);
+    return transactionId;
   }
 
   refund(amountCents) {
     const reference = `SHOPFRONT-${this.orderId}`;
-    return this.gateway.sendTransfer(amountCents, reference);
+    const started = performance.now();
+    const refundId = this.gateway.sendTransfer(amountCents, reference);
+    const tookMs = performance.now() - started;
+    console.log(`gateway sendTransfer in ${tookMs.toFixed(0)} ms`);
+    return refundId;
   }
 }
 
@@ -95,11 +133,19 @@ export class GiftCard {
   }
 
   charge(amountCents) {
-    return this.gateway.redeemGiftCard(this.code, amountCents);
+    const started = performance.now();
+    const transactionId = this.gateway.redeemGiftCard(this.code, amountCents);
+    const tookMs = performance.now() - started;
+    console.log(`gateway redeemGiftCard in ${tookMs.toFixed(0)} ms`);
+    return transactionId;
   }
 
   refund(amountCents) {
-    return this.gateway.topUpGiftCard(this.code, amountCents);
+    const started = performance.now();
+    const refundId = this.gateway.topUpGiftCard(this.code, amountCents);
+    const tookMs = performance.now() - started;
+    console.log(`gateway topUpGiftCard in ${tookMs.toFixed(0)} ms`);
+    return refundId;
   }
 }
 
