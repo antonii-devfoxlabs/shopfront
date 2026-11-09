@@ -33,6 +33,10 @@ def pay(method: str, amount_cents: int, details: dict) -> str:
         return gateway.charge_wallet(
             "google_pay", required(details, "wallet_token"), amount_cents
         )
+    elif method == "samsung_pay":
+        return gateway.charge_wallet(
+            "samsung_pay", required(details, "wallet_token"), amount_cents
+        )
     elif method == "bank_transfer":
         reference = f"SHOPFRONT-{required(details, 'order_id')}"
         return gateway.expect_transfer(amount_cents, reference)

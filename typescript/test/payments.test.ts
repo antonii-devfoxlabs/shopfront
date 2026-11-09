@@ -18,6 +18,7 @@ const EVERY_METHOD: [string, PaymentDetails, string | null][] = [
   ['paypal', { payerEmail: 'ada@example.com' }, 'ada@example.com'],
   ['apple_pay', { walletToken: 'wallet-1' }, null],
   ['google_pay', { walletToken: 'wallet-2' }, null],
+  ['samsung_pay', { walletToken: 'wallet-3' }, null],
   ['bank_transfer', { orderId: 'SF-00042' }, 'SHOPFRONT-SF-00042'],
   ['gift_card', { code: 'GIFT-2026-0001' }, 'GIFT-2026-0001'],
 ];
@@ -41,7 +42,7 @@ test('a declined card throws', () => {
   );
 });
 
-for (const wallet of ['apple_pay', 'google_pay']) {
+for (const wallet of ['apple_pay', 'google_pay', 'samsung_pay']) {
   test(`a declined ${wallet} throws`, () => {
     assert.throws(() => pay(wallet, 1_000, { walletToken: 'declined' }), {
       constructor: PaymentDeclinedError,

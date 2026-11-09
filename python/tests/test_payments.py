@@ -23,6 +23,7 @@ def last_charge() -> dict:
         ("paypal", {"payer_email": "ada@example.com"}, "ada@example.com"),
         ("apple_pay", {"wallet_token": "wallet-1"}, None),
         ("google_pay", {"wallet_token": "wallet-2"}, None),
+        ("samsung_pay", {"wallet_token": "wallet-3"}, None),
         ("bank_transfer", {"order_id": "SF-00042"}, "SHOPFRONT-SF-00042"),
         ("gift_card", {"code": "GIFT-2026-0001"}, "GIFT-2026-0001"),
     ],
@@ -42,7 +43,7 @@ def test_a_declined_card_raises():
         pay("card", 1_000, {"card_token": "declined"})
 
 
-@pytest.mark.parametrize("wallet", ["apple_pay", "google_pay"])
+@pytest.mark.parametrize("wallet", ["apple_pay", "google_pay", "samsung_pay"])
 def test_a_declined_wallet_raises(wallet):
     with pytest.raises(PaymentDeclinedError, match=wallet):
         pay(wallet, 1_000, {"wallet_token": "declined"})

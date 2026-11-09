@@ -43,6 +43,9 @@ export function pay(
   } else if (method === 'google_pay') {
     const walletToken = required(details.walletToken, 'walletToken');
     return gateway.chargeWallet('google_pay', walletToken, amountCents);
+  } else if (method === 'samsung_pay') {
+    const walletToken = required(details.walletToken, 'walletToken');
+    return gateway.chargeWallet('samsung_pay', walletToken, amountCents);
   } else if (method === 'bank_transfer') {
     const orderId = required(details.orderId, 'orderId');
     return gateway.expectTransfer(amountCents, `SHOPFRONT-${orderId}`);

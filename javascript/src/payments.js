@@ -33,6 +33,12 @@ export function pay(method, amountCents, details) {
       required(details, 'walletToken'),
       amountCents,
     );
+  } else if (method === 'samsung_pay') {
+    return gateway.chargeWallet(
+      'samsung_pay',
+      required(details, 'walletToken'),
+      amountCents,
+    );
   } else if (method === 'bank_transfer') {
     const reference = `SHOPFRONT-${required(details, 'orderId')}`;
     return gateway.expectTransfer(amountCents, reference);
