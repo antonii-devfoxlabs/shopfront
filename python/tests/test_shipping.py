@@ -6,6 +6,7 @@ from shopfront.cart import Cart
 from shopfront.catalog import starter_catalog
 from shopfront.settings import DUTCH_SHOP, GERMAN_SHOP, Settings
 from shopfront.shipping import (
+    BoxRouteQuote,
     ParcelNowQuote,
     ShippingQuote,
     SwiftShipQuote,
@@ -23,10 +24,11 @@ def cart_of(sku: str, quantity: int) -> Cart:
 
 
 def providers_for(shop: Settings) -> list[ShippingQuote]:
-    """Both shipping providers, with the shop's ParcelNow account."""
+    """Every shipping provider, with the shop's ParcelNow account."""
     return [
         ParcelNowQuote(ParcelNowClient(account=shop.parcelnow_account)),
         SwiftShipQuote(SwiftShip()),
+        BoxRouteQuote(),
     ]
 
 
@@ -155,6 +157,22 @@ def test_a_light_parcel_abroad_goes_by_swiftship():
     )
 
 
+def test_a_parcel_to_poland_goes_by_boxroute():
+    cart = cart_of("MUG-01", 2)
+    # 700 g to Poland: BoxRoute 4.50, SwiftShip 5.25, ParcelNow 9.90.
+    assert (
+        shipping_cost(
+            cart,
+            starter_catalog(),
+            "PL",
+            2_500,
+            providers_for(GERMAN_SHOP),
+            GERMAN_SHOP,
+        )
+        == 450
+    )
+
+
 def test_the_threshold_comes_from_the_settings():
     lower = copy.replace(GERMAN_SHOP, free_shipping_from_cents=1_000)
     cart = cart_of("MUG-01", 1)
@@ -256,6 +274,11 @@ def test_parcelnows_adapter_answers_in_cents():
 def test_swiftships_adapter_answers_in_cents():
     # 820 g is nine started 100 g steps at 0.60.
     assert SwiftShipQuote(SwiftShip()).cost(820, "DE") == 540
+
+
+def test_boxroutes_adapter_answers_in_cents():
+    # 2,500 g is three started kilos: 4.50 and two extra kilos at 1.00.
+    assert BoxRouteQuote().cost(2_500, "PL") == 650
 
 
 class Fixed:

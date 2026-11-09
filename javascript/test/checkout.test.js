@@ -17,6 +17,7 @@ import { pay } from '../src/payments.js';
 import { PriceCalculator } from '../src/pricing.js';
 import { DUTCH_SHOP, GERMAN_SHOP } from '../src/settings.js';
 import {
+  BoxRouteQuote,
   ParcelNowQuote,
   SwiftShipQuote,
   shippingCost,
@@ -28,13 +29,14 @@ import { PaymentGateway } from '../src/vendor/paymentGateway.js';
 import { SwiftShip } from '../src/vendor/swiftship.js';
 import { TaxService } from '../src/vendor/taxService.js';
 
-// Both shipping providers, with the shop's ParcelNow account.
+// Every shipping provider, with the shop's ParcelNow account.
 function providersFor(shop) {
   return [
     new ParcelNowQuote(
       new ParcelNowClient({ account: shop.parcelNowAccount }),
     ),
     new SwiftShipQuote(new SwiftShip()),
+    new BoxRouteQuote(),
   ];
 }
 

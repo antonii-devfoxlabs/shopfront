@@ -14,6 +14,7 @@ from shopfront.payments import pay
 from shopfront.pricing import PriceCalculator
 from shopfront.settings import GERMAN_SHOP
 from shopfront.shipping import (
+    BoxRouteQuote,
     ParcelNowQuote,
     ShippingQuote,
     SwiftShipQuote,
@@ -34,6 +35,7 @@ def main() -> None:
     providers: list[ShippingQuote] = [
         ParcelNowQuote(ParcelNowClient(account=shop.parcelnow_account)),
         SwiftShipQuote(SwiftShip()),
+        BoxRouteQuote(),
     ]
     catalog = starter_catalog()
     cart = Cart()

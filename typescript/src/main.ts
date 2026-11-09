@@ -11,7 +11,12 @@ import {
 import { pay } from './payments.ts';
 import { PriceCalculator } from './pricing.ts';
 import { GERMAN_SHOP } from './settings.ts';
-import { ParcelNowQuote, SwiftShipQuote, shippingCost } from './shipping.ts';
+import {
+  BoxRouteQuote,
+  ParcelNowQuote,
+  SwiftShipQuote,
+  shippingCost,
+} from './shipping.ts';
 import { Analytics } from './vendor/analytics.ts';
 import { Mailer } from './vendor/mailer.ts';
 import { ParcelNowClient } from './vendor/parcelnow.ts';
@@ -25,6 +30,7 @@ const gateway = new PaymentGateway({ merchant: shop.merchantId });
 const providers = [
   new ParcelNowQuote(new ParcelNowClient({ account: shop.parcelNowAccount })),
   new SwiftShipQuote(new SwiftShip()),
+  new BoxRouteQuote(),
 ];
 
 const catalog = starterCatalog();

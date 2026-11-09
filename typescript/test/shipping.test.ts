@@ -5,6 +5,7 @@ import { Cart } from '../src/cart.ts';
 import { starterCatalog } from '../src/catalog.ts';
 import { DUTCH_SHOP, GERMAN_SHOP, type Settings } from '../src/settings.ts';
 import {
+  BoxRouteQuote,
   ParcelNowQuote,
   type ShippingQuote,
   SwiftShipQuote,
@@ -20,13 +21,14 @@ function cartOf(sku: string, quantity: number): Cart {
   return cart;
 }
 
-// Both shipping providers, with the shop's ParcelNow account.
+// Every shipping provider, with the shop's ParcelNow account.
 function providersFor(shop: Settings): ShippingQuote[] {
   return [
     new ParcelNowQuote(
       new ParcelNowClient({ account: shop.parcelNowAccount }),
     ),
     new SwiftShipQuote(new SwiftShip()),
+    new BoxRouteQuote(),
   ];
 }
 
@@ -155,6 +157,22 @@ test('a light parcel abroad goes by SwiftShip', () => {
   );
 });
 
+test('a parcel to Poland goes by BoxRoute', () => {
+  const cart = cartOf('MUG-01', 2);
+  // 700 g to Poland: BoxRoute 4.50, SwiftShip 5.25, ParcelNow 9.90.
+  assert.equal(
+    shippingCost(
+      cart,
+      starterCatalog(),
+      'PL',
+      2_500,
+      providersFor(GERMAN_SHOP),
+      GERMAN_SHOP,
+    ),
+    450,
+  );
+});
+
 test('the threshold comes from the settings', () => {
   const lower = { ...GERMAN_SHOP, freeShippingFromCents: 1_000 };
   const cart = cartOf('MUG-01', 1);
@@ -266,6 +284,11 @@ test("ParcelNow's adapter answers in cents", () => {
 test("SwiftShip's adapter answers in cents", () => {
   // 820 g is nine started 100 g steps at 0.60.
   assert.equal(new SwiftShipQuote(new SwiftShip()).cost(820, 'DE'), 540);
+});
+
+test("BoxRoute's adapter answers in cents", () => {
+  // 2,500 g is three started kilos: 4.50 and two extra kilos at 1.00.
+  assert.equal(new BoxRouteQuote().cost(2_500, 'PL'), 650);
 });
 
 // A stand-in provider with one price for every parcel.

@@ -1,5 +1,7 @@
 // What it costs to ship a cart.
 
+import { estimate } from './vendor/boxroute.js';
+
 /**
  * Every shipping provider fills this slot: what one parcel costs, in
  * cents.
@@ -31,6 +33,14 @@ export class SwiftShipQuote {
 
   cost(grams, country) {
     return this.client.quote({ grams, to: country });
+  }
+}
+
+// BoxRoute's estimate, made to answer as a ShippingQuote.
+export class BoxRouteQuote {
+  cost(grams, country) {
+    const price = estimate({ destination: country, kilos: grams / 1000 });
+    return price.euros * 100 + price.cents;
   }
 }
 

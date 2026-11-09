@@ -17,6 +17,7 @@ from shopfront.payments import pay
 from shopfront.pricing import PriceCalculator
 from shopfront.settings import DUTCH_SHOP, GERMAN_SHOP, Settings
 from shopfront.shipping import (
+    BoxRouteQuote,
     ParcelNowQuote,
     ShippingQuote,
     SwiftShipQuote,
@@ -30,10 +31,11 @@ from shopfront.vendor.tax_service import TaxService
 
 
 def providers_for(shop: Settings) -> list[ShippingQuote]:
-    """Both shipping providers, with the shop's ParcelNow account."""
+    """Every shipping provider, with the shop's ParcelNow account."""
     return [
         ParcelNowQuote(ParcelNowClient(account=shop.parcelnow_account)),
         SwiftShipQuote(SwiftShip()),
+        BoxRouteQuote(),
     ]
 
 

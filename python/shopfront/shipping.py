@@ -5,6 +5,7 @@ from typing import Protocol
 from shopfront.cart import Cart
 from shopfront.catalog import Catalog
 from shopfront.settings import Settings
+from shopfront.vendor.boxroute import estimate
 from shopfront.vendor.parcelnow import ParcelNowClient
 from shopfront.vendor.swiftship import SwiftShip
 
@@ -35,6 +36,14 @@ class SwiftShipQuote:
 
     def cost(self, grams: int, country: str) -> int:
         return self.client.quote({"grams": grams, "to": country})
+
+
+class BoxRouteQuote:
+    """BoxRoute's estimate, made to answer as a ShippingQuote."""
+
+    def cost(self, grams: int, country: str) -> int:
+        price = estimate(country, grams / 1000)
+        return price["euros"] * 100 + price["cents"]
 
 
 def cart_weight_grams(cart: Cart, catalog: Catalog) -> int:

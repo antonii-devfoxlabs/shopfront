@@ -3,6 +3,7 @@
 import type { Cart } from './cart.ts';
 import type { Catalog } from './catalog.ts';
 import type { Settings } from './settings.ts';
+import { estimate } from './vendor/boxroute.ts';
 import type { ParcelNowClient } from './vendor/parcelnow.ts';
 import type { SwiftShip } from './vendor/swiftship.ts';
 
@@ -39,6 +40,14 @@ export class SwiftShipQuote implements ShippingQuote {
 
   cost(grams: number, country: string): number {
     return this.client.quote({ grams, to: country });
+  }
+}
+
+// BoxRoute's estimate, made to answer as a ShippingQuote.
+export class BoxRouteQuote implements ShippingQuote {
+  cost(grams: number, country: string): number {
+    const price = estimate({ destination: country, kilos: grams / 1000 });
+    return price.euros * 100 + price.cents;
   }
 }
 
