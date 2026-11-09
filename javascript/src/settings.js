@@ -1,4 +1,4 @@
-// The store's settings, read by every part of Shopfront.
+// The settings of each shop Shopfront runs.
 
 /**
  * Everything that makes one shop different from another.
@@ -35,14 +35,3 @@ export const DUTCH_SHOP = Object.freeze({
   parcelNowAccount: 'shopfront-nl',
   merchantId: 'shopfront-nl',
 });
-
-// The settings every part of Shopfront reads.
-export let current = GERMAN_SHOP;
-
-// Puts other settings in place for every part, and gives back the
-// ones that were there, so a test can put them back.
-export function use(settings) {
-  const previous = current;
-  current = settings;
-  return previous;
-}

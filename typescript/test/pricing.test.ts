@@ -4,13 +4,14 @@ import { test } from 'node:test';
 import { Cart } from '../src/cart.ts';
 import { starterCatalog } from '../src/catalog.ts';
 import { PriceCalculator, UnknownCouponError } from '../src/pricing.ts';
+import { GERMAN_SHOP } from '../src/settings.ts';
 import { TaxService, TaxServiceError } from '../src/vendor/taxService.ts';
 
 const A_JUNE_DAY = new Date(2026, 5, 15);
 const A_DECEMBER_DAY = new Date(2026, 11, 10);
 
 function calculator() {
-  return new PriceCalculator(starterCatalog(), new TaxService());
+  return new PriceCalculator(starterCatalog(), new TaxService(), GERMAN_SHOP);
 }
 
 function cartOf(lines: Record<string, number>): Cart {
@@ -89,7 +90,11 @@ test('a business at home pays VAT', () => {
 
 test('every quote asks the tax service again', () => {
   const taxService = new TaxService();
-  const prices = new PriceCalculator(starterCatalog(), taxService);
+  const prices = new PriceCalculator(
+    starterCatalog(),
+    taxService,
+    GERMAN_SHOP,
+  );
   for (let round = 0; round < 3; round += 1) {
     prices.quote(cartOf({ 'MUG-01': 1 }), 'DE', { today: A_JUNE_DAY });
   }

@@ -3,7 +3,7 @@ import { test } from 'node:test';
 
 import { Cart } from '../src/cart.ts';
 import { starterCatalog } from '../src/catalog.ts';
-import * as settings from '../src/settings.ts';
+import { DUTCH_SHOP, GERMAN_SHOP } from '../src/settings.ts';
 import { cartWeightGrams, shippingCost } from '../src/shipping.ts';
 import { ParcelNowError } from '../src/vendor/parcelnow.ts';
 
@@ -19,72 +19,109 @@ test('weight adds every line', () => {
 
 test('home orders over the threshold ship free', () => {
   const cart = cartOf('KTL-03', 2);
-  assert.equal(shippingCost(cart, starterCatalog(), 'DE', 9_800), 0);
+  assert.equal(
+    shippingCost(cart, starterCatalog(), 'DE', 9_800, GERMAN_SHOP),
+    0,
+  );
 });
 
 test('home orders under the threshold pay ParcelNow', () => {
   const cart = cartOf('MUG-01', 1);
-  assert.equal(shippingCost(cart, starterCatalog(), 'DE', 1_250), 490);
+  assert.equal(
+    shippingCost(cart, starterCatalog(), 'DE', 1_250, GERMAN_SHOP),
+    490,
+  );
 });
 
 test('exactly the threshold ships free', () => {
   const cart = cartOf('MUG-01', 4);
-  assert.equal(shippingCost(cart, starterCatalog(), 'DE', 5_000), 0);
+  assert.equal(
+    shippingCost(cart, starterCatalog(), 'DE', 5_000, GERMAN_SHOP),
+    0,
+  );
 });
 
 test('heavy home parcels still go by ParcelNow', () => {
   const cart = cartOf('KTL-03', 5);
   // 5.5 kg: the base rate and five extra kilos.
-  assert.equal(shippingCost(cart, starterCatalog(), 'DE', 4_000), 1_090);
+  assert.equal(
+    shippingCost(cart, starterCatalog(), 'DE', 4_000, GERMAN_SHOP),
+    1_090,
+  );
 });
 
 test('exactly five kilos abroad is not freight', () => {
   const cart = cartOf('FLT-05', 50);
   // 4.5 kg: the base rate and four extra kilos.
-  assert.equal(shippingCost(cart, starterCatalog(), 'NL', 22_500), 1_270);
+  assert.equal(
+    shippingCost(cart, starterCatalog(), 'NL', 22_500, GERMAN_SHOP),
+    1_270,
+  );
   const heavier = cartOf('CUP-04', 9);
   // 5.4 kg is over five kilos, so it goes as freight.
-  assert.equal(shippingCost(heavier, starterCatalog(), 'NL', 21_600), 3_500);
+  assert.equal(
+    shippingCost(heavier, starterCatalog(), 'NL', 21_600, GERMAN_SHOP),
+    3_500,
+  );
 });
 
 test('an empty cart pays the base rate', () => {
-  assert.equal(shippingCost(new Cart(), starterCatalog(), 'FR', 0), 890);
+  assert.equal(
+    shippingCost(new Cart(), starterCatalog(), 'FR', 0, GERMAN_SHOP),
+    890,
+  );
 });
 
-test('the threshold comes from the settings', (context) => {
-  const previous = settings.use({
-    ...settings.current,
-    freeShippingFromCents: 1_000,
-  });
-  context.after(() => settings.use(previous));
+test('the threshold comes from the settings', () => {
+  const lower = { ...GERMAN_SHOP, freeShippingFromCents: 1_000 };
   const cart = cartOf('MUG-01', 1);
-  assert.equal(shippingCost(cart, starterCatalog(), 'DE', 1_250), 0);
+  assert.equal(shippingCost(cart, starterCatalog(), 'DE', 1_250, lower), 0);
 });
 
-test('the Dutch shop ships free at home from 60 EUR', (context) => {
-  const previous = settings.use(settings.DUTCH_SHOP);
-  context.after(() => settings.use(previous));
+test('the Dutch shop ships free at home from 60 EUR', () => {
   const cart = cartOf('MUG-01', 5);
-  assert.equal(shippingCost(cart, starterCatalog(), 'NL', 6_000), 0);
-  assert.equal(shippingCost(cart, starterCatalog(), 'NL', 5_999), 910);
+  assert.equal(
+    shippingCost(cart, starterCatalog(), 'NL', 6_000, DUTCH_SHOP),
+    0,
+  );
+  assert.equal(
+    shippingCost(cart, starterCatalog(), 'NL', 5_999, DUTCH_SHOP),
+    910,
+  );
   // For the Dutch shop, Germany is abroad.
-  assert.equal(shippingCost(cart, starterCatalog(), 'DE', 9_800), 610);
+  assert.equal(
+    shippingCost(cart, starterCatalog(), 'DE', 9_800, DUTCH_SHOP),
+    610,
+  );
 });
 
 test('abroad pays even over the threshold', () => {
   const cart = cartOf('KTL-03', 2);
   // 2.2 kg: the base rate and two extra kilos.
-  assert.equal(shippingCost(cart, starterCatalog(), 'FR', 9_800), 1_130);
+  assert.equal(
+    shippingCost(cart, starterCatalog(), 'FR', 9_800, GERMAN_SHOP),
+    1_130,
+  );
 });
 
 test('heavy parcels abroad go as freight', () => {
   const cart = cartOf('KTL-03', 5);
-  assert.equal(shippingCost(cart, starterCatalog(), 'NL', 24_500), 3_500);
+  assert.equal(
+    shippingCost(cart, starterCatalog(), 'NL', 24_500, GERMAN_SHOP),
+    3_500,
+  );
 });
 
 test('ParcelNow does not ship everywhere', () => {
   assert.throws(
-    () => shippingCost(cartOf('MUG-01', 1), starterCatalog(), 'US', 1_250),
+    () =>
+      shippingCost(
+        cartOf('MUG-01', 1),
+        starterCatalog(),
+        'US',
+        1_250,
+        GERMAN_SHOP,
+      ),
     ParcelNowError,
   );
 });

@@ -1,6 +1,5 @@
 // What it costs to ship a cart.
 
-import * as settings from './settings.js';
 import { ParcelNowClient } from './vendor/parcelnow.js';
 
 export function cartWeightGrams(cart, catalog) {
@@ -11,16 +10,16 @@ export function cartWeightGrams(cart, catalog) {
   return grams;
 }
 
-export function shippingCost(cart, catalog, country, paidCents) {
+export function shippingCost(cart, catalog, country, paidCents, shop) {
   const weightGrams = cartWeightGrams(cart, catalog);
-  if (country === settings.current.homeCountry) {
-    if (paidCents >= settings.current.freeShippingFromCents) return 0;
+  if (country === shop.homeCountry) {
+    if (paidCents >= shop.freeShippingFromCents) return 0;
   } else if (weightGrams > 5_000) {
     // Heavy parcels abroad go as freight: one flat price.
     return 3_500;
   }
   const client = new ParcelNowClient({
-    account: settings.current.parcelNowAccount,
+    account: shop.parcelNowAccount,
   });
   const rate = client.getRate({
     weightKg: weightGrams / 1000,

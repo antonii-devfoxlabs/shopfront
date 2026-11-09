@@ -1,8 +1,8 @@
 """What it costs to ship a cart."""
 
-from shopfront import settings
 from shopfront.cart import Cart
 from shopfront.catalog import Catalog
+from shopfront.settings import Settings
 from shopfront.vendor.parcelnow import ParcelNowClient
 
 
@@ -14,16 +14,20 @@ def cart_weight_grams(cart: Cart, catalog: Catalog) -> int:
 
 
 def shipping_cost(
-    cart: Cart, catalog: Catalog, country: str, paid_cents: int
+    cart: Cart,
+    catalog: Catalog,
+    country: str,
+    paid_cents: int,
+    shop: Settings,
 ) -> int:
     weight_grams = cart_weight_grams(cart, catalog)
-    if country == settings.current.home_country:
-        if paid_cents >= settings.current.free_shipping_from_cents:
+    if country == shop.home_country:
+        if paid_cents >= shop.free_shipping_from_cents:
             return 0
     elif weight_grams > 5_000:
         # Heavy parcels abroad go as freight: one flat price.
         return 3_500
-    client = ParcelNowClient(account=settings.current.parcelnow_account)
+    client = ParcelNowClient(account=shop.parcelnow_account)
     rate = client.get_rate(weight_grams / 1000, country)
     euros, cents = rate["amount"].split(".")
     return int(euros) * 100 + int(cents)

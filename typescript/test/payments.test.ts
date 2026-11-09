@@ -12,16 +12,20 @@ import {
   UnsupportedPaymentMethodError,
   Wallet,
   accepted,
-  gateway,
   pay,
   payment,
   refund,
 } from '../src/payments.ts';
-import * as settings from '../src/settings.ts';
+import { DUTCH_SHOP, GERMAN_SHOP } from '../src/settings.ts';
 import {
   PaymentDeclinedError,
   PaymentGateway,
 } from '../src/vendor/paymentGateway.ts';
+
+// A new payment gateway of the German shop, for one test.
+function aGateway(): PaymentGateway {
+  return new PaymentGateway({ merchant: GERMAN_SHOP.merchantId });
+}
 
 const EVERY_METHOD: [string, PaymentDetails, string | null][] = [
   ['card', { cardToken: 'tok-4242' }, null],
@@ -35,8 +39,9 @@ const EVERY_METHOD: [string, PaymentDetails, string | null][] = [
 
 for (const [method, details, detail] of EVERY_METHOD) {
   test(`${method} charges the gateway`, () => {
-    const transactionId = pay(method, 1_000, details);
-    assert.deepEqual(gateway().charges.at(-1), {
+    const gateway = aGateway();
+    const transactionId = pay(method, 1_000, details, gateway);
+    assert.deepEqual(gateway.charges.at(-1), {
       id: transactionId,
       kind: method,
       amount: 1_000,
@@ -47,8 +52,9 @@ for (const [method, details, detail] of EVERY_METHOD) {
 
 for (const [method, details, detail] of EVERY_METHOD) {
   test(`${method} refunds through the gateway`, () => {
-    const refundId = refund(method, 1_000, details);
-    assert.deepEqual(gateway().refunds.at(-1), {
+    const gateway = aGateway();
+    const refundId = refund(method, 1_000, details, gateway);
+    assert.deepEqual(gateway.refunds.at(-1), {
       id: refundId,
       kind: method,
       amount: 1_000,
@@ -57,19 +63,23 @@ for (const [method, details, detail] of EVERY_METHOD) {
   });
 }
 
-const EACH_WAY: [PaymentMethod, string][] = [
-  [new Card('tok-4242'), 'card'],
-  [new PayPal('ada@example.com'), 'paypal'],
-  [new Wallet('samsung_pay', 'wallet-3'), 'samsung_pay'],
-  [new BankTransfer('SF-00042'), 'bank_transfer'],
-  [new GiftCard('GIFT-2026-0001'), 'gift_card'],
+const EACH_WAY: [(gateway: PaymentGateway) => PaymentMethod, string][] = [
+  [(gateway) => new Card('tok-4242', gateway), 'card'],
+  [(gateway) => new PayPal('ada@example.com', gateway), 'paypal'],
+  [
+    (gateway) => new Wallet('samsung_pay', 'wallet-3', gateway),
+    'samsung_pay',
+  ],
+  [(gateway) => new BankTransfer('SF-00042', gateway), 'bank_transfer'],
+  [(gateway) => new GiftCard('GIFT-2026-0001', gateway), 'gift_card'],
 ];
 
-for (const [payment, kind] of EACH_WAY) {
+for (const [create, kind] of EACH_WAY) {
   test(`${kind} charges on its own`, () => {
-    const transactionId = payment.charge(1_000);
-    assert.equal(gateway().charges.at(-1)?.id, transactionId);
-    assert.equal(gateway().charges.at(-1)?.kind, kind);
+    const gateway = aGateway();
+    const transactionId = create(gateway).charge(1_000);
+    assert.equal(gateway.charges.at(-1)?.id, transactionId);
+    assert.equal(gateway.charges.at(-1)?.kind, kind);
   });
 }
 
@@ -85,35 +95,42 @@ const EVERY_CLASS: [string, PaymentDetails, Function][] = [
 
 for (const [method, details, expected] of EVERY_CLASS) {
   test(`payment creates ${method} without charging`, () => {
-    const chargesBefore = gateway().charges.length;
-    assert.ok(payment(method, details) instanceof expected);
-    assert.equal(gateway().charges.length, chargesBefore);
+    const gateway = aGateway();
+    const chargesBefore = gateway.charges.length;
+    assert.ok(payment(method, details, gateway) instanceof expected);
+    assert.equal(gateway.charges.length, chargesBefore);
   });
 }
 
 test('a declined card throws', () => {
+  const gateway = aGateway();
   assert.throws(
-    () => pay('card', 1_000, { cardToken: 'declined' }),
+    () => pay('card', 1_000, { cardToken: 'declined' }, gateway),
     PaymentDeclinedError,
   );
 });
 
 for (const wallet of ['apple_pay', 'google_pay', 'samsung_pay']) {
   test(`a declined ${wallet} throws`, () => {
-    assert.throws(() => pay(wallet, 1_000, { walletToken: 'declined' }), {
-      constructor: PaymentDeclinedError,
-      message: `${wallet} declined the payment`,
-    });
+    const gateway = aGateway();
+    assert.throws(
+      () => pay(wallet, 1_000, { walletToken: 'declined' }, gateway),
+      {
+        constructor: PaymentDeclinedError,
+        message: `${wallet} declined the payment`,
+      },
+    );
   });
 }
 
 test('a missing detail is an error, not a charge', () => {
-  const chargesBefore = gateway().charges.length;
-  assert.throws(() => pay('card', 1_000, {}), {
+  const gateway = aGateway();
+  const chargesBefore = gateway.charges.length;
+  assert.throws(() => pay('card', 1_000, {}, gateway), {
     constructor: MissingPaymentDetailError,
     message: 'cardToken',
   });
-  assert.equal(gateway().charges.length, chargesBefore);
+  assert.equal(gateway.charges.length, chargesBefore);
 });
 
 test('a gift card pays down to its balance', () => {
@@ -136,7 +153,11 @@ test('an unknown gift card is declined', () => {
 });
 
 test('an unknown method is an error', () => {
-  assert.throws(() => pay('cash', 1_000, {}), UnsupportedPaymentMethodError);
+  const gateway = aGateway();
+  assert.throws(
+    () => pay('cash', 1_000, {}, gateway),
+    UnsupportedPaymentMethodError,
+  );
 });
 
 test('checkout offers every way to pay', () => {
@@ -144,15 +165,15 @@ test('checkout offers every way to pay', () => {
   assert.deepEqual(accepted(), names);
 });
 
-test('the Dutch shop charges its own merchant account', (context) => {
-  const previous = settings.use(settings.DUTCH_SHOP);
-  context.after(() => settings.use(previous));
-  const transactionId = pay('card', 2_500, { cardToken: 'tok-4242' });
-  assert.equal(gateway().merchant, 'shopfront-nl');
-  assert.equal(gateway().charges.at(-1)?.id, transactionId);
+test('the Dutch shop charges its own merchant account', () => {
+  const dutch = new PaymentGateway({ merchant: DUTCH_SHOP.merchantId });
+  const transactionId = pay('card', 2_500, { cardToken: 'tok-4242' }, dutch);
+  assert.equal(dutch.merchant, 'shopfront-nl');
+  assert.equal(dutch.charges.at(-1)?.id, transactionId);
 });
 
 test('one payment, one charge', () => {
-  pay('card', 1_000, { cardToken: 'tok-4242' });
-  assert.equal(gateway().charges.length, 1);
+  const gateway = aGateway();
+  pay('card', 1_000, { cardToken: 'tok-4242' }, gateway);
+  assert.equal(gateway.charges.length, 1);
 });

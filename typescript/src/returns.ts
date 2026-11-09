@@ -6,6 +6,7 @@ import {
   type PaymentDetails,
   type PaymentMethod,
 } from './payments.ts';
+import type { PaymentGateway } from './vendor/paymentGateway.ts';
 
 export class ReturnRefusedError extends Error {
   override name = 'ReturnRefusedError';
@@ -15,10 +16,16 @@ export class ReturnRefusedError extends Error {
 export class Return {
   readonly order: Order;
   readonly details: PaymentDetails;
+  readonly gateway: PaymentGateway;
 
-  constructor(order: Order, details: PaymentDetails) {
+  constructor(
+    order: Order,
+    details: PaymentDetails,
+    gateway: PaymentGateway,
+  ) {
     this.order = order;
     this.details = details;
+    this.gateway = gateway;
   }
 
   // Give the money back once, and mark the order returned.
@@ -35,14 +42,14 @@ export class Return {
 
   // Create the way to pay that the money goes back to.
   destination(): PaymentMethod {
-    return payment(this.order.paymentMethod, this.details);
+    return payment(this.order.paymentMethod, this.details, this.gateway);
   }
 }
 
 // The person who got the order as a gift sends it back.
 export class GiftReturn extends Return {
   override destination(): PaymentMethod {
-    return payment('gift_card', this.details);
+    return payment('gift_card', this.details, this.gateway);
   }
 }
 
@@ -50,6 +57,8 @@ export class GiftReturn extends Return {
 export function returnOrder(
   orderId: string,
   details: PaymentDetails,
+  gateway: PaymentGateway,
 ): string {
-  return new Return(OrderBook.instance().find(orderId), details).process();
+  const order = OrderBook.instance().find(orderId);
+  return new Return(order, details, gateway).process();
 }

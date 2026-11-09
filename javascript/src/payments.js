@@ -1,7 +1,6 @@
 // Taking the money, and giving it back, in whichever way the shopper chose.
 
-import * as settings from './settings.js';
-import { PaymentGateway } from './vendor/paymentGateway.js';
+/** @import { PaymentGateway } from './vendor/paymentGateway.js' */
 
 export class UnsupportedPaymentMethodError extends Error {
   name = 'UnsupportedPaymentMethodError';
@@ -9,25 +8,6 @@ export class UnsupportedPaymentMethodError extends Error {
 
 export class MissingPaymentDetailError extends Error {
   name = 'MissingPaymentDetailError';
-}
-
-// One client per merchant account, made the first time it is needed.
-const gateways = new Map();
-
-// The payment gateway of the shop that is current now.
-export function gateway() {
-  const merchant = settings.current.merchantId;
-  let client = gateways.get(merchant);
-  if (client === undefined) {
-    client = new PaymentGateway({ merchant });
-    gateways.set(merchant, client);
-  }
-  return client;
-}
-
-// For tests only: forget every gateway, with its charges and refunds.
-export function reset() {
-  gateways.clear();
 }
 
 /**
@@ -38,115 +18,142 @@ export function reset() {
  */
 
 export class Card {
-  constructor(cardToken) {
+  constructor(cardToken, gateway) {
     this.cardToken = cardToken;
+    this.gateway = gateway;
   }
 
   charge(amountCents) {
-    return gateway().chargeCard(this.cardToken, amountCents);
+    return this.gateway.chargeCard(this.cardToken, amountCents);
   }
 
   refund(amountCents) {
-    return gateway().refundCard(this.cardToken, amountCents);
+    return this.gateway.refundCard(this.cardToken, amountCents);
   }
 }
 
 export class PayPal {
-  constructor(payerEmail) {
+  constructor(payerEmail, gateway) {
     this.payerEmail = payerEmail;
+    this.gateway = gateway;
   }
 
   charge(amountCents) {
-    return gateway().chargePaypal(this.payerEmail, amountCents);
+    return this.gateway.chargePaypal(this.payerEmail, amountCents);
   }
 
   refund(amountCents) {
-    return gateway().refundPaypal(this.payerEmail, amountCents);
+    return this.gateway.refundPaypal(this.payerEmail, amountCents);
   }
 }
 
 export class Wallet {
-  constructor(wallet, walletToken) {
+  constructor(wallet, walletToken, gateway) {
     this.wallet = wallet;
     this.walletToken = walletToken;
+    this.gateway = gateway;
   }
 
   charge(amountCents) {
-    return gateway().chargeWallet(this.wallet, this.walletToken, amountCents);
+    return this.gateway.chargeWallet(
+      this.wallet,
+      this.walletToken,
+      amountCents,
+    );
   }
 
   refund(amountCents) {
-    return gateway().refundWallet(this.wallet, this.walletToken, amountCents);
+    return this.gateway.refundWallet(
+      this.wallet,
+      this.walletToken,
+      amountCents,
+    );
   }
 }
 
 export class BankTransfer {
-  constructor(orderId) {
+  constructor(orderId, gateway) {
     this.orderId = orderId;
+    this.gateway = gateway;
   }
 
   charge(amountCents) {
     const reference = `SHOPFRONT-${this.orderId}`;
-    return gateway().expectTransfer(amountCents, reference);
+    return this.gateway.expectTransfer(amountCents, reference);
   }
 
   refund(amountCents) {
     const reference = `SHOPFRONT-${this.orderId}`;
-    return gateway().sendTransfer(amountCents, reference);
+    return this.gateway.sendTransfer(amountCents, reference);
   }
 }
 
 export class GiftCard {
-  constructor(code) {
+  constructor(code, gateway) {
     this.code = code;
+    this.gateway = gateway;
   }
 
   charge(amountCents) {
-    return gateway().redeemGiftCard(this.code, amountCents);
+    return this.gateway.redeemGiftCard(this.code, amountCents);
   }
 
   refund(amountCents) {
-    return gateway().topUpGiftCard(this.code, amountCents);
+    return this.gateway.topUpGiftCard(this.code, amountCents);
   }
 }
 
 /**
  * Every way to pay, by the name the shopper picks, with the function
- * that creates it from the shopper's details.
- * @type {Map<string, (details: object) => PaymentMethod>}
+ * that creates it from the shopper's details and the gateway it uses.
+ * @type {Map<string, (details: object, gateway: PaymentGateway) => PaymentMethod>}
  */
 const PAYMENT_METHODS = new Map([
-  ['card', (details) => new Card(required(details, 'cardToken'))],
-  ['paypal', (details) => new PayPal(required(details, 'payerEmail'))],
+  [
+    'card',
+    (details, gateway) => new Card(required(details, 'cardToken'), gateway),
+  ],
+  [
+    'paypal',
+    (details, gateway) =>
+      new PayPal(required(details, 'payerEmail'), gateway),
+  ],
   [
     'apple_pay',
-    (details) => new Wallet('apple_pay', required(details, 'walletToken')),
+    (details, gateway) =>
+      new Wallet('apple_pay', required(details, 'walletToken'), gateway),
   ],
   [
     'google_pay',
-    (details) => new Wallet('google_pay', required(details, 'walletToken')),
+    (details, gateway) =>
+      new Wallet('google_pay', required(details, 'walletToken'), gateway),
   ],
   [
     'samsung_pay',
-    (details) => new Wallet('samsung_pay', required(details, 'walletToken')),
+    (details, gateway) =>
+      new Wallet('samsung_pay', required(details, 'walletToken'), gateway),
   ],
   [
     'bank_transfer',
-    (details) => new BankTransfer(required(details, 'orderId')),
+    (details, gateway) =>
+      new BankTransfer(required(details, 'orderId'), gateway),
   ],
-  ['gift_card', (details) => new GiftCard(required(details, 'code'))],
+  [
+    'gift_card',
+    (details, gateway) => new GiftCard(required(details, 'code'), gateway),
+  ],
 ]);
 
 /**
  * Create the way to pay that the method's name stands for.
  * @returns {PaymentMethod}
  */
-export function payment(method, details) {
+export function payment(method, details, gateway) {
   const create = PAYMENT_METHODS.get(method);
   if (create === undefined) {
     throw new UnsupportedPaymentMethodError(method);
   }
-  return create(details);
+  return create(details, gateway);
 }
 
 // The names of the ways to pay, in the order checkout shows them.
@@ -155,13 +162,13 @@ export function accepted() {
 }
 
 // Charge the shopper and return the gateway's transaction id.
-export function pay(method, amountCents, details) {
-  return payment(method, details).charge(amountCents);
+export function pay(method, amountCents, details, gateway) {
+  return payment(method, details, gateway).charge(amountCents);
 }
 
 // Give the shopper's money back and return the gateway's refund id.
-export function refund(method, amountCents, details) {
-  return payment(method, details).refund(amountCents);
+export function refund(method, amountCents, details, gateway) {
+  return payment(method, details, gateway).refund(amountCents);
 }
 
 // A detail set to null is as missing as one left out, as in Python.

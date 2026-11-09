@@ -3,9 +3,7 @@
 import { beforeEach } from 'node:test';
 
 import * as orders from './src/orders.ts';
-import * as payments from './src/payments.ts';
 
 beforeEach(() => {
   orders.reset();
-  payments.reset();
 });

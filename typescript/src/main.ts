@@ -10,27 +10,38 @@ import {
 } from './orders.ts';
 import { pay } from './payments.ts';
 import { PriceCalculator } from './pricing.ts';
+import { GERMAN_SHOP } from './settings.ts';
 import { shippingCost } from './shipping.ts';
 import { Analytics } from './vendor/analytics.ts';
 import { Mailer } from './vendor/mailer.ts';
+import { PaymentGateway } from './vendor/paymentGateway.ts';
 import { TaxService } from './vendor/taxService.ts';
+
+// The one place that picks the shop, and hands it to every part.
+const shop = GERMAN_SHOP;
+const gateway = new PaymentGateway({ merchant: shop.merchantId });
 
 const catalog = starterCatalog();
 const cart = new Cart();
 cart.add('MUG-01', 2);
 cart.add('TEA-02');
 
-const calculator = new PriceCalculator(catalog, new TaxService());
+const calculator = new PriceCalculator(catalog, new TaxService(), shop);
 const quote = calculator.quote(cart, 'DE', {
   today: new Date(),
   coupon: 'WELCOME10',
 });
 const paidCents = quote.subtotalCents - quote.discountCents;
-const shippingCents = shippingCost(cart, catalog, 'DE', paidCents);
+const shippingCents = shippingCost(cart, catalog, 'DE', paidCents, shop);
 const totalCents = paidCents + quote.taxCents + shippingCents;
 
 const orderId = nextOrderId();
-const transactionId = pay('card', totalCents, { cardToken: 'tok-4242' });
+const transactionId = pay(
+  'card',
+  totalCents,
+  { cardToken: 'tok-4242' },
+  gateway,
+);
 const order = new OrderBuilder(orderId)
   .email('ada@example.com')
   .name('Ada')
@@ -44,14 +55,14 @@ const order = new OrderBuilder(orderId)
   .transaction(transactionId)
   .build();
 const mailer = new Mailer();
-placeOrder(order, catalog, mailer, new Analytics());
+placeOrder(order, catalog, mailer, new Analytics(), shop);
 
 console.log(`Order ${order.orderId} placed`);
-console.log(`  subtotal  ${formatMoney(order.subtotalCents)}`);
+console.log(`  subtotal  ${formatMoney(order.subtotalCents, shop)}`);
 if (order.discountCents > 0) {
-  console.log(`  discount -${formatMoney(order.discountCents)}`);
+  console.log(`  discount -${formatMoney(order.discountCents, shop)}`);
 }
-console.log(`  tax       ${formatMoney(order.taxCents)}`);
-console.log(`  shipping  ${formatMoney(order.shippingCents)}`);
-console.log(`  total     ${formatMoney(order.totalCents)}`);
+console.log(`  tax       ${formatMoney(order.taxCents, shop)}`);
+console.log(`  shipping  ${formatMoney(order.shippingCents, shop)}`);
+console.log(`  total     ${formatMoney(order.totalCents, shop)}`);
 console.log(`Email sent to ${mailer.outbox[0]?.to}`);

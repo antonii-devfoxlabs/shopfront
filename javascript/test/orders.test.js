@@ -12,7 +12,7 @@ import {
   placeOrder,
   reorder,
 } from '../src/orders.js';
-import * as settings from '../src/settings.js';
+import { DUTCH_SHOP, GERMAN_SHOP } from '../src/settings.js';
 import { Analytics } from '../src/vendor/analytics.js';
 import { Mailer } from '../src/vendor/mailer.js';
 
@@ -103,7 +103,7 @@ test('placing an order takes stock, emails and tracks', () => {
   const catalog = starterCatalog();
   const mailer = new Mailer();
   const analytics = new Analytics();
-  placeOrder(anOrder(), catalog, mailer, analytics);
+  placeOrder(anOrder(), catalog, mailer, analytics, GERMAN_SHOP);
   assert.equal(catalog.find('MUG-01').stock, 38);
   assert.equal(mailer.outbox[0].from, 'orders@shopfront.example');
   assert.equal(mailer.outbox[0].to, 'ada@example.com');
@@ -116,7 +116,13 @@ test('placing an order takes stock, emails and tracks', () => {
 
 test('a placed order is in the order book', () => {
   const order = anOrder();
-  placeOrder(order, starterCatalog(), new Mailer(), new Analytics());
+  placeOrder(
+    order,
+    starterCatalog(),
+    new Mailer(),
+    new Analytics(),
+    GERMAN_SHOP,
+  );
   assert.equal(OrderBook.instance().find('SF-00007'), order);
 });
 
@@ -142,11 +148,15 @@ test('the store has one order book', () => {
   assert.throws(() => new OrderBook(), /the store has one order book/);
 });
 
-test('the Dutch shop emails from its own address', (context) => {
-  const previous = settings.use(settings.DUTCH_SHOP);
-  context.after(() => settings.use(previous));
+test('the Dutch shop emails from its own address', () => {
   const mailer = new Mailer();
-  placeOrder(anOrder(), starterCatalog(), mailer, new Analytics());
+  placeOrder(
+    anOrder(),
+    starterCatalog(),
+    mailer,
+    new Analytics(),
+    DUTCH_SHOP,
+  );
   assert.equal(mailer.outbox[0].from, 'orders.nl@shopfront.example');
   assert.equal(mailer.outbox[0].subject, 'Shopfront NL: order SF-00007');
 });
@@ -160,7 +170,7 @@ test('an order with a short line takes nothing and sends nothing', () => {
     ['KTL-03', 9],
   ]);
   assert.throws(
-    () => placeOrder(order, catalog, mailer, analytics),
+    () => placeOrder(order, catalog, mailer, analytics, GERMAN_SHOP),
     OutOfStockError,
   );
   assert.equal(catalog.find('MUG-01').stock, 40);
@@ -185,7 +195,7 @@ test('a parcel of 40 EUR or more gets a free sample', () => {
 });
 
 test('money is shown in euros', () => {
-  assert.equal(formatMoney(3_168), '31.68 EUR');
-  assert.equal(formatMoney(5), '0.05 EUR');
-  assert.equal(formatMoney(-205), '-2.05 EUR');
+  assert.equal(formatMoney(3_168, GERMAN_SHOP), '31.68 EUR');
+  assert.equal(formatMoney(5, GERMAN_SHOP), '0.05 EUR');
+  assert.equal(formatMoney(-205, GERMAN_SHOP), '-2.05 EUR');
 });

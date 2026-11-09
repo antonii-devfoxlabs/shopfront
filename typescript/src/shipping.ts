@@ -2,7 +2,7 @@
 
 import type { Cart } from './cart.ts';
 import type { Catalog } from './catalog.ts';
-import * as settings from './settings.ts';
+import type { Settings } from './settings.ts';
 import { ParcelNowClient } from './vendor/parcelnow.ts';
 
 export function cartWeightGrams(cart: Cart, catalog: Catalog): number {
@@ -18,16 +18,17 @@ export function shippingCost(
   catalog: Catalog,
   country: string,
   paidCents: number,
+  shop: Settings,
 ): number {
   const weightGrams = cartWeightGrams(cart, catalog);
-  if (country === settings.current.homeCountry) {
-    if (paidCents >= settings.current.freeShippingFromCents) return 0;
+  if (country === shop.homeCountry) {
+    if (paidCents >= shop.freeShippingFromCents) return 0;
   } else if (weightGrams > 5_000) {
     // Heavy parcels abroad go as freight: one flat price.
     return 3_500;
   }
   const client = new ParcelNowClient({
-    account: settings.current.parcelNowAccount,
+    account: shop.parcelNowAccount,
   });
   const rate = client.getRate({
     weightKg: weightGrams / 1000,

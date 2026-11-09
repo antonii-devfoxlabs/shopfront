@@ -3,10 +3,17 @@ import { test } from 'node:test';
 
 import { starterCatalog } from '../src/catalog.js';
 import { OrderBuilder, placeOrder } from '../src/orders.js';
-import { Card, GiftCard, gateway } from '../src/payments.js';
+import { Card, GiftCard } from '../src/payments.js';
 import { GiftReturn, Return, returnOrder } from '../src/returns.js';
+import { GERMAN_SHOP } from '../src/settings.js';
 import { Analytics } from '../src/vendor/analytics.js';
 import { Mailer } from '../src/vendor/mailer.js';
+import { PaymentGateway } from '../src/vendor/paymentGateway.js';
+
+// A new payment gateway of the German shop, for one test.
+function aGateway() {
+  return new PaymentGateway({ merchant: GERMAN_SHOP.merchantId });
+}
 
 function aCardOrder() {
   return new OrderBuilder('SF-00007')
@@ -24,9 +31,11 @@ function aCardOrder() {
 }
 
 test('a return refunds the way the shopper paid', () => {
+  const gateway = aGateway();
   const order = aCardOrder();
-  const refundId = new Return(order, { cardToken: 'tok-4242' }).process();
-  assert.deepEqual(gateway().refunds.at(-1), {
+  const details = { cardToken: 'tok-4242' };
+  const refundId = new Return(order, details, gateway).process();
+  assert.deepEqual(gateway.refunds.at(-1), {
     id: refundId,
     kind: 'card',
     amount: 3_168,
@@ -36,18 +45,30 @@ test('a return refunds the way the shopper paid', () => {
 });
 
 test('an order is returned by its number', () => {
+  const gateway = aGateway();
   const order = aCardOrder();
-  placeOrder(order, starterCatalog(), new Mailer(), new Analytics());
-  const refundId = returnOrder('SF-00007', { cardToken: 'tok-4242' });
-  assert.equal(gateway().refunds.at(-1)?.id, refundId);
+  placeOrder(
+    order,
+    starterCatalog(),
+    new Mailer(),
+    new Analytics(),
+    GERMAN_SHOP,
+  );
+  const refundId = returnOrder(
+    'SF-00007',
+    { cardToken: 'tok-4242' },
+    gateway,
+  );
+  assert.equal(gateway.refunds.at(-1)?.id, refundId);
   assert.equal(order.status, 'returned');
 });
 
 test('a gift return refunds onto a gift card', () => {
+  const gateway = aGateway();
   const order = aCardOrder();
   const details = { code: 'GIFT-2026-0001' };
-  const refundId = new GiftReturn(order, details).process();
-  assert.deepEqual(gateway().refunds.at(-1), {
+  const refundId = new GiftReturn(order, details, gateway).process();
+  assert.deepEqual(gateway.refunds.at(-1), {
     id: refundId,
     kind: 'gift_card',
     amount: 3_168,
@@ -63,22 +84,28 @@ const EVERY_RETURN = [
 
 for (const [ReturnClass, details, expected] of EVERY_RETURN) {
   test(`${ReturnClass.name} creates its destination`, () => {
-    const refundsBefore = gateway().refunds.length;
-    const destination = new ReturnClass(aCardOrder(), details).destination();
+    const gateway = aGateway();
+    const refundsBefore = gateway.refunds.length;
+    const destination = new ReturnClass(
+      aCardOrder(),
+      details,
+      gateway,
+    ).destination();
     assert.ok(destination instanceof expected);
-    assert.equal(gateway().refunds.length, refundsBefore);
+    assert.equal(gateway.refunds.length, refundsBefore);
   });
 }
 
 for (const [ReturnClass, details] of EVERY_RETURN) {
   test(`${ReturnClass.name} returns an order once`, () => {
+    const gateway = aGateway();
     const order = aCardOrder();
-    new ReturnClass(order, details).process();
-    const refundsBefore = gateway().refunds.length;
-    assert.throws(() => new ReturnClass(order, details).process(), {
+    new ReturnClass(order, details, gateway).process();
+    const refundsBefore = gateway.refunds.length;
+    assert.throws(() => new ReturnClass(order, details, gateway).process(), {
       name: 'ReturnRefusedError',
       message: 'SF-00007 is returned',
     });
-    assert.equal(gateway().refunds.length, refundsBefore);
+    assert.equal(gateway.refunds.length, refundsBefore);
   });
 }

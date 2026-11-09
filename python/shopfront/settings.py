@@ -1,4 +1,4 @@
-"""The store's settings, read by every part of Shopfront."""
+"""The settings of each shop Shopfront runs."""
 
 from dataclasses import dataclass
 
@@ -38,6 +38,3 @@ DUTCH_SHOP = Settings(
     parcelnow_account="shopfront-nl",
     merchant_id="shopfront-nl",
 )
-
-# The settings every part of Shopfront reads.
-current: Settings = GERMAN_SHOP

@@ -1,6 +1,5 @@
 import pytest
 
-from shopfront import settings
 from shopfront.catalog import OutOfStockError, starter_catalog
 from shopfront.orders import (
     IncompleteOrderError,
@@ -14,6 +13,7 @@ from shopfront.orders import (
     place_order,
     reorder,
 )
+from shopfront.settings import DUTCH_SHOP, GERMAN_SHOP
 from shopfront.vendor.analytics import Analytics
 from shopfront.vendor.mailer import Mailer
 
@@ -100,7 +100,7 @@ def test_order_ids_count_up():
 
 def test_placing_an_order_takes_stock_emails_and_tracks():
     catalog, mailer, analytics = starter_catalog(), Mailer(), Analytics()
-    place_order(an_order(), catalog, mailer, analytics)
+    place_order(an_order(), catalog, mailer, analytics, GERMAN_SHOP)
     assert catalog.find("MUG-01").stock == 38
     assert mailer.outbox[0]["from"] == "orders@shopfront.example"
     assert mailer.outbox[0]["to"] == "ada@example.com"
@@ -113,7 +113,7 @@ def test_placing_an_order_takes_stock_emails_and_tracks():
 
 def test_a_placed_order_is_in_the_order_book():
     order = an_order()
-    place_order(order, starter_catalog(), Mailer(), Analytics())
+    place_order(order, starter_catalog(), Mailer(), Analytics(), GERMAN_SHOP)
     assert OrderBook.instance().find("SF-00007") is order
 
 
@@ -137,10 +137,11 @@ def test_the_store_has_one_order_book():
         OrderBook()
 
 
-def test_the_dutch_shop_emails_from_its_own_address(monkeypatch):
-    monkeypatch.setattr(settings, "current", settings.DUTCH_SHOP)
+def test_the_dutch_shop_emails_from_its_own_address():
     mailer = Mailer()
-    place_order(an_order(), starter_catalog(), mailer, Analytics())
+    place_order(
+        an_order(), starter_catalog(), mailer, Analytics(), DUTCH_SHOP
+    )
     assert mailer.outbox[0]["from"] == "orders.nl@shopfront.example"
     assert mailer.outbox[0]["subject"] == "Shopfront NL: order SF-00007"
 
@@ -149,7 +150,7 @@ def test_an_order_with_a_short_line_takes_nothing_and_sends_nothing():
     catalog, mailer, analytics = starter_catalog(), Mailer(), Analytics()
     order = an_order({"MUG-01": 2, "KTL-03": 9})
     with pytest.raises(OutOfStockError):
-        place_order(order, catalog, mailer, analytics)
+        place_order(order, catalog, mailer, analytics, GERMAN_SHOP)
     assert catalog.find("MUG-01").stock == 40
     assert mailer.outbox == []
     assert analytics.events == []
@@ -174,6 +175,6 @@ def test_a_parcel_of_40_eur_or_more_gets_a_free_sample():
 
 
 def test_money_is_shown_in_euros():
-    assert format_money(3_168) == "31.68 EUR"
-    assert format_money(5) == "0.05 EUR"
-    assert format_money(-205) == "-2.05 EUR"
+    assert format_money(3_168, GERMAN_SHOP) == "31.68 EUR"
+    assert format_money(5, GERMAN_SHOP) == "0.05 EUR"
+    assert format_money(-205, GERMAN_SHOP) == "-2.05 EUR"

@@ -5,6 +5,7 @@ import pytest
 from shopfront.cart import Cart
 from shopfront.catalog import starter_catalog
 from shopfront.pricing import PriceCalculator, UnknownCouponError
+from shopfront.settings import GERMAN_SHOP
 from shopfront.vendor.tax_service import TaxService, TaxServiceError
 
 A_JUNE_DAY = date(2026, 6, 15)
@@ -12,7 +13,7 @@ A_DECEMBER_DAY = date(2026, 12, 10)
 
 
 def calculator() -> PriceCalculator:
-    return PriceCalculator(starter_catalog(), TaxService())
+    return PriceCalculator(starter_catalog(), TaxService(), GERMAN_SHOP)
 
 
 def cart_of(lines: dict[str, int]) -> Cart:
@@ -84,7 +85,7 @@ def test_a_business_at_home_pays_vat():
 
 def test_every_quote_asks_the_tax_service_again():
     tax_service = TaxService()
-    prices = PriceCalculator(starter_catalog(), tax_service)
+    prices = PriceCalculator(starter_catalog(), tax_service, GERMAN_SHOP)
     for _ in range(3):
         prices.quote(cart_of({"MUG-01": 1}), "DE", today=A_JUNE_DAY)
     assert tax_service.lookups == 3

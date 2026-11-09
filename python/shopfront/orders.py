@@ -4,8 +4,8 @@ from collections.abc import Mapping
 from types import MappingProxyType
 from typing import ClassVar
 
-from shopfront import settings
 from shopfront.catalog import Catalog
+from shopfront.settings import Settings
 from shopfront.vendor.analytics import Analytics
 from shopfront.vendor.mailer import Mailer
 
@@ -215,18 +215,22 @@ def reset() -> None:
 
 
 def place_order(
-    order: Order, catalog: Catalog, mailer: Mailer, analytics: Analytics
+    order: Order,
+    catalog: Catalog,
+    mailer: Mailer,
+    analytics: Analytics,
+    shop: Settings,
 ) -> None:
     catalog.take_all_from_stock(order.lines)
     OrderBook.instance().add(order)
     mailer.send(
-        sender=settings.current.store_email,
+        sender=shop.store_email,
         to=order.customer_email,
-        subject=f"{settings.current.store_name}: order {order.order_id}",
+        subject=f"{shop.store_name}: order {order.order_id}",
         body=(
             f"Hi {order.customer_name}, thank you! "
             f"We have your order {order.order_id}, "
-            f"{format_money(order.total_cents)} in all."
+            f"{format_money(order.total_cents, shop)} in all."
         ),
     )
     analytics.track(
@@ -235,7 +239,7 @@ def place_order(
     )
 
 
-def format_money(cents: int) -> str:
+def format_money(cents: int, shop: Settings) -> str:
     sign = "-" if cents < 0 else ""
     euros, rest = divmod(abs(cents), 100)
-    return f"{sign}{euros}.{rest:02d} {settings.current.currency}"
+    return f"{sign}{euros}.{rest:02d} {shop.currency}"

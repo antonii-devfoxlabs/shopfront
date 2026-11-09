@@ -3,9 +3,9 @@
 from dataclasses import dataclass
 from datetime import date
 
-from shopfront import settings
 from shopfront.cart import Cart
 from shopfront.catalog import Catalog
+from shopfront.settings import Settings
 from shopfront.vendor.tax_service import TaxService
 
 
@@ -21,9 +21,12 @@ class PriceQuote:
 
 
 class PriceCalculator:
-    def __init__(self, catalog: Catalog, tax_service: TaxService) -> None:
+    def __init__(
+        self, catalog: Catalog, tax_service: TaxService, shop: Settings
+    ) -> None:
         self.catalog = catalog
         self.tax_service = tax_service
+        self.shop = shop
 
     def subtotal(self, cart: Cart) -> int:
         return sum(
@@ -61,7 +64,7 @@ class PriceCalculator:
     ) -> PriceQuote:
         subtotal_cents = self.subtotal(cart)
         discount_cents = self.discount(subtotal_cents, coupon, today)
-        if vat_id is not None and country != settings.current.home_country:
+        if vat_id is not None and country != self.shop.home_country:
             # A business in another EU country pays the VAT at home.
             tax_cents = 0
         else:

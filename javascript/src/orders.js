@@ -1,7 +1,5 @@
 // An order, and what happens once it is placed.
 
-import * as settings from './settings.js';
-
 let lastOrderNumber = 0;
 
 export function nextOrderId() {
@@ -225,17 +223,17 @@ export function reset() {
   OrderBook.reset();
 }
 
-export function placeOrder(order, catalog, mailer, analytics) {
+export function placeOrder(order, catalog, mailer, analytics, shop) {
   catalog.takeAllFromStock(order.lines);
   OrderBook.instance().add(order);
   mailer.send({
-    from: settings.current.storeEmail,
+    from: shop.storeEmail,
     to: order.customerEmail,
-    subject: `${settings.current.storeName}: order ${order.orderId}`,
+    subject: `${shop.storeName}: order ${order.orderId}`,
     body:
       `Hi ${order.customerName}, thank you! ` +
       `We have your order ${order.orderId}, ` +
-      `${formatMoney(order.totalCents)} in all.`,
+      `${formatMoney(order.totalCents, shop)} in all.`,
   });
   analytics.track('order_placed', {
     order_id: order.orderId,
@@ -243,9 +241,9 @@ export function placeOrder(order, catalog, mailer, analytics) {
   });
 }
 
-export function formatMoney(cents) {
+export function formatMoney(cents, shop) {
   const sign = cents < 0 ? '-' : '';
   const euros = Math.floor(Math.abs(cents) / 100);
   const rest = String(Math.abs(cents) % 100).padStart(2, '0');
-  return `${sign}${euros}.${rest} ${settings.current.currency}`;
+  return `${sign}${euros}.${rest} ${shop.currency}`;
 }

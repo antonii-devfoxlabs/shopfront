@@ -1,6 +1,7 @@
 """One order through the whole store, the way `python -m shopfront`
 runs it."""
 
+import asyncio
 from datetime import date
 
 from shopfront.cart import Cart
@@ -14,27 +15,31 @@ from shopfront.orders import (
 )
 from shopfront.payments import pay
 from shopfront.pricing import PriceCalculator
+from shopfront.settings import DUTCH_SHOP, GERMAN_SHOP, Settings
 from shopfront.shipping import shipping_cost
 from shopfront.vendor.analytics import Analytics
 from shopfront.vendor.mailer import Mailer
 from shopfront.vendor.tax_service import TaxService
 
 
-def test_a_whole_order():
+def test_a_whole_order(gateway):
+    shop = GERMAN_SHOP
     catalog = starter_catalog()
     cart = Cart()
     cart.add("MUG-01", 2)
     cart.add("TEA-02")
 
-    calculator = PriceCalculator(catalog, TaxService())
+    calculator = PriceCalculator(catalog, TaxService(), shop)
     quote = calculator.quote(
         cart, "DE", today=date(2026, 6, 15), coupon="WELCOME10"
     )
     paid_cents = quote.subtotal_cents - quote.discount_cents
-    shipping_cents = shipping_cost(cart, catalog, "DE", paid_cents)
+    shipping_cents = shipping_cost(cart, catalog, "DE", paid_cents, shop)
     total_cents = paid_cents + quote.tax_cents + shipping_cents
 
-    transaction_id = pay("card", total_cents, {"card_token": "tok-4242"})
+    transaction_id = pay(
+        "card", total_cents, {"card_token": "tok-4242"}, gateway
+    )
     order = (
         OrderBuilder(next_order_id())
         .email("ada@example.com")
@@ -50,14 +55,15 @@ def test_a_whole_order():
         .build()
     )
     mailer = Mailer()
-    place_order(order, catalog, mailer, Analytics())
+    place_order(order, catalog, mailer, Analytics(), shop)
 
     assert order.total_cents == 4_121
     assert catalog.find("MUG-01").stock == 38
     assert len(mailer.outbox) == 1
 
 
-def test_ordering_again():
+def test_ordering_again(gateway):
+    shop = GERMAN_SHOP
     catalog = starter_catalog()
     previous = (
         OrderBuilder(next_order_id())
@@ -80,18 +86,20 @@ def test_ordering_again():
         cart.add(sku, quantity)
     country = previous.shipping_country
 
-    calculator = PriceCalculator(catalog, TaxService())
+    calculator = PriceCalculator(catalog, TaxService(), shop)
     quote = calculator.quote(cart, country, today=date(2026, 7, 15))
     builder.subtotal(quote.subtotal_cents)
     builder.discount(quote.discount_cents)
     builder.tax(quote.tax_cents)
 
     paid_cents = quote.subtotal_cents - quote.discount_cents
-    shipping_cents = shipping_cost(cart, catalog, country, paid_cents)
+    shipping_cents = shipping_cost(cart, catalog, country, paid_cents, shop)
     builder.shipping(shipping_cents)
 
     total_cents = paid_cents + quote.tax_cents + shipping_cents
-    transaction_id = pay("card", total_cents, {"card_token": "tok-4242"})
+    transaction_id = pay(
+        "card", total_cents, {"card_token": "tok-4242"}, gateway
+    )
     builder.paid_by("card").transaction(transaction_id)
     order = builder.build()
 
@@ -101,3 +109,18 @@ def test_ordering_again():
     assert order.shipping_country == "DE"
     assert order.tax_cents == 644
     assert order.total_cents == 4_524
+
+
+def test_two_shops_in_one_run():
+    async def checkout(shop: Settings, country: str) -> int:
+        await asyncio.sleep(0.01)  # The bank answers.
+        cart = Cart()
+        cart.add("MUG-01", 5)
+        return shipping_cost(cart, starter_catalog(), country, 6_000, shop)
+
+    async def both() -> list[int]:
+        return await asyncio.gather(
+            checkout(DUTCH_SHOP, "NL"), checkout(GERMAN_SHOP, "DE")
+        )
+
+    assert asyncio.run(both()) == [0, 0]
