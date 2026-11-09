@@ -1,6 +1,6 @@
-// SwiftShip's SDK: a second shipping provider, cheaper abroad.
-// Shopfront does not use it yet. Its API looks nothing like
-// ParcelNow's: it takes a parcel object and answers in cents.
+// SwiftShip's SDK: a second shipping provider, cheaper for light
+// parcels. Its API looks nothing like ParcelNow's: it takes a parcel
+// object and answers in cents.
 
 const CENTS_PER_100_GRAMS = new Map([
   ['DE', 60],

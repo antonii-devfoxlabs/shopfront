@@ -245,3 +245,35 @@ def test_parcelnow_does_not_ship_everywhere():
             providers_for(GERMAN_SHOP),
             GERMAN_SHOP,
         )
+
+
+def test_parcelnows_adapter_answers_in_cents():
+    client = ParcelNowClient(account=GERMAN_SHOP.parcelnow_account)
+    # 820 g is one started kilo: ParcelNow's "4.90" to Germany.
+    assert ParcelNowQuote(client).cost(820, "DE") == 490
+
+
+def test_swiftships_adapter_answers_in_cents():
+    # 820 g is nine started 100 g steps at 0.60.
+    assert SwiftShipQuote(SwiftShip()).cost(820, "DE") == 540
+
+
+class Fixed:
+    """A stand-in provider with one price for every parcel."""
+
+    def __init__(self, cents: int) -> None:
+        self.cents = cents
+
+    def cost(self, grams: int, country: str) -> int:
+        return self.cents
+
+
+def test_the_cheapest_provider_wins():
+    providers: list[ShippingQuote] = [Fixed(700), Fixed(450)]
+    cart = cart_of("MUG-01", 1)
+    assert (
+        shipping_cost(
+            cart, starter_catalog(), "FR", 1_250, providers, GERMAN_SHOP
+        )
+        == 450
+    )

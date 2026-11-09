@@ -1,7 +1,7 @@
-"""SwiftShip's SDK: a second shipping provider, cheaper abroad.
+"""SwiftShip's SDK: a second shipping provider, cheaper for light parcels.
 
-Shopfront does not use it yet. Its API looks nothing like
-ParcelNow's: it takes a parcel as a dictionary and answers in cents.
+Its API looks nothing like ParcelNow's: it takes a parcel as a
+dictionary and answers in cents.
 """
 
 import math

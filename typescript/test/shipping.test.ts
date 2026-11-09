@@ -254,3 +254,38 @@ test('ParcelNow does not ship everywhere', () => {
     ParcelNowError,
   );
 });
+
+test("ParcelNow's adapter answers in cents", () => {
+  const client = new ParcelNowClient({
+    account: GERMAN_SHOP.parcelNowAccount,
+  });
+  // 820 g is one started kilo: ParcelNow's '4.90' to Germany.
+  assert.equal(new ParcelNowQuote(client).cost(820, 'DE'), 490);
+});
+
+test("SwiftShip's adapter answers in cents", () => {
+  // 820 g is nine started 100 g steps at 0.60.
+  assert.equal(new SwiftShipQuote(new SwiftShip()).cost(820, 'DE'), 540);
+});
+
+// A stand-in provider with one price for every parcel.
+class Fixed implements ShippingQuote {
+  readonly cents: number;
+
+  constructor(cents: number) {
+    this.cents = cents;
+  }
+
+  cost(): number {
+    return this.cents;
+  }
+}
+
+test('the cheapest provider wins', () => {
+  const providers = [new Fixed(700), new Fixed(450)];
+  const cart = cartOf('MUG-01', 1);
+  assert.equal(
+    shippingCost(cart, starterCatalog(), 'FR', 1_250, providers, GERMAN_SHOP),
+    450,
+  );
+});
