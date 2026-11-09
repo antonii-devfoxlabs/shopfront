@@ -19,6 +19,7 @@ import {
 import { GERMAN_SHOP } from './settings.js';
 import { shippingCost } from './shipping.js';
 import { CachedRates, TimedRates } from './taxes.js';
+import { timed } from './timing.js';
 import { Analytics } from './vendor/analytics.js';
 import { Mailer } from './vendor/mailer.js';
 import { ParcelNowClient } from './vendor/parcelnow.js';
@@ -33,10 +34,12 @@ const gateway = new TimedGateway(
   new PaymentGateway({ merchant: shop.merchantId }),
   console.log,
 );
+// Every shipping quote is timed and logged, and so is the whole cost.
+const parcelNow = new ParcelNowClient({ account: shop.parcelNowAccount });
 const providers = [
-  parcelNowQuote(new ParcelNowClient({ account: shop.parcelNowAccount })),
-  swiftShipQuote(new SwiftShip()),
-  boxRouteQuote,
+  timed('parcelnow quote', parcelNowQuote(parcelNow), console.log),
+  timed('swiftship quote', swiftShipQuote(new SwiftShip()), console.log),
+  timed('boxroute quote', boxRouteQuote, console.log),
 ];
 
 const catalog = starterCatalog();
@@ -52,7 +55,8 @@ const quote = calculator.quote(cart, 'DE', {
   coupon: 'WELCOME10',
 });
 const paidCents = quote.subtotalCents - quote.discountCents;
-const shippingCents = shippingCost(
+const timedShippingCost = timed('shipping cost', shippingCost, console.log);
+const shippingCents = timedShippingCost(
   cart,
   catalog,
   'DE',

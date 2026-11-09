@@ -21,6 +21,7 @@ from shopfront.providers import (
 from shopfront.settings import GERMAN_SHOP
 from shopfront.shipping import ShippingQuote, shipping_cost
 from shopfront.taxes import CachedRates, TimedRates
+from shopfront.timing import timed
 from shopfront.vendor.analytics import Analytics
 from shopfront.vendor.mailer import Mailer
 from shopfront.vendor.parcelnow import ParcelNowClient
@@ -34,10 +35,12 @@ def main() -> None:
     shop = GERMAN_SHOP
     # Every call to the payment gateway is timed and logged.
     gateway = TimedGateway(PaymentGateway(merchant=shop.merchant_id), print)
+    # Every shipping quote is timed and logged, and so is the whole cost.
+    parcelnow = ParcelNowClient(account=shop.parcelnow_account)
     providers: list[ShippingQuote] = [
-        parcelnow_quote(ParcelNowClient(account=shop.parcelnow_account)),
-        swiftship_quote(SwiftShip()),
-        boxroute_quote,
+        timed("parcelnow quote", parcelnow_quote(parcelnow), print),
+        timed("swiftship quote", swiftship_quote(SwiftShip()), print),
+        timed("boxroute quote", boxroute_quote, print),
     ]
     catalog = starter_catalog()
     cart = Cart()
@@ -51,7 +54,8 @@ def main() -> None:
         cart, "DE", today=date.today(), coupon="WELCOME10"
     )
     paid_cents = quote.subtotal_cents - quote.discount_cents
-    shipping_cents = shipping_cost(
+    timed_shipping_cost = timed("shipping cost", shipping_cost, print)
+    shipping_cents = timed_shipping_cost(
         cart, catalog, "DE", paid_cents, providers, shop
     )
     total_cents = paid_cents + quote.tax_cents + shipping_cents
