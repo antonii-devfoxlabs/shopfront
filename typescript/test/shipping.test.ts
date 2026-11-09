@@ -25,11 +25,12 @@ test('home orders over the threshold ship free', () => {
   );
 });
 
-test('home orders under the threshold pay ParcelNow', () => {
+test('home orders under the threshold pay the cheaper provider', () => {
   const cart = cartOf('MUG-01', 1);
+  // 350 g: SwiftShip's minimum, 3.90, beats ParcelNow's 4.90.
   assert.equal(
     shippingCost(cart, starterCatalog(), 'DE', 1_250, GERMAN_SHOP),
-    490,
+    390,
   );
 });
 
@@ -65,10 +66,19 @@ test('exactly five kilos abroad is not freight', () => {
   );
 });
 
-test('an empty cart pays the base rate', () => {
+test("an empty cart pays SwiftShip's minimum", () => {
   assert.equal(
     shippingCost(new Cart(), starterCatalog(), 'FR', 0, GERMAN_SHOP),
-    890,
+    390,
+  );
+});
+
+test('a light parcel abroad goes by SwiftShip', () => {
+  const cart = cartOf('MUG-01', 2);
+  // 700 g to France: SwiftShip 4.90, ParcelNow 8.90.
+  assert.equal(
+    shippingCost(cart, starterCatalog(), 'FR', 2_500, GERMAN_SHOP),
+    490,
   );
 });
 

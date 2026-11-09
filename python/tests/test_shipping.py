@@ -26,11 +26,12 @@ def test_home_orders_over_the_threshold_ship_free():
     )
 
 
-def test_home_orders_under_the_threshold_pay_parcelnow():
+def test_home_orders_under_the_threshold_pay_the_cheaper_provider():
     cart = cart_of("MUG-01", 1)
+    # 350 g: SwiftShip's minimum, 3.90, beats ParcelNow's 4.90.
     assert (
         shipping_cost(cart, starter_catalog(), "DE", 1_250, GERMAN_SHOP)
-        == 490
+        == 390
     )
 
 
@@ -65,9 +66,18 @@ def test_exactly_five_kilos_abroad_is_not_freight():
     )
 
 
-def test_an_empty_cart_pays_the_base_rate():
+def test_an_empty_cart_pays_swiftships_minimum():
     assert (
-        shipping_cost(Cart(), starter_catalog(), "FR", 0, GERMAN_SHOP) == 890
+        shipping_cost(Cart(), starter_catalog(), "FR", 0, GERMAN_SHOP) == 390
+    )
+
+
+def test_a_light_parcel_abroad_goes_by_swiftship():
+    cart = cart_of("MUG-01", 2)
+    # 700 g to France: SwiftShip 4.90, ParcelNow 8.90.
+    assert (
+        shipping_cost(cart, starter_catalog(), "FR", 2_500, GERMAN_SHOP)
+        == 490
     )
 
 

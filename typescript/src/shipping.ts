@@ -4,6 +4,7 @@ import type { Cart } from './cart.ts';
 import type { Catalog } from './catalog.ts';
 import type { Settings } from './settings.ts';
 import { ParcelNowClient } from './vendor/parcelnow.ts';
+import { SwiftShip } from './vendor/swiftship.ts';
 
 export function cartWeightGrams(cart: Cart, catalog: Catalog): number {
   let grams = 0;
@@ -35,5 +36,10 @@ export function shippingCost(
     destination: country,
   });
   const [euros, cents] = rate.amount.split('.');
-  return Number(euros) * 100 + Number(cents);
+  const parcelNowCents = Number(euros) * 100 + Number(cents);
+  const swiftShipCents = new SwiftShip().quote({
+    grams: weightGrams,
+    to: country,
+  });
+  return Math.min(parcelNowCents, swiftShipCents);
 }

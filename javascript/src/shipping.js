@@ -1,6 +1,7 @@
 // What it costs to ship a cart.
 
 import { ParcelNowClient } from './vendor/parcelnow.js';
+import { SwiftShip } from './vendor/swiftship.js';
 
 export function cartWeightGrams(cart, catalog) {
   let grams = 0;
@@ -26,5 +27,10 @@ export function shippingCost(cart, catalog, country, paidCents, shop) {
     destination: country,
   });
   const [euros, cents] = rate.amount.split('.');
-  return Number(euros) * 100 + Number(cents);
+  const parcelNowCents = Number(euros) * 100 + Number(cents);
+  const swiftShipCents = new SwiftShip().quote({
+    grams: weightGrams,
+    to: country,
+  });
+  return Math.min(parcelNowCents, swiftShipCents);
 }
