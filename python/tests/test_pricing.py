@@ -59,6 +59,20 @@ def test_a_quote_puts_it_together():
     assert quote.tax_cents == 580
 
 
+def test_a_business_abroad_pays_no_vat():
+    quote = calculator().quote(
+        cart_of({"MUG-01": 40}), "FR", None, A_JUNE_DAY, "FR12345678901"
+    )
+    assert quote.tax_cents == 0
+
+
+def test_a_business_at_home_pays_vat():
+    quote = calculator().quote(
+        cart_of({"MUG-01": 40}), "DE", None, A_JUNE_DAY, "DE123456789"
+    )
+    assert quote.tax_cents == 9_025
+
+
 def test_every_quote_asks_the_tax_service_again():
     tax_service = TaxService()
     prices = PriceCalculator(starter_catalog(), tax_service)

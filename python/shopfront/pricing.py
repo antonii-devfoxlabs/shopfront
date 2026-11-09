@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from datetime import date
 
+from shopfront import settings
 from shopfront.cart import Cart
 from shopfront.catalog import Catalog
 from shopfront.vendor.tax_service import TaxService
@@ -50,9 +51,18 @@ class PriceCalculator:
         return (amount_cents * rate + 50) // 100
 
     def quote(
-        self, cart: Cart, country: str, coupon: str | None, today: date
+        self,
+        cart: Cart,
+        country: str,
+        coupon: str | None,
+        today: date,
+        vat_id: str | None = None,
     ) -> PriceQuote:
         subtotal_cents = self.subtotal(cart)
         discount_cents = self.discount(subtotal_cents, coupon, today)
-        tax_cents = self.tax(subtotal_cents - discount_cents, country)
+        if vat_id is not None and country != settings.HOME_COUNTRY:
+            # A business in another EU country pays the VAT at home.
+            tax_cents = 0
+        else:
+            tax_cents = self.tax(subtotal_cents - discount_cents, country)
         return PriceQuote(subtotal_cents, discount_cents, tax_cents)

@@ -66,6 +66,30 @@ test('a quote puts it together', () => {
   });
 });
 
+test('a business abroad pays no VAT', () => {
+  const cart = cartOf({ 'MUG-01': 40 });
+  const quote = calculator().quote(
+    cart,
+    'FR',
+    null,
+    A_JUNE_DAY,
+    'FR12345678901',
+  );
+  assert.equal(quote.taxCents, 0);
+});
+
+test('a business at home pays VAT', () => {
+  const cart = cartOf({ 'MUG-01': 40 });
+  const quote = calculator().quote(
+    cart,
+    'DE',
+    null,
+    A_JUNE_DAY,
+    'DE123456789',
+  );
+  assert.equal(quote.taxCents, 9_025);
+});
+
 test('every quote asks the tax service again', () => {
   const taxService = new TaxService();
   const prices = new PriceCalculator(starterCatalog(), taxService);
