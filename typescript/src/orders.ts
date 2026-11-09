@@ -5,7 +5,7 @@ import { settings } from './settings.ts';
 import type { Analytics } from './vendor/analytics.ts';
 import type { Mailer } from './vendor/mailer.ts';
 
-export type OrderStatus = 'placed' | 'cancelled';
+export type OrderStatus = 'placed' | 'cancelled' | 'returned';
 
 let lastOrderNumber = 0;
 
