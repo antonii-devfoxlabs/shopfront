@@ -1,25 +1,71 @@
 import pytest
 
 from shopfront.catalog import OutOfStockError, starter_catalog
-from shopfront.orders import Order, format_money, next_order_id, place_order
+from shopfront.orders import (
+    IncompleteOrderError,
+    Order,
+    OrderBuilder,
+    format_money,
+    next_order_id,
+    place_order,
+)
 from shopfront.vendor.analytics import Analytics
 from shopfront.vendor.mailer import Mailer
 
 
 def an_order() -> Order:
-    return Order(
-        "SF-00007",
-        "ada@example.com",
-        "Ada",
-        {"MUG-01": 2},
-        2_500,
-        250,
-        428,
-        490,
-        "DE",
-        "card",
-        "txn-0001",
+    return (
+        OrderBuilder("SF-00007")
+        .email("ada@example.com")
+        .name("Ada")
+        .lines({"MUG-01": 2})
+        .subtotal(2_500)
+        .discount(250)
+        .tax(428)
+        .shipping(490)
+        .country("DE")
+        .paid_by("card")
+        .transaction("txn-0001")
+        .build()
     )
+
+
+def test_the_builder_puts_every_part_in_its_place():
+    order = an_order()
+    assert order.order_id == "SF-00007"
+    assert order.customer_email == "ada@example.com"
+    assert order.customer_name == "Ada"
+    assert order.lines == {"MUG-01": 2}
+    assert order.subtotal_cents == 2_500
+    assert order.discount_cents == 250
+    assert order.tax_cents == 428
+    assert order.shipping_cents == 490
+    assert order.shipping_country == "DE"
+    assert order.payment_method == "card"
+    assert order.transaction_id == "txn-0001"
+
+
+def test_an_order_without_a_discount_has_none():
+    order = (
+        OrderBuilder("SF-00008")
+        .email("ada@example.com")
+        .name("Ada")
+        .lines({"MUG-01": 1})
+        .subtotal(1_250)
+        .tax(165)
+        .shipping(490)
+        .country("DE")
+        .paid_by("card")
+        .transaction("txn-0002")
+        .build()
+    )
+    assert order.discount_cents == 0
+
+
+def test_an_order_with_a_part_missing_is_refused():
+    builder = OrderBuilder("SF-00009").email("ada@example.com").name("Ada")
+    with pytest.raises(IncompleteOrderError, match="lines"):
+        builder.build()
 
 
 def test_the_total_adds_everything_up():

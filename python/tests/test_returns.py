@@ -1,24 +1,25 @@
 import pytest
 
 from shopfront import payments
-from shopfront.orders import Order
+from shopfront.orders import Order, OrderBuilder
 from shopfront.payments import Card, GiftCard
 from shopfront.returns import GiftReturn, Return, ReturnRefusedError
 
 
 def a_card_order() -> Order:
-    return Order(
-        "SF-00007",
-        "ada@example.com",
-        "Ada",
-        {"MUG-01": 2},
-        2_500,
-        250,
-        428,
-        490,
-        "DE",
-        "card",
-        "txn-0001",
+    return (
+        OrderBuilder("SF-00007")
+        .email("ada@example.com")
+        .name("Ada")
+        .lines({"MUG-01": 2})
+        .subtotal(2_500)
+        .discount(250)
+        .tax(428)
+        .shipping(490)
+        .country("DE")
+        .paid_by("card")
+        .transaction("txn-0001")
+        .build()
     )
 
 

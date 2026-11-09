@@ -2,26 +2,24 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { exportCsv, exportJson } from '../src/exports.ts';
-import { Order, type OrderStatus } from '../src/orders.ts';
+import { type Order, OrderBuilder, type OrderStatus } from '../src/orders.ts';
 
 function order(
   orderId: string,
   status: OrderStatus = 'placed',
   email = 'ada@example.com',
 ): Order {
-  const placed = new Order(
-    orderId,
-    email,
-    'Ada',
-    [['MUG-01', 1]],
-    1_250,
-    0,
-    165,
-    490,
-    'DE',
-    'card',
-    'txn-0001',
-  );
+  const placed = new OrderBuilder(orderId)
+    .email(email)
+    .name('Ada')
+    .lines([['MUG-01', 1]])
+    .subtotal(1_250)
+    .tax(165)
+    .shipping(490)
+    .country('DE')
+    .paidBy('card')
+    .transaction('txn-0001')
+    .build();
   placed.status = status;
   return placed;
 }

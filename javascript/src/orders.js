@@ -47,6 +47,100 @@ export class Order {
   }
 }
 
+export class IncompleteOrderError extends Error {
+  name = 'IncompleteOrderError';
+}
+
+// Takes an order's parts one at a time, by name, and builds it.
+export class OrderBuilder {
+  #orderId;
+  #email;
+  #name;
+  #lines;
+  #subtotalCents;
+  #discountCents = 0;
+  #taxCents;
+  #shippingCents;
+  #country;
+  #paidBy;
+  #transactionId;
+
+  constructor(orderId) {
+    this.#orderId = orderId;
+  }
+
+  email(address) {
+    this.#email = address;
+    return this;
+  }
+
+  name(name) {
+    this.#name = name;
+    return this;
+  }
+
+  lines(lines) {
+    this.#lines = lines;
+    return this;
+  }
+
+  subtotal(cents) {
+    this.#subtotalCents = cents;
+    return this;
+  }
+
+  discount(cents) {
+    this.#discountCents = cents;
+    return this;
+  }
+
+  tax(cents) {
+    this.#taxCents = cents;
+    return this;
+  }
+
+  shipping(cents) {
+    this.#shippingCents = cents;
+    return this;
+  }
+
+  country(code) {
+    this.#country = code;
+    return this;
+  }
+
+  paidBy(method) {
+    this.#paidBy = method;
+    return this;
+  }
+
+  transaction(transactionId) {
+    this.#transactionId = transactionId;
+    return this;
+  }
+
+  build() {
+    return new Order(
+      this.#orderId,
+      given(this.#email, 'email'),
+      given(this.#name, 'name'),
+      given(this.#lines, 'lines'),
+      given(this.#subtotalCents, 'subtotal'),
+      this.#discountCents,
+      given(this.#taxCents, 'tax'),
+      given(this.#shippingCents, 'shipping'),
+      given(this.#country, 'country'),
+      given(this.#paidBy, 'paidBy'),
+      given(this.#transactionId, 'transaction'),
+    );
+  }
+}
+
+function given(value, part) {
+  if (value === undefined) throw new IncompleteOrderError(part);
+  return value;
+}
+
 export function placeOrder(order, catalog, mailer, analytics) {
   catalog.takeAllFromStock(order.lines);
   mailer.send({

@@ -5,7 +5,7 @@ import { test } from 'node:test';
 
 import { Cart } from '../src/cart.js';
 import { starterCatalog } from '../src/catalog.js';
-import { Order, nextOrderId, placeOrder } from '../src/orders.js';
+import { OrderBuilder, nextOrderId, placeOrder } from '../src/orders.js';
 import { pay } from '../src/payments.js';
 import { PriceCalculator } from '../src/pricing.js';
 import { shippingCost } from '../src/shipping.js';
@@ -31,19 +31,18 @@ test('a whole order', () => {
   const totalCents = paidCents + quote.taxCents + shippingCents;
 
   const transactionId = pay('card', totalCents, { cardToken: 'tok-4242' });
-  const order = new Order(
-    nextOrderId(),
-    'ada@example.com',
-    'Ada',
-    cart.lines,
-    quote.subtotalCents,
-    quote.discountCents,
-    quote.taxCents,
-    shippingCents,
-    'DE',
-    'card',
-    transactionId,
-  );
+  const order = new OrderBuilder(nextOrderId())
+    .email('ada@example.com')
+    .name('Ada')
+    .lines(cart.lines)
+    .subtotal(quote.subtotalCents)
+    .discount(quote.discountCents)
+    .tax(quote.taxCents)
+    .shipping(shippingCents)
+    .country('DE')
+    .paidBy('card')
+    .transaction(transactionId)
+    .build();
   const mailer = new Mailer();
   placeOrder(order, catalog, mailer, new Analytics());
 

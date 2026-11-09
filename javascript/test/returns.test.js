@@ -1,24 +1,23 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { Order } from '../src/orders.js';
+import { OrderBuilder } from '../src/orders.js';
 import { Card, GiftCard, gateway } from '../src/payments.js';
 import { GiftReturn, Return } from '../src/returns.js';
 
 function aCardOrder() {
-  return new Order(
-    'SF-00007',
-    'ada@example.com',
-    'Ada',
-    [['MUG-01', 2]],
-    2_500,
-    250,
-    428,
-    490,
-    'DE',
-    'card',
-    'txn-0001',
-  );
+  return new OrderBuilder('SF-00007')
+    .email('ada@example.com')
+    .name('Ada')
+    .lines([['MUG-01', 2]])
+    .subtotal(2_500)
+    .discount(250)
+    .tax(428)
+    .shipping(490)
+    .country('DE')
+    .paidBy('card')
+    .transaction('txn-0001')
+    .build();
 }
 
 test('a return refunds the way the shopper paid', () => {

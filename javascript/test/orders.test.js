@@ -3,7 +3,7 @@ import { test } from 'node:test';
 
 import { OutOfStockError, starterCatalog } from '../src/catalog.js';
 import {
-  Order,
+  OrderBuilder,
   formatMoney,
   nextOrderId,
   placeOrder,
@@ -12,20 +12,59 @@ import { Analytics } from '../src/vendor/analytics.js';
 import { Mailer } from '../src/vendor/mailer.js';
 
 function anOrder() {
-  return new Order(
-    'SF-00007',
-    'ada@example.com',
-    'Ada',
-    [['MUG-01', 2]],
-    2_500,
-    250,
-    428,
-    490,
-    'DE',
-    'card',
-    'txn-0001',
-  );
+  return new OrderBuilder('SF-00007')
+    .email('ada@example.com')
+    .name('Ada')
+    .lines([['MUG-01', 2]])
+    .subtotal(2_500)
+    .discount(250)
+    .tax(428)
+    .shipping(490)
+    .country('DE')
+    .paidBy('card')
+    .transaction('txn-0001')
+    .build();
 }
+
+test('the builder puts every part in its place', () => {
+  const order = anOrder();
+  assert.equal(order.orderId, 'SF-00007');
+  assert.equal(order.customerEmail, 'ada@example.com');
+  assert.equal(order.customerName, 'Ada');
+  assert.deepEqual(order.lines, new Map([['MUG-01', 2]]));
+  assert.equal(order.subtotalCents, 2_500);
+  assert.equal(order.discountCents, 250);
+  assert.equal(order.taxCents, 428);
+  assert.equal(order.shippingCents, 490);
+  assert.equal(order.shippingCountry, 'DE');
+  assert.equal(order.paymentMethod, 'card');
+  assert.equal(order.transactionId, 'txn-0001');
+});
+
+test('an order without a discount has none', () => {
+  const order = new OrderBuilder('SF-00008')
+    .email('ada@example.com')
+    .name('Ada')
+    .lines([['MUG-01', 1]])
+    .subtotal(1_250)
+    .tax(165)
+    .shipping(490)
+    .country('DE')
+    .paidBy('card')
+    .transaction('txn-0002')
+    .build();
+  assert.equal(order.discountCents, 0);
+});
+
+test('an order with a part missing is refused', () => {
+  const builder = new OrderBuilder('SF-00009')
+    .email('ada@example.com')
+    .name('Ada');
+  assert.throws(() => builder.build(), {
+    name: 'IncompleteOrderError',
+    message: 'lines',
+  });
+});
 
 test('the total adds everything up', () => {
   assert.equal(anOrder().totalCents, 3_168);

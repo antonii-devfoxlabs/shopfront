@@ -4,7 +4,12 @@ from datetime import date
 
 from shopfront.cart import Cart
 from shopfront.catalog import starter_catalog
-from shopfront.orders import Order, format_money, next_order_id, place_order
+from shopfront.orders import (
+    OrderBuilder,
+    format_money,
+    next_order_id,
+    place_order,
+)
 from shopfront.payments import pay
 from shopfront.pricing import PriceCalculator
 from shopfront.shipping import shipping_cost
@@ -27,18 +32,19 @@ def main() -> None:
 
     order_id = next_order_id()
     transaction_id = pay("card", total_cents, {"card_token": "tok-4242"})
-    order = Order(
-        order_id,
-        "ada@example.com",
-        "Ada",
-        cart.lines,
-        quote.subtotal_cents,
-        quote.discount_cents,
-        quote.tax_cents,
-        shipping_cents,
-        "DE",
-        "card",
-        transaction_id,
+    order = (
+        OrderBuilder(order_id)
+        .email("ada@example.com")
+        .name("Ada")
+        .lines(cart.lines)
+        .subtotal(quote.subtotal_cents)
+        .discount(quote.discount_cents)
+        .tax(quote.tax_cents)
+        .shipping(shipping_cents)
+        .country("DE")
+        .paid_by("card")
+        .transaction(transaction_id)
+        .build()
     )
     mailer = Mailer()
     place_order(order, catalog, mailer, Analytics())

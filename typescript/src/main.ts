@@ -2,7 +2,12 @@
 
 import { Cart } from './cart.ts';
 import { starterCatalog } from './catalog.ts';
-import { Order, formatMoney, nextOrderId, placeOrder } from './orders.ts';
+import {
+  OrderBuilder,
+  formatMoney,
+  nextOrderId,
+  placeOrder,
+} from './orders.ts';
 import { pay } from './payments.ts';
 import { PriceCalculator } from './pricing.ts';
 import { shippingCost } from './shipping.ts';
@@ -23,19 +28,18 @@ const totalCents = paidCents + quote.taxCents + shippingCents;
 
 const orderId = nextOrderId();
 const transactionId = pay('card', totalCents, { cardToken: 'tok-4242' });
-const order = new Order(
-  orderId,
-  'ada@example.com',
-  'Ada',
-  cart.lines,
-  quote.subtotalCents,
-  quote.discountCents,
-  quote.taxCents,
-  shippingCents,
-  'DE',
-  'card',
-  transactionId,
-);
+const order = new OrderBuilder(orderId)
+  .email('ada@example.com')
+  .name('Ada')
+  .lines(cart.lines)
+  .subtotal(quote.subtotalCents)
+  .discount(quote.discountCents)
+  .tax(quote.taxCents)
+  .shipping(shippingCents)
+  .country('DE')
+  .paidBy('card')
+  .transaction(transactionId)
+  .build();
 const mailer = new Mailer();
 placeOrder(order, catalog, mailer, new Analytics());
 

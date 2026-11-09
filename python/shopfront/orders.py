@@ -52,6 +52,88 @@ class Order:
         )
 
 
+class IncompleteOrderError(Exception):
+    pass
+
+
+class OrderBuilder:
+    """Takes an order's parts one at a time, by name, and builds it."""
+
+    def __init__(self, order_id: str) -> None:
+        self._order_id = order_id
+        self._email: str | None = None
+        self._name: str | None = None
+        self._lines: dict[str, int] | None = None
+        self._subtotal_cents: int | None = None
+        self._discount_cents = 0
+        self._tax_cents: int | None = None
+        self._shipping_cents: int | None = None
+        self._country: str | None = None
+        self._paid_by: str | None = None
+        self._transaction_id: str | None = None
+
+    def email(self, address: str) -> OrderBuilder:
+        self._email = address
+        return self
+
+    def name(self, name: str) -> OrderBuilder:
+        self._name = name
+        return self
+
+    def lines(self, lines: dict[str, int]) -> OrderBuilder:
+        self._lines = lines
+        return self
+
+    def subtotal(self, cents: int) -> OrderBuilder:
+        self._subtotal_cents = cents
+        return self
+
+    def discount(self, cents: int) -> OrderBuilder:
+        self._discount_cents = cents
+        return self
+
+    def tax(self, cents: int) -> OrderBuilder:
+        self._tax_cents = cents
+        return self
+
+    def shipping(self, cents: int) -> OrderBuilder:
+        self._shipping_cents = cents
+        return self
+
+    def country(self, code: str) -> OrderBuilder:
+        self._country = code
+        return self
+
+    def paid_by(self, method: str) -> OrderBuilder:
+        self._paid_by = method
+        return self
+
+    def transaction(self, transaction_id: str) -> OrderBuilder:
+        self._transaction_id = transaction_id
+        return self
+
+    def build(self) -> Order:
+        return Order(
+            self._order_id,
+            given(self._email, "email"),
+            given(self._name, "name"),
+            given(self._lines, "lines"),
+            given(self._subtotal_cents, "subtotal"),
+            self._discount_cents,
+            given(self._tax_cents, "tax"),
+            given(self._shipping_cents, "shipping"),
+            given(self._country, "country"),
+            given(self._paid_by, "paid_by"),
+            given(self._transaction_id, "transaction"),
+        )
+
+
+def given[T](value: T | None, part: str) -> T:
+    if value is None:
+        raise IncompleteOrderError(part)
+    return value
+
+
 def place_order(
     order: Order, catalog: Catalog, mailer: Mailer, analytics: Analytics
 ) -> None:

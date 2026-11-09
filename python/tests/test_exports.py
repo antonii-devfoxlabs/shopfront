@@ -1,24 +1,24 @@
 import json
 
 from shopfront.exports import export_csv, export_json
-from shopfront.orders import Order
+from shopfront.orders import Order, OrderBuilder
 
 
 def order(
     order_id: str, status: str = "placed", email: str = "ada@example.com"
 ) -> Order:
-    placed = Order(
-        order_id,
-        email,
-        "Ada",
-        {"MUG-01": 1},
-        1_250,
-        0,
-        165,
-        490,
-        "DE",
-        "card",
-        "txn-0001",
+    placed = (
+        OrderBuilder(order_id)
+        .email(email)
+        .name("Ada")
+        .lines({"MUG-01": 1})
+        .subtotal(1_250)
+        .tax(165)
+        .shipping(490)
+        .country("DE")
+        .paid_by("card")
+        .transaction("txn-0001")
+        .build()
     )
     placed.status = status
     return placed
