@@ -11,6 +11,7 @@ import {
   Wallet,
   gateway,
   pay,
+  paymentMethod,
   refund,
 } from '../src/payments.js';
 import {
@@ -65,6 +66,24 @@ for (const [payment, kind] of EACH_WAY) {
     const transactionId = payment.charge(1_000);
     assert.equal(gateway.charges.at(-1).id, transactionId);
     assert.equal(gateway.charges.at(-1).kind, kind);
+  });
+}
+
+const EVERY_CLASS = [
+  ['card', { cardToken: 'tok-4242' }, Card],
+  ['paypal', { payerEmail: 'ada@example.com' }, PayPal],
+  ['apple_pay', { walletToken: 'wallet-1' }, Wallet],
+  ['google_pay', { walletToken: 'wallet-2' }, Wallet],
+  ['samsung_pay', { walletToken: 'wallet-3' }, Wallet],
+  ['bank_transfer', { orderId: 'SF-00042' }, BankTransfer],
+  ['gift_card', { code: 'GIFT-2026-0001' }, GiftCard],
+];
+
+for (const [method, details, expected] of EVERY_CLASS) {
+  test(`paymentMethod creates ${method} without charging`, () => {
+    const chargesBefore = gateway.charges.length;
+    assert.ok(paymentMethod(method, details) instanceof expected);
+    assert.equal(gateway.charges.length, chargesBefore);
   });
 }
 

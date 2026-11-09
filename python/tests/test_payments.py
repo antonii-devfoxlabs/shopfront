@@ -10,6 +10,7 @@ from shopfront.payments import (
     UnsupportedPaymentMethodError,
     Wallet,
     pay,
+    payment_method,
     refund,
 )
 from shopfront.vendor.payment_gateway import (
@@ -69,6 +70,24 @@ def test_each_way_to_pay_charges_on_its_own(payment, kind):
     transaction_id = payment.charge(1_000)
     assert last_charge()["id"] == transaction_id
     assert last_charge()["kind"] == kind
+
+
+@pytest.mark.parametrize(
+    ("method", "details", "expected"),
+    [
+        ("card", {"card_token": "tok-4242"}, Card),
+        ("paypal", {"payer_email": "ada@example.com"}, PayPal),
+        ("apple_pay", {"wallet_token": "wallet-1"}, Wallet),
+        ("google_pay", {"wallet_token": "wallet-2"}, Wallet),
+        ("samsung_pay", {"wallet_token": "wallet-3"}, Wallet),
+        ("bank_transfer", {"order_id": "SF-00042"}, BankTransfer),
+        ("gift_card", {"code": "GIFT-2026-0001"}, GiftCard),
+    ],
+)
+def test_payment_method_creates_without_charging(method, details, expected):
+    charges_before = len(payments.gateway.charges)
+    assert isinstance(payment_method(method, details), expected)
+    assert len(payments.gateway.charges) == charges_before
 
 
 def test_a_declined_card_raises():

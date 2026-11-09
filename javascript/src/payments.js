@@ -97,44 +97,34 @@ export class GiftCard {
   }
 }
 
-// Charge the shopper and return the gateway's transaction id.
-export function pay(method, amountCents, details) {
-  /** @type {PaymentMethod} */
-  let payment;
+/**
+ * Create the way to pay that the method's name stands for.
+ * @returns {PaymentMethod}
+ */
+export function paymentMethod(method, details) {
   if (method === 'card') {
-    payment = new Card(required(details, 'cardToken'));
+    return new Card(required(details, 'cardToken'));
   } else if (method === 'paypal') {
-    payment = new PayPal(required(details, 'payerEmail'));
+    return new PayPal(required(details, 'payerEmail'));
   } else if (WALLETS.includes(method)) {
-    payment = new Wallet(method, required(details, 'walletToken'));
+    return new Wallet(method, required(details, 'walletToken'));
   } else if (method === 'bank_transfer') {
-    payment = new BankTransfer(required(details, 'orderId'));
+    return new BankTransfer(required(details, 'orderId'));
   } else if (method === 'gift_card') {
-    payment = new GiftCard(required(details, 'code'));
+    return new GiftCard(required(details, 'code'));
   } else {
     throw new UnsupportedPaymentMethodError(method);
   }
-  return payment.charge(amountCents);
+}
+
+// Charge the shopper and return the gateway's transaction id.
+export function pay(method, amountCents, details) {
+  return paymentMethod(method, details).charge(amountCents);
 }
 
 // Give the shopper's money back and return the gateway's refund id.
 export function refund(method, amountCents, details) {
-  /** @type {PaymentMethod} */
-  let payment;
-  if (method === 'card') {
-    payment = new Card(required(details, 'cardToken'));
-  } else if (method === 'paypal') {
-    payment = new PayPal(required(details, 'payerEmail'));
-  } else if (WALLETS.includes(method)) {
-    payment = new Wallet(method, required(details, 'walletToken'));
-  } else if (method === 'bank_transfer') {
-    payment = new BankTransfer(required(details, 'orderId'));
-  } else if (method === 'gift_card') {
-    payment = new GiftCard(required(details, 'code'));
-  } else {
-    throw new UnsupportedPaymentMethodError(method);
-  }
-  return payment.refund(amountCents);
+  return paymentMethod(method, details).refund(amountCents);
 }
 
 // A detail set to null is as missing as one left out, as in Python.

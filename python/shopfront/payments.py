@@ -87,40 +87,30 @@ class GiftCard:
         return gateway.top_up_gift_card(self.code, amount_cents)
 
 
-def pay(method: str, amount_cents: int, details: dict) -> str:
-    """Charge the shopper and return the gateway's transaction id."""
-    payment: PaymentMethod
+def payment_method(method: str, details: dict) -> PaymentMethod:
+    """Create the way to pay that the method's name stands for."""
     if method == "card":
-        payment = Card(required(details, "card_token"))
+        return Card(required(details, "card_token"))
     elif method == "paypal":
-        payment = PayPal(required(details, "payer_email"))
+        return PayPal(required(details, "payer_email"))
     elif method in WALLETS:
-        payment = Wallet(method, required(details, "wallet_token"))
+        return Wallet(method, required(details, "wallet_token"))
     elif method == "bank_transfer":
-        payment = BankTransfer(required(details, "order_id"))
+        return BankTransfer(required(details, "order_id"))
     elif method == "gift_card":
-        payment = GiftCard(required(details, "code"))
+        return GiftCard(required(details, "code"))
     else:
         raise UnsupportedPaymentMethodError(method)
-    return payment.charge(amount_cents)
+
+
+def pay(method: str, amount_cents: int, details: dict) -> str:
+    """Charge the shopper and return the gateway's transaction id."""
+    return payment_method(method, details).charge(amount_cents)
 
 
 def refund(method: str, amount_cents: int, details: dict) -> str:
     """Give the shopper's money back and return the gateway's refund id."""
-    payment: PaymentMethod
-    if method == "card":
-        payment = Card(required(details, "card_token"))
-    elif method == "paypal":
-        payment = PayPal(required(details, "payer_email"))
-    elif method in WALLETS:
-        payment = Wallet(method, required(details, "wallet_token"))
-    elif method == "bank_transfer":
-        payment = BankTransfer(required(details, "order_id"))
-    elif method == "gift_card":
-        payment = GiftCard(required(details, "code"))
-    else:
-        raise UnsupportedPaymentMethodError(method)
-    return payment.refund(amount_cents)
+    return payment_method(method, details).refund(amount_cents)
 
 
 def required(details: dict, name: str) -> str:

@@ -116,28 +116,34 @@ export class GiftCard implements PaymentMethod {
   }
 }
 
+// Create the way to pay that the method's name stands for.
+export function paymentMethod(
+  method: string,
+  details: PaymentDetails,
+): PaymentMethod {
+  if (method === 'card') {
+    return new Card(required(details.cardToken, 'cardToken'));
+  } else if (method === 'paypal') {
+    return new PayPal(required(details.payerEmail, 'payerEmail'));
+  } else if (WALLETS.includes(method)) {
+    const walletToken = required(details.walletToken, 'walletToken');
+    return new Wallet(method, walletToken);
+  } else if (method === 'bank_transfer') {
+    return new BankTransfer(required(details.orderId, 'orderId'));
+  } else if (method === 'gift_card') {
+    return new GiftCard(required(details.code, 'code'));
+  } else {
+    throw new UnsupportedPaymentMethodError(method);
+  }
+}
+
 // Charge the shopper and return the gateway's transaction id.
 export function pay(
   method: string,
   amountCents: number,
   details: PaymentDetails,
 ): string {
-  let payment: PaymentMethod;
-  if (method === 'card') {
-    payment = new Card(required(details.cardToken, 'cardToken'));
-  } else if (method === 'paypal') {
-    payment = new PayPal(required(details.payerEmail, 'payerEmail'));
-  } else if (WALLETS.includes(method)) {
-    const walletToken = required(details.walletToken, 'walletToken');
-    payment = new Wallet(method, walletToken);
-  } else if (method === 'bank_transfer') {
-    payment = new BankTransfer(required(details.orderId, 'orderId'));
-  } else if (method === 'gift_card') {
-    payment = new GiftCard(required(details.code, 'code'));
-  } else {
-    throw new UnsupportedPaymentMethodError(method);
-  }
-  return payment.charge(amountCents);
+  return paymentMethod(method, details).charge(amountCents);
 }
 
 // Give the shopper's money back and return the gateway's refund id.
@@ -146,22 +152,7 @@ export function refund(
   amountCents: number,
   details: PaymentDetails,
 ): string {
-  let payment: PaymentMethod;
-  if (method === 'card') {
-    payment = new Card(required(details.cardToken, 'cardToken'));
-  } else if (method === 'paypal') {
-    payment = new PayPal(required(details.payerEmail, 'payerEmail'));
-  } else if (WALLETS.includes(method)) {
-    const walletToken = required(details.walletToken, 'walletToken');
-    payment = new Wallet(method, walletToken);
-  } else if (method === 'bank_transfer') {
-    payment = new BankTransfer(required(details.orderId, 'orderId'));
-  } else if (method === 'gift_card') {
-    payment = new GiftCard(required(details.code, 'code'));
-  } else {
-    throw new UnsupportedPaymentMethodError(method);
-  }
-  return payment.refund(amountCents);
+  return paymentMethod(method, details).refund(amountCents);
 }
 
 function required(value: string | undefined, name: string): string {
