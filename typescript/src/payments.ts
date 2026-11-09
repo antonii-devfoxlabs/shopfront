@@ -116,7 +116,7 @@ export class GiftCard implements PaymentMethod {
 
 // Every way to pay, by the name the shopper picks, with the function
 // that creates it from the shopper's details.
-export const PAYMENT_METHODS = new Map<
+const PAYMENT_METHODS = new Map<
   string,
   (details: PaymentDetails) => PaymentMethod
 >([

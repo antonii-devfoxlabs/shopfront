@@ -100,7 +100,7 @@ export class GiftCard {
  * that creates it from the shopper's details.
  * @type {Map<string, (details: object) => PaymentMethod>}
  */
-export const PAYMENT_METHODS = new Map([
+const PAYMENT_METHODS = new Map([
   ['card', (details) => new Card(required(details, 'cardToken'))],
   ['paypal', (details) => new PayPal(required(details, 'payerEmail'))],
   [

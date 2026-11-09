@@ -136,4 +136,4 @@ def test_an_unknown_method_is_an_error():
 
 
 def test_checkout_offers_every_way_to_pay():
-    assert accepted() == [method for method, details, detail in EVERY_METHOD]
+    assert accepted() == [method for method, _, _ in EVERY_METHOD]
