@@ -3,9 +3,9 @@ import { test } from 'node:test';
 
 import { OutOfStockError, starterCatalog } from '../src/catalog.js';
 import {
+  OrderBook,
   OrderBuilder,
   UnknownOrderError,
-  book,
   formatMoney,
   nextOrderId,
   packingSlip,
@@ -117,11 +117,19 @@ test('placing an order takes stock, emails and tracks', () => {
 test('a placed order is in the order book', () => {
   const order = anOrder();
   placeOrder(order, starterCatalog(), new Mailer(), new Analytics());
-  assert.equal(book.find('SF-00007'), order);
+  assert.equal(OrderBook.instance().find('SF-00007'), order);
 });
 
 test('an unknown order number is refused', () => {
-  assert.throws(() => book.find('SF-99999'), UnknownOrderError);
+  assert.throws(
+    () => OrderBook.instance().find('SF-99999'),
+    UnknownOrderError,
+  );
+});
+
+test('the store has one order book', () => {
+  assert.equal(OrderBook.instance(), OrderBook.instance());
+  assert.throws(() => new OrderBook(), /the store has one order book/);
 });
 
 test('the Dutch shop emails from its own address', (context) => {

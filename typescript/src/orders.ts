@@ -200,9 +200,19 @@ export class UnknownOrderError extends Error {
   override name = 'UnknownOrderError';
 }
 
-// Every order the store has placed, found by its number.
+// Every order the store has placed, found by its number. The store has
+// one: get it with OrderBook.instance().
 export class OrderBook {
+  static #instance: OrderBook | undefined;
   readonly #orders: Map<string, Order> = new Map();
+
+  private constructor() {}
+
+  // The store's order book, created the first time it is asked for.
+  static instance(): OrderBook {
+    OrderBook.#instance ??= new OrderBook();
+    return OrderBook.#instance;
+  }
 
   add(order: Order): void {
     this.#orders.set(order.orderId, order);
@@ -214,10 +224,6 @@ export class OrderBook {
     return order;
   }
 }
-
-// The one order book: every part that records or finds orders uses it.
-export const book = new OrderBook();
-
 export function placeOrder(
   order: Order,
   catalog: Catalog,
@@ -225,7 +231,7 @@ export function placeOrder(
   analytics: Analytics,
 ): void {
   catalog.takeAllFromStock(order.lines);
-  book.add(order);
+  OrderBook.instance().add(order);
   mailer.send({
     from: settings.current.storeEmail,
     to: order.customerEmail,

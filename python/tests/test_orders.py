@@ -5,9 +5,9 @@ from shopfront.catalog import OutOfStockError, starter_catalog
 from shopfront.orders import (
     IncompleteOrderError,
     Order,
+    OrderBook,
     OrderBuilder,
     UnknownOrderError,
-    book,
     format_money,
     next_order_id,
     packing_slip,
@@ -114,12 +114,18 @@ def test_placing_an_order_takes_stock_emails_and_tracks():
 def test_a_placed_order_is_in_the_order_book():
     order = an_order()
     place_order(order, starter_catalog(), Mailer(), Analytics())
-    assert book.find("SF-00007") is order
+    assert OrderBook.instance().find("SF-00007") is order
 
 
 def test_an_unknown_order_number_is_refused():
     with pytest.raises(UnknownOrderError, match="SF-99999"):
-        book.find("SF-99999")
+        OrderBook.instance().find("SF-99999")
+
+
+def test_the_store_has_one_order_book():
+    assert OrderBook.instance() is OrderBook.instance()
+    with pytest.raises(RuntimeError, match="the store has one order book"):
+        OrderBook()
 
 
 def test_the_dutch_shop_emails_from_its_own_address(monkeypatch):

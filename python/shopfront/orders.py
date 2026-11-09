@@ -2,6 +2,7 @@
 
 from collections.abc import Mapping
 from types import MappingProxyType
+from typing import ClassVar
 
 from shopfront import settings
 from shopfront.catalog import Catalog
@@ -171,10 +172,25 @@ class UnknownOrderError(Exception):
 
 
 class OrderBook:
-    """Every order the store has placed, found by its number."""
+    """Every order the store has placed, found by its number.
+
+    The store has one: get it with OrderBook.instance().
+    """
+
+    _instance: ClassVar[OrderBook | None] = None
 
     def __init__(self) -> None:
+        if OrderBook._instance is not None:
+            raise RuntimeError("the store has one order book: use instance()")
         self._orders: dict[str, Order] = {}
+        OrderBook._instance = self
+
+    @classmethod
+    def instance(cls) -> OrderBook:
+        """The store's order book, created the first time it is asked for."""
+        if cls._instance is None:
+            return cls()
+        return cls._instance
 
     def add(self, order: Order) -> None:
         self._orders[order.order_id] = order
@@ -186,15 +202,11 @@ class OrderBook:
         return order
 
 
-# The one order book: every part that records or finds orders uses it.
-book = OrderBook()
-
-
 def place_order(
     order: Order, catalog: Catalog, mailer: Mailer, analytics: Analytics
 ) -> None:
     catalog.take_all_from_stock(order.lines)
-    book.add(order)
+    OrderBook.instance().add(order)
     mailer.send(
         sender=settings.current.store_email,
         to=order.customer_email,

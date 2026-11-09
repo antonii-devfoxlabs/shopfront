@@ -1,6 +1,6 @@
 // Orders sent back, and the money that goes back with them.
 
-import { book, type Order } from './orders.ts';
+import { OrderBook, type Order } from './orders.ts';
 import {
   payment,
   type PaymentDetails,
@@ -51,5 +51,5 @@ export function returnOrder(
   orderId: string,
   details: PaymentDetails,
 ): string {
-  return new Return(book.find(orderId), details).process();
+  return new Return(OrderBook.instance().find(orderId), details).process();
 }
