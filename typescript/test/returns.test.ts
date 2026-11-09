@@ -26,7 +26,7 @@ function aCardOrder() {
 test('a return refunds the way the shopper paid', () => {
   const order = aCardOrder();
   const refundId = new Return(order, { cardToken: 'tok-4242' }).process();
-  assert.deepEqual(gateway.refunds.at(-1), {
+  assert.deepEqual(gateway().refunds.at(-1), {
     id: refundId,
     kind: 'card',
     amount: 3_168,
@@ -39,7 +39,7 @@ test('an order is returned by its number', () => {
   const order = aCardOrder();
   placeOrder(order, starterCatalog(), new Mailer(), new Analytics());
   const refundId = returnOrder('SF-00007', { cardToken: 'tok-4242' });
-  assert.equal(gateway.refunds.at(-1)?.id, refundId);
+  assert.equal(gateway().refunds.at(-1)?.id, refundId);
   assert.equal(order.status, 'returned');
 });
 
@@ -47,7 +47,7 @@ test('a gift return refunds onto a gift card', () => {
   const order = aCardOrder();
   const details = { code: 'GIFT-2026-0001' };
   const refundId = new GiftReturn(order, details).process();
-  assert.deepEqual(gateway.refunds.at(-1), {
+  assert.deepEqual(gateway().refunds.at(-1), {
     id: refundId,
     kind: 'gift_card',
     amount: 3_168,
@@ -63,10 +63,10 @@ const EVERY_RETURN = [
 
 for (const [ReturnClass, details, expected] of EVERY_RETURN) {
   test(`${ReturnClass.name} creates its destination`, () => {
-    const refundsBefore = gateway.refunds.length;
+    const refundsBefore = gateway().refunds.length;
     const destination = new ReturnClass(aCardOrder(), details).destination();
     assert.ok(destination instanceof expected);
-    assert.equal(gateway.refunds.length, refundsBefore);
+    assert.equal(gateway().refunds.length, refundsBefore);
   });
 }
 
@@ -74,11 +74,11 @@ for (const [ReturnClass, details] of EVERY_RETURN) {
   test(`${ReturnClass.name} returns an order once`, () => {
     const order = aCardOrder();
     new ReturnClass(order, details).process();
-    const refundsBefore = gateway.refunds.length;
+    const refundsBefore = gateway().refunds.length;
     assert.throws(() => new ReturnClass(order, details).process(), {
       name: 'ReturnRefusedError',
       message: 'SF-00007 is returned',
     });
-    assert.equal(gateway.refunds.length, refundsBefore);
+    assert.equal(gateway().refunds.length, refundsBefore);
   });
 }

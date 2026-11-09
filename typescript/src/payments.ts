@@ -21,9 +21,19 @@ export type PaymentDetails = {
   code?: string;
 };
 
-export const gateway = new PaymentGateway({
-  merchant: settings.current.merchantId,
-});
+// One client per merchant account, made the first time it is needed.
+const gateways = new Map<string, PaymentGateway>();
+
+// The payment gateway of the shop that is current now.
+export function gateway(): PaymentGateway {
+  const merchant = settings.current.merchantId;
+  let client = gateways.get(merchant);
+  if (client === undefined) {
+    client = new PaymentGateway({ merchant });
+    gateways.set(merchant, client);
+  }
+  return client;
+}
 
 export interface PaymentMethod {
   charge(amountCents: number): string;
@@ -38,11 +48,11 @@ export class Card implements PaymentMethod {
   }
 
   charge(amountCents: number): string {
-    return gateway.chargeCard(this.cardToken, amountCents);
+    return gateway().chargeCard(this.cardToken, amountCents);
   }
 
   refund(amountCents: number): string {
-    return gateway.refundCard(this.cardToken, amountCents);
+    return gateway().refundCard(this.cardToken, amountCents);
   }
 }
 
@@ -54,11 +64,11 @@ export class PayPal implements PaymentMethod {
   }
 
   charge(amountCents: number): string {
-    return gateway.chargePaypal(this.payerEmail, amountCents);
+    return gateway().chargePaypal(this.payerEmail, amountCents);
   }
 
   refund(amountCents: number): string {
-    return gateway.refundPaypal(this.payerEmail, amountCents);
+    return gateway().refundPaypal(this.payerEmail, amountCents);
   }
 }
 
@@ -72,11 +82,11 @@ export class Wallet implements PaymentMethod {
   }
 
   charge(amountCents: number): string {
-    return gateway.chargeWallet(this.wallet, this.walletToken, amountCents);
+    return gateway().chargeWallet(this.wallet, this.walletToken, amountCents);
   }
 
   refund(amountCents: number): string {
-    return gateway.refundWallet(this.wallet, this.walletToken, amountCents);
+    return gateway().refundWallet(this.wallet, this.walletToken, amountCents);
   }
 }
 
@@ -89,12 +99,12 @@ export class BankTransfer implements PaymentMethod {
 
   charge(amountCents: number): string {
     const reference = `SHOPFRONT-${this.orderId}`;
-    return gateway.expectTransfer(amountCents, reference);
+    return gateway().expectTransfer(amountCents, reference);
   }
 
   refund(amountCents: number): string {
     const reference = `SHOPFRONT-${this.orderId}`;
-    return gateway.sendTransfer(amountCents, reference);
+    return gateway().sendTransfer(amountCents, reference);
   }
 }
 
@@ -106,11 +116,11 @@ export class GiftCard implements PaymentMethod {
   }
 
   charge(amountCents: number): string {
-    return gateway.redeemGiftCard(this.code, amountCents);
+    return gateway().redeemGiftCard(this.code, amountCents);
   }
 
   refund(amountCents: number): string {
-    return gateway.topUpGiftCard(this.code, amountCents);
+    return gateway().topUpGiftCard(this.code, amountCents);
   }
 }
 

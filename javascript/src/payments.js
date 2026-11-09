@@ -11,9 +11,19 @@ export class MissingPaymentDetailError extends Error {
   name = 'MissingPaymentDetailError';
 }
 
-export const gateway = new PaymentGateway({
-  merchant: settings.current.merchantId,
-});
+// One client per merchant account, made the first time it is needed.
+const gateways = new Map();
+
+// The payment gateway of the shop that is current now.
+export function gateway() {
+  const merchant = settings.current.merchantId;
+  let client = gateways.get(merchant);
+  if (client === undefined) {
+    client = new PaymentGateway({ merchant });
+    gateways.set(merchant, client);
+  }
+  return client;
+}
 
 /**
  * Every way to pay fills this slot.
@@ -28,11 +38,11 @@ export class Card {
   }
 
   charge(amountCents) {
-    return gateway.chargeCard(this.cardToken, amountCents);
+    return gateway().chargeCard(this.cardToken, amountCents);
   }
 
   refund(amountCents) {
-    return gateway.refundCard(this.cardToken, amountCents);
+    return gateway().refundCard(this.cardToken, amountCents);
   }
 }
 
@@ -42,11 +52,11 @@ export class PayPal {
   }
 
   charge(amountCents) {
-    return gateway.chargePaypal(this.payerEmail, amountCents);
+    return gateway().chargePaypal(this.payerEmail, amountCents);
   }
 
   refund(amountCents) {
-    return gateway.refundPaypal(this.payerEmail, amountCents);
+    return gateway().refundPaypal(this.payerEmail, amountCents);
   }
 }
 
@@ -57,11 +67,11 @@ export class Wallet {
   }
 
   charge(amountCents) {
-    return gateway.chargeWallet(this.wallet, this.walletToken, amountCents);
+    return gateway().chargeWallet(this.wallet, this.walletToken, amountCents);
   }
 
   refund(amountCents) {
-    return gateway.refundWallet(this.wallet, this.walletToken, amountCents);
+    return gateway().refundWallet(this.wallet, this.walletToken, amountCents);
   }
 }
 
@@ -72,12 +82,12 @@ export class BankTransfer {
 
   charge(amountCents) {
     const reference = `SHOPFRONT-${this.orderId}`;
-    return gateway.expectTransfer(amountCents, reference);
+    return gateway().expectTransfer(amountCents, reference);
   }
 
   refund(amountCents) {
     const reference = `SHOPFRONT-${this.orderId}`;
-    return gateway.sendTransfer(amountCents, reference);
+    return gateway().sendTransfer(amountCents, reference);
   }
 }
 
@@ -87,11 +97,11 @@ export class GiftCard {
   }
 
   charge(amountCents) {
-    return gateway.redeemGiftCard(this.code, amountCents);
+    return gateway().redeemGiftCard(this.code, amountCents);
   }
 
   refund(amountCents) {
-    return gateway.topUpGiftCard(this.code, amountCents);
+    return gateway().topUpGiftCard(this.code, amountCents);
   }
 }
 

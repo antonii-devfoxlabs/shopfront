@@ -1,6 +1,6 @@
 import pytest
 
-from shopfront import payments
+from shopfront import payments, settings
 from shopfront.payments import (
     BankTransfer,
     Card,
@@ -21,7 +21,7 @@ from shopfront.vendor.payment_gateway import (
 
 
 def last_charge() -> dict:
-    return payments.gateway.charges[-1]
+    return payments.gateway().charges[-1]
 
 
 EVERY_METHOD = [
@@ -49,7 +49,7 @@ def test_every_method_charges_the_gateway(method, details, detail):
 @pytest.mark.parametrize(("method", "details", "detail"), EVERY_METHOD)
 def test_every_method_refunds_through_the_gateway(method, details, detail):
     refund_id = refund(method, 1_000, details)
-    assert payments.gateway.refunds[-1] == {
+    assert payments.gateway().refunds[-1] == {
         "id": refund_id,
         "kind": method,
         "amount": 1_000,
@@ -86,9 +86,9 @@ def test_each_way_to_pay_charges_on_its_own(payment, kind):
     ],
 )
 def test_payment_creates_without_charging(method, details, expected):
-    charges_before = len(payments.gateway.charges)
+    charges_before = len(payments.gateway().charges)
     assert isinstance(payment(method, details), expected)
-    assert len(payments.gateway.charges) == charges_before
+    assert len(payments.gateway().charges) == charges_before
 
 
 def test_a_declined_card_raises():
@@ -103,17 +103,17 @@ def test_a_declined_wallet_raises(wallet):
 
 
 def test_a_missing_detail_is_an_error_not_a_charge():
-    charges_before = len(payments.gateway.charges)
+    charges_before = len(payments.gateway().charges)
     with pytest.raises(MissingPaymentDetailError, match="card_token"):
         pay("card", 1_000, {})
-    assert len(payments.gateway.charges) == charges_before
+    assert len(payments.gateway().charges) == charges_before
 
 
 def test_a_detail_set_to_none_is_missing():
-    charges_before = len(payments.gateway.charges)
+    charges_before = len(payments.gateway().charges)
     with pytest.raises(MissingPaymentDetailError, match="card_token"):
         pay("card", 1_000, {"card_token": None})
-    assert len(payments.gateway.charges) == charges_before
+    assert len(payments.gateway().charges) == charges_before
 
 
 def test_a_gift_card_pays_down_to_its_balance():
@@ -137,3 +137,10 @@ def test_an_unknown_method_is_an_error():
 
 def test_checkout_offers_every_way_to_pay():
     assert accepted() == [method for method, _, _ in EVERY_METHOD]
+
+
+def test_the_dutch_shop_charges_its_own_merchant_account(monkeypatch):
+    monkeypatch.setattr(settings, "current", settings.DUTCH_SHOP)
+    transaction_id = pay("card", 2_500, {"card_token": "tok-4242"})
+    assert payments.gateway().merchant == "shopfront-nl"
+    assert payments.gateway().charges[-1]["id"] == transaction_id

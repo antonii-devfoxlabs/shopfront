@@ -15,6 +15,7 @@ import {
   payment,
   refund,
 } from '../src/payments.js';
+import * as settings from '../src/settings.js';
 import {
   PaymentDeclinedError,
   PaymentGateway,
@@ -33,7 +34,7 @@ const EVERY_METHOD = [
 for (const [method, details, detail] of EVERY_METHOD) {
   test(`${method} charges the gateway`, () => {
     const transactionId = pay(method, 1_000, details);
-    assert.deepEqual(gateway.charges.at(-1), {
+    assert.deepEqual(gateway().charges.at(-1), {
       id: transactionId,
       kind: method,
       amount: 1_000,
@@ -45,7 +46,7 @@ for (const [method, details, detail] of EVERY_METHOD) {
 for (const [method, details, detail] of EVERY_METHOD) {
   test(`${method} refunds through the gateway`, () => {
     const refundId = refund(method, 1_000, details);
-    assert.deepEqual(gateway.refunds.at(-1), {
+    assert.deepEqual(gateway().refunds.at(-1), {
       id: refundId,
       kind: method,
       amount: 1_000,
@@ -65,8 +66,8 @@ const EACH_WAY = [
 for (const [payment, kind] of EACH_WAY) {
   test(`${kind} charges on its own`, () => {
     const transactionId = payment.charge(1_000);
-    assert.equal(gateway.charges.at(-1).id, transactionId);
-    assert.equal(gateway.charges.at(-1).kind, kind);
+    assert.equal(gateway().charges.at(-1).id, transactionId);
+    assert.equal(gateway().charges.at(-1).kind, kind);
   });
 }
 
@@ -82,9 +83,9 @@ const EVERY_CLASS = [
 
 for (const [method, details, expected] of EVERY_CLASS) {
   test(`payment creates ${method} without charging`, () => {
-    const chargesBefore = gateway.charges.length;
+    const chargesBefore = gateway().charges.length;
     assert.ok(payment(method, details) instanceof expected);
-    assert.equal(gateway.charges.length, chargesBefore);
+    assert.equal(gateway().charges.length, chargesBefore);
   });
 }
 
@@ -105,21 +106,21 @@ for (const wallet of ['apple_pay', 'google_pay', 'samsung_pay']) {
 }
 
 test('a missing detail is an error, not a charge', () => {
-  const chargesBefore = gateway.charges.length;
+  const chargesBefore = gateway().charges.length;
   assert.throws(() => pay('card', 1_000, {}), {
     constructor: MissingPaymentDetailError,
     message: 'cardToken',
   });
-  assert.equal(gateway.charges.length, chargesBefore);
+  assert.equal(gateway().charges.length, chargesBefore);
 });
 
 test('a detail set to null is missing', () => {
-  const chargesBefore = gateway.charges.length;
+  const chargesBefore = gateway().charges.length;
   assert.throws(() => pay('card', 1_000, { cardToken: null }), {
     constructor: MissingPaymentDetailError,
     message: 'cardToken',
   });
-  assert.equal(gateway.charges.length, chargesBefore);
+  assert.equal(gateway().charges.length, chargesBefore);
 });
 
 test('a gift card pays down to its balance', () => {
@@ -148,4 +149,12 @@ test('an unknown method is an error', () => {
 test('checkout offers every way to pay', () => {
   const names = EVERY_METHOD.map(([method]) => method);
   assert.deepEqual(accepted(), names);
+});
+
+test('the Dutch shop charges its own merchant account', (context) => {
+  const previous = settings.use(settings.DUTCH_SHOP);
+  context.after(() => settings.use(previous));
+  const transactionId = pay('card', 2_500, { cardToken: 'tok-4242' });
+  assert.equal(gateway().merchant, 'shopfront-nl');
+  assert.equal(gateway().charges.at(-1)?.id, transactionId);
 });

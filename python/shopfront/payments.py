@@ -15,7 +15,18 @@ class MissingPaymentDetailError(Exception):
     pass
 
 
-gateway = PaymentGateway(merchant=settings.current.merchant_id)
+# One client per merchant account, made the first time it is needed.
+_gateways: dict[str, PaymentGateway] = {}
+
+
+def gateway() -> PaymentGateway:
+    """The payment gateway of the shop that is current now."""
+    merchant = settings.current.merchant_id
+    client = _gateways.get(merchant)
+    if client is None:
+        client = PaymentGateway(merchant=merchant)
+        _gateways[merchant] = client
+    return client
 
 
 class PaymentMethod(Protocol):
@@ -29,10 +40,10 @@ class Card:
         self.card_token = card_token
 
     def charge(self, amount_cents: int) -> str:
-        return gateway.charge_card(self.card_token, amount_cents)
+        return gateway().charge_card(self.card_token, amount_cents)
 
     def refund(self, amount_cents: int) -> str:
-        return gateway.refund_card(self.card_token, amount_cents)
+        return gateway().refund_card(self.card_token, amount_cents)
 
 
 class PayPal:
@@ -40,10 +51,10 @@ class PayPal:
         self.payer_email = payer_email
 
     def charge(self, amount_cents: int) -> str:
-        return gateway.charge_paypal(self.payer_email, amount_cents)
+        return gateway().charge_paypal(self.payer_email, amount_cents)
 
     def refund(self, amount_cents: int) -> str:
-        return gateway.refund_paypal(self.payer_email, amount_cents)
+        return gateway().refund_paypal(self.payer_email, amount_cents)
 
 
 class Wallet:
@@ -52,12 +63,12 @@ class Wallet:
         self.wallet_token = wallet_token
 
     def charge(self, amount_cents: int) -> str:
-        return gateway.charge_wallet(
+        return gateway().charge_wallet(
             self.wallet, self.wallet_token, amount_cents
         )
 
     def refund(self, amount_cents: int) -> str:
-        return gateway.refund_wallet(
+        return gateway().refund_wallet(
             self.wallet, self.wallet_token, amount_cents
         )
 
@@ -68,11 +79,11 @@ class BankTransfer:
 
     def charge(self, amount_cents: int) -> str:
         reference = f"SHOPFRONT-{self.order_id}"
-        return gateway.expect_transfer(amount_cents, reference)
+        return gateway().expect_transfer(amount_cents, reference)
 
     def refund(self, amount_cents: int) -> str:
         reference = f"SHOPFRONT-{self.order_id}"
-        return gateway.send_transfer(amount_cents, reference)
+        return gateway().send_transfer(amount_cents, reference)
 
 
 class GiftCard:
@@ -80,10 +91,10 @@ class GiftCard:
         self.code = code
 
     def charge(self, amount_cents: int) -> str:
-        return gateway.redeem_gift_card(self.code, amount_cents)
+        return gateway().redeem_gift_card(self.code, amount_cents)
 
     def refund(self, amount_cents: int) -> str:
-        return gateway.top_up_gift_card(self.code, amount_cents)
+        return gateway().top_up_gift_card(self.code, amount_cents)
 
 
 PAYMENT_METHODS: dict[str, Callable[[dict], PaymentMethod]] = {
