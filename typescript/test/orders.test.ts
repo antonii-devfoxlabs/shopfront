@@ -13,11 +13,11 @@ import {
 import { Analytics } from '../src/vendor/analytics.ts';
 import { Mailer } from '../src/vendor/mailer.ts';
 
-function anOrder() {
+function anOrder(lines: Iterable<[string, number]> = [['MUG-01', 2]]) {
   return new OrderBuilder('SF-00007')
     .email('ada@example.com')
     .name('Ada')
-    .lines([['MUG-01', 2]])
+    .lines(lines)
     .subtotal(2_500)
     .discount(250)
     .tax(428)
@@ -80,6 +80,16 @@ test('the total adds everything up', () => {
   assert.equal(anOrder().totalCents, 3_168);
 });
 
+test('a built order cannot change', () => {
+  const order = anOrder();
+  assert.throws(() => {
+    (order as { taxCents: number }).taxCents = 0;
+  }, TypeError);
+  (order.lines as Map<string, number>).set('KTL-03', 9);
+  assert.deepEqual(order.lines, new Map([['MUG-01', 2]]));
+  assert.equal(order.totalCents, 3_168);
+});
+
 test('order ids count up', () => {
   const first = nextOrderId();
   const second = nextOrderId();
@@ -106,8 +116,10 @@ test('an order with a short line takes nothing and sends nothing', () => {
   const catalog = starterCatalog();
   const mailer = new Mailer();
   const analytics = new Analytics();
-  const order = anOrder();
-  order.lines.set('KTL-03', 9);
+  const order = anOrder([
+    ['MUG-01', 2],
+    ['KTL-03', 9],
+  ]);
   assert.throws(
     () => placeOrder(order, catalog, mailer, analytics),
     OutOfStockError,

@@ -18,7 +18,6 @@ export class Order {
   readonly orderId: string;
   readonly customerEmail: string;
   readonly customerName: string;
-  readonly lines: Map<string, number>;
   readonly subtotalCents: number;
   readonly discountCents: number;
   readonly taxCents: number;
@@ -26,7 +25,8 @@ export class Order {
   readonly shippingCountry: string;
   readonly paymentMethod: string;
   readonly transactionId: string;
-  status: OrderStatus = 'placed';
+  readonly #lines: Map<string, number>;
+  #status: OrderStatus = 'placed';
 
   constructor(
     orderId: string,
@@ -44,7 +44,7 @@ export class Order {
     this.orderId = orderId;
     this.customerEmail = customerEmail;
     this.customerName = customerName;
-    this.lines = new Map(lines);
+    this.#lines = new Map(lines);
     this.subtotalCents = subtotalCents;
     this.discountCents = discountCents;
     this.taxCents = taxCents;
@@ -52,6 +52,21 @@ export class Order {
     this.shippingCountry = shippingCountry;
     this.paymentMethod = paymentMethod;
     this.transactionId = transactionId;
+    // Each part is set once, here; only the status changes.
+    Object.freeze(this);
+  }
+
+  get lines(): ReadonlyMap<string, number> {
+    // A copy each time, so not even a cast can reach the order's own.
+    return new Map(this.#lines);
+  }
+
+  get status(): OrderStatus {
+    return this.#status;
+  }
+
+  set status(status: OrderStatus) {
+    this.#status = status;
   }
 
   get totalCents(): number {
@@ -172,9 +187,13 @@ const FREE_SAMPLE_FROM_CENTS = 4_000;
 
 // What goes into the parcel, one line per product.
 export function packingSlip(order: Order): string[] {
-  const lines = order.lines;
-  if (order.totalCents >= FREE_SAMPLE_FROM_CENTS) lines.set(FREE_SAMPLE, 1);
-  return [...lines].map(([sku, quantity]) => `${quantity} x ${sku}`);
+  const slip = [...order.lines].map(
+    ([sku, quantity]) => `${quantity} x ${sku}`,
+  );
+  if (order.totalCents >= FREE_SAMPLE_FROM_CENTS) {
+    slip.push(`1 x ${FREE_SAMPLE}`);
+  }
+  return slip;
 }
 
 export function placeOrder(

@@ -10,6 +10,9 @@ export function nextOrderId() {
 }
 
 export class Order {
+  #lines;
+  #status = 'placed';
+
   constructor(
     orderId,
     customerEmail,
@@ -26,7 +29,7 @@ export class Order {
     this.orderId = orderId;
     this.customerEmail = customerEmail;
     this.customerName = customerName;
-    this.lines = new Map(lines);
+    this.#lines = new Map(lines);
     this.subtotalCents = subtotalCents;
     this.discountCents = discountCents;
     this.taxCents = taxCents;
@@ -34,7 +37,21 @@ export class Order {
     this.shippingCountry = shippingCountry;
     this.paymentMethod = paymentMethod;
     this.transactionId = transactionId;
-    this.status = 'placed';
+    // Each part is set once, here; only the status changes.
+    Object.freeze(this);
+  }
+
+  get lines() {
+    // A copy each time: JavaScript has no read-only Map.
+    return new Map(this.#lines);
+  }
+
+  get status() {
+    return this.#status;
+  }
+
+  set status(status) {
+    this.#status = status;
   }
 
   get totalCents() {
@@ -155,9 +172,13 @@ const FREE_SAMPLE_FROM_CENTS = 4_000;
 
 // What goes into the parcel, one line per product.
 export function packingSlip(order) {
-  const lines = order.lines;
-  if (order.totalCents >= FREE_SAMPLE_FROM_CENTS) lines.set(FREE_SAMPLE, 1);
-  return [...lines].map(([sku, quantity]) => `${quantity} x ${sku}`);
+  const slip = [...order.lines].map(
+    ([sku, quantity]) => `${quantity} x ${sku}`,
+  );
+  if (order.totalCents >= FREE_SAMPLE_FROM_CENTS) {
+    slip.push(`1 x ${FREE_SAMPLE}`);
+  }
+  return slip;
 }
 
 export function placeOrder(order, catalog, mailer, analytics) {

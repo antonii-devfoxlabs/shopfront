@@ -15,12 +15,12 @@ from shopfront.vendor.analytics import Analytics
 from shopfront.vendor.mailer import Mailer
 
 
-def an_order() -> Order:
+def an_order(lines: dict[str, int] | None = None) -> Order:
     return (
         OrderBuilder("SF-00007")
         .email("ada@example.com")
         .name("Ada")
-        .lines({"MUG-01": 2})
+        .lines(lines or {"MUG-01": 2})
         .subtotal(2_500)
         .discount(250)
         .tax(428)
@@ -80,6 +80,16 @@ def test_the_total_adds_everything_up():
     assert an_order().total_cents == 3_168
 
 
+def test_a_built_order_cannot_change():
+    order = an_order()
+    with pytest.raises(AttributeError, match="tax_cents cannot change"):
+        order.tax_cents = 0
+    with pytest.raises(TypeError):
+        order.lines["KTL-03"] = 9
+    assert order.lines == {"MUG-01": 2}
+    assert order.total_cents == 3_168
+
+
 def test_order_ids_count_up():
     first, second = next_order_id(), next_order_id()
     assert int(second[3:]) == int(first[3:]) + 1
@@ -100,8 +110,7 @@ def test_placing_an_order_takes_stock_emails_and_tracks():
 
 def test_an_order_with_a_short_line_takes_nothing_and_sends_nothing():
     catalog, mailer, analytics = starter_catalog(), Mailer(), Analytics()
-    order = an_order()
-    order.lines["KTL-03"] = 9
+    order = an_order({"MUG-01": 2, "KTL-03": 9})
     with pytest.raises(OutOfStockError):
         place_order(order, catalog, mailer, analytics)
     assert catalog.find("MUG-01").stock == 40

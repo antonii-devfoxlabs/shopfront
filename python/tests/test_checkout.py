@@ -8,6 +8,7 @@ from shopfront.catalog import starter_catalog
 from shopfront.orders import (
     OrderBuilder,
     next_order_id,
+    packing_slip,
     place_order,
     reorder,
 )
@@ -72,6 +73,7 @@ def test_ordering_again():
         .transaction("txn-0001")
         .build()
     )
+    assert packing_slip(previous)[-1] == "1 x TEA-SAMPLE"
     builder = reorder(previous, next_order_id())
     cart = Cart()
     for sku, quantity in previous.lines.items():

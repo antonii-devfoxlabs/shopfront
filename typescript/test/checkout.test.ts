@@ -8,6 +8,7 @@ import { starterCatalog } from '../src/catalog.ts';
 import {
   OrderBuilder,
   nextOrderId,
+  packingSlip,
   placeOrder,
   reorder,
 } from '../src/orders.ts';
@@ -71,6 +72,7 @@ test('ordering again', () => {
     .paidBy('card')
     .transaction('txn-0001')
     .build();
+  assert.equal(packingSlip(previous).at(-1), '1 x TEA-SAMPLE');
   const builder = reorder(previous, nextOrderId());
   const cart = new Cart();
   for (const [sku, quantity] of previous.lines) cart.add(sku, quantity);

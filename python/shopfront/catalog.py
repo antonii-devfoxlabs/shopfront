@@ -1,5 +1,6 @@
 """The products Shopfront sells, and how many of each are left."""
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 
 
@@ -41,7 +42,7 @@ class Catalog:
             )
         product.stock -= quantity
 
-    def take_all_from_stock(self, lines: dict[str, int]) -> None:
+    def take_all_from_stock(self, lines: Mapping[str, int]) -> None:
         """Take every line, or none of them if one is short."""
         for sku, quantity in lines.items():
             product = self.find(sku)

@@ -1,5 +1,8 @@
 """An order, and what happens once it is placed."""
 
+from collections.abc import Mapping
+from types import MappingProxyType
+
 from shopfront import settings
 from shopfront.catalog import Catalog
 from shopfront.vendor.analytics import Analytics
@@ -20,7 +23,7 @@ class Order:
         order_id: str,
         customer_email: str,
         customer_name: str,
-        lines: dict[str, int],
+        lines: Mapping[str, int],
         subtotal_cents: int,
         discount_cents: int,
         tax_cents: int,
@@ -32,7 +35,7 @@ class Order:
         self.order_id = order_id
         self.customer_email = customer_email
         self.customer_name = customer_name
-        self.lines = dict(lines)
+        self.lines = MappingProxyType(dict(lines))
         self.subtotal_cents = subtotal_cents
         self.discount_cents = discount_cents
         self.tax_cents = tax_cents
@@ -41,6 +44,12 @@ class Order:
         self.payment_method = payment_method
         self.transaction_id = transaction_id
         self.status = "placed"
+
+    def __setattr__(self, name: str, value: object) -> None:
+        # Each part is set once, in __init__; only the status changes.
+        if name != "status" and hasattr(self, name):
+            raise AttributeError(f"an order's {name} cannot change")
+        super().__setattr__(name, value)
 
     @property
     def total_cents(self) -> int:
@@ -63,7 +72,7 @@ class OrderBuilder:
         self._order_id = order_id
         self._email: str | None = None
         self._name: str | None = None
-        self._lines: dict[str, int] | None = None
+        self._lines: Mapping[str, int] | None = None
         self._subtotal_cents: int | None = None
         self._discount_cents = 0
         self._tax_cents: int | None = None
@@ -80,7 +89,7 @@ class OrderBuilder:
         self._name = name
         return self
 
-    def lines(self, lines: dict[str, int]) -> OrderBuilder:
+    def lines(self, lines: Mapping[str, int]) -> OrderBuilder:
         self._lines = lines
         return self
 
@@ -151,10 +160,10 @@ FREE_SAMPLE_FROM_CENTS = 4_000
 
 def packing_slip(order: Order) -> list[str]:
     """What goes into the parcel, one line per product."""
-    lines = order.lines
+    slip = [f"{quantity} x {sku}" for sku, quantity in order.lines.items()]
     if order.total_cents >= FREE_SAMPLE_FROM_CENTS:
-        lines[FREE_SAMPLE] = 1
-    return [f"{quantity} x {sku}" for sku, quantity in lines.items()]
+        slip.append(f"1 x {FREE_SAMPLE}")
+    return slip
 
 
 def place_order(
