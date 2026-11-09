@@ -171,9 +171,9 @@ def place_order(
 ) -> None:
     catalog.take_all_from_stock(order.lines)
     mailer.send(
-        sender=settings.STORE_EMAIL,
+        sender=settings.current.store_email,
         to=order.customer_email,
-        subject=f"{settings.STORE_NAME}: order {order.order_id}",
+        subject=f"{settings.current.store_name}: order {order.order_id}",
         body=(
             f"Hi {order.customer_name}, thank you! "
             f"We have your order {order.order_id}, "
@@ -189,4 +189,4 @@ def place_order(
 def format_money(cents: int) -> str:
     sign = "-" if cents < 0 else ""
     euros, rest = divmod(abs(cents), 100)
-    return f"{sign}{euros}.{rest:02d} {settings.CURRENCY}"
+    return f"{sign}{euros}.{rest:02d} {settings.current.currency}"

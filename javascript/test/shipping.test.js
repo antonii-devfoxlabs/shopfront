@@ -3,7 +3,7 @@ import { test } from 'node:test';
 
 import { Cart } from '../src/cart.js';
 import { starterCatalog } from '../src/catalog.js';
-import { settings } from '../src/settings.js';
+import * as settings from '../src/settings.js';
 import { cartWeightGrams, shippingCost } from '../src/shipping.js';
 import { ParcelNowError } from '../src/vendor/parcelnow.js';
 
@@ -52,22 +52,18 @@ test('an empty cart pays the base rate', () => {
 });
 
 test('the threshold comes from the settings', (context) => {
-  const saved = settings.freeShippingFromCents;
-  context.after(() => {
-    settings.freeShippingFromCents = saved;
+  const previous = settings.use({
+    ...settings.current,
+    freeShippingFromCents: 1_000,
   });
-  settings.freeShippingFromCents = 1_000;
+  context.after(() => settings.use(previous));
   const cart = cartOf('MUG-01', 1);
   assert.equal(shippingCost(cart, starterCatalog(), 'DE', 1_250), 0);
 });
 
 test('the Dutch shop ships free at home from 60 EUR', (context) => {
-  const saved = { ...settings };
-  context.after(() => {
-    Object.assign(settings, saved);
-  });
-  settings.homeCountry = 'NL';
-  settings.freeShippingFromCents = 6_000;
+  const previous = settings.use(settings.DUTCH_SHOP);
+  context.after(() => settings.use(previous));
   const cart = cartOf('MUG-01', 5);
   assert.equal(shippingCost(cart, starterCatalog(), 'NL', 6_000), 0);
   assert.equal(shippingCost(cart, starterCatalog(), 'NL', 5_999), 910);

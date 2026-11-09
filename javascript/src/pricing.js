@@ -1,6 +1,6 @@
 // What a cart costs: the subtotal, the discount and the tax.
 
-import { settings } from './settings.js';
+import * as settings from './settings.js';
 
 export class UnknownCouponError extends Error {
   name = 'UnknownCouponError';
@@ -46,7 +46,7 @@ export class PriceCalculator {
     const discountCents = this.discount(subtotalCents, coupon, today);
     // A business in another EU country pays the VAT at home.
     const taxCents =
-      vatId !== null && country !== settings.homeCountry
+      vatId !== null && country !== settings.current.homeCountry
         ? 0
         : this.tax(subtotalCents - discountCents, country);
     return { subtotalCents, discountCents, taxCents };

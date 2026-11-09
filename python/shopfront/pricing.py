@@ -61,7 +61,7 @@ class PriceCalculator:
     ) -> PriceQuote:
         subtotal_cents = self.subtotal(cart)
         discount_cents = self.discount(subtotal_cents, coupon, today)
-        if vat_id is not None and country != settings.HOME_COUNTRY:
+        if vat_id is not None and country != settings.current.home_country:
             # A business in another EU country pays the VAT at home.
             tax_cents = 0
         else:

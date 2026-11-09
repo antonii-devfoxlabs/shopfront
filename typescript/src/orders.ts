@@ -1,7 +1,7 @@
 // An order, and what happens once it is placed.
 
 import type { Catalog } from './catalog.ts';
-import { settings } from './settings.ts';
+import * as settings from './settings.ts';
 import type { Analytics } from './vendor/analytics.ts';
 import type { Mailer } from './vendor/mailer.ts';
 
@@ -204,9 +204,9 @@ export function placeOrder(
 ): void {
   catalog.takeAllFromStock(order.lines);
   mailer.send({
-    from: settings.storeEmail,
+    from: settings.current.storeEmail,
     to: order.customerEmail,
-    subject: `${settings.storeName}: order ${order.orderId}`,
+    subject: `${settings.current.storeName}: order ${order.orderId}`,
     body:
       `Hi ${order.customerName}, thank you! ` +
       `We have your order ${order.orderId}, ` +
@@ -222,5 +222,5 @@ export function formatMoney(cents: number): string {
   const sign = cents < 0 ? '-' : '';
   const euros = Math.floor(Math.abs(cents) / 100);
   const rest = String(Math.abs(cents) % 100).padStart(2, '0');
-  return `${sign}${euros}.${rest} ${settings.currency}`;
+  return `${sign}${euros}.${rest} ${settings.current.currency}`;
 }

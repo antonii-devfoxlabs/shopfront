@@ -1,6 +1,6 @@
 // An order, and what happens once it is placed.
 
-import { settings } from './settings.js';
+import * as settings from './settings.js';
 
 let lastOrderNumber = 0;
 
@@ -184,9 +184,9 @@ export function packingSlip(order) {
 export function placeOrder(order, catalog, mailer, analytics) {
   catalog.takeAllFromStock(order.lines);
   mailer.send({
-    from: settings.storeEmail,
+    from: settings.current.storeEmail,
     to: order.customerEmail,
-    subject: `${settings.storeName}: order ${order.orderId}`,
+    subject: `${settings.current.storeName}: order ${order.orderId}`,
     body:
       `Hi ${order.customerName}, thank you! ` +
       `We have your order ${order.orderId}, ` +
@@ -202,5 +202,5 @@ export function formatMoney(cents) {
   const sign = cents < 0 ? '-' : '';
   const euros = Math.floor(Math.abs(cents) / 100);
   const rest = String(Math.abs(cents) % 100).padStart(2, '0');
-  return `${sign}${euros}.${rest} ${settings.currency}`;
+  return `${sign}${euros}.${rest} ${settings.current.currency}`;
 }

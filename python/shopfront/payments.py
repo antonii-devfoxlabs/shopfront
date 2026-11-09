@@ -15,7 +15,7 @@ class MissingPaymentDetailError(Exception):
     pass
 
 
-gateway = PaymentGateway(merchant=settings.MERCHANT_ID)
+gateway = PaymentGateway(merchant=settings.current.merchant_id)
 
 
 class PaymentMethod(Protocol):

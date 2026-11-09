@@ -1,14 +1,43 @@
 """The store's settings, read by every part of Shopfront."""
 
-STORE_NAME = "Shopfront"
-STORE_EMAIL = "orders@shopfront.example"
-CURRENCY = "EUR"
+from dataclasses import dataclass
 
-# Where the store ships from: orders inside this country can ship
-# for free.
-HOME_COUNTRY = "DE"
-FREE_SHIPPING_FROM_CENTS = 5_000
 
-# The accounts Shopfront uses with its providers.
-PARCELNOW_ACCOUNT = "shopfront"
-MERCHANT_ID = "shopfront-store"
+@dataclass(frozen=True, kw_only=True)
+class Settings:
+    """Everything that makes one shop different from another."""
+
+    store_name: str
+    store_email: str
+    currency: str
+    # Where the shop ships from: orders inside this country can ship
+    # for free.
+    home_country: str
+    free_shipping_from_cents: int
+    # The accounts the shop uses with its providers.
+    parcelnow_account: str
+    merchant_id: str
+
+
+GERMAN_SHOP = Settings(
+    store_name="Shopfront",
+    store_email="orders@shopfront.example",
+    currency="EUR",
+    home_country="DE",
+    free_shipping_from_cents=5_000,
+    parcelnow_account="shopfront",
+    merchant_id="shopfront-store",
+)
+
+DUTCH_SHOP = Settings(
+    store_name="Shopfront NL",
+    store_email="orders.nl@shopfront.example",
+    currency="EUR",
+    home_country="NL",
+    free_shipping_from_cents=6_000,
+    parcelnow_account="shopfront-nl",
+    merchant_id="shopfront-nl",
+)
+
+# The settings every part of Shopfront reads.
+current: Settings = GERMAN_SHOP

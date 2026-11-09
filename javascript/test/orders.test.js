@@ -10,7 +10,7 @@ import {
   placeOrder,
   reorder,
 } from '../src/orders.js';
-import { settings } from '../src/settings.js';
+import * as settings from '../src/settings.js';
 import { Analytics } from '../src/vendor/analytics.js';
 import { Mailer } from '../src/vendor/mailer.js';
 
@@ -113,12 +113,8 @@ test('placing an order takes stock, emails and tracks', () => {
 });
 
 test('the Dutch shop emails from its own address', (context) => {
-  const saved = { ...settings };
-  context.after(() => {
-    Object.assign(settings, saved);
-  });
-  settings.storeName = 'Shopfront NL';
-  settings.storeEmail = 'orders.nl@shopfront.example';
+  const previous = settings.use(settings.DUTCH_SHOP);
+  context.after(() => settings.use(previous));
   const mailer = new Mailer();
   placeOrder(anOrder(), starterCatalog(), mailer, new Analytics());
   assert.equal(mailer.outbox[0].from, 'orders.nl@shopfront.example');

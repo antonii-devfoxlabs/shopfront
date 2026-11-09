@@ -2,7 +2,7 @@
 
 import type { Cart } from './cart.ts';
 import type { Catalog } from './catalog.ts';
-import { settings } from './settings.ts';
+import * as settings from './settings.ts';
 import type { TaxService } from './vendor/taxService.ts';
 
 export class UnknownCouponError extends Error {
@@ -72,7 +72,7 @@ export class PriceCalculator {
     const discountCents = this.discount(subtotalCents, coupon, today);
     // A business in another EU country pays the VAT at home.
     const taxCents =
-      vatId !== null && country !== settings.homeCountry
+      vatId !== null && country !== settings.current.homeCountry
         ? 0
         : this.tax(subtotalCents - discountCents, country);
     return { subtotalCents, discountCents, taxCents };

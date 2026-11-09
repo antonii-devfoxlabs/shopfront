@@ -1,6 +1,6 @@
 // Taking the money, and giving it back, in whichever way the shopper chose.
 
-import { settings } from './settings.js';
+import * as settings from './settings.js';
 import { PaymentGateway } from './vendor/paymentGateway.js';
 
 export class UnsupportedPaymentMethodError extends Error {
@@ -12,7 +12,7 @@ export class MissingPaymentDetailError extends Error {
 }
 
 export const gateway = new PaymentGateway({
-  merchant: settings.merchantId,
+  merchant: settings.current.merchantId,
 });
 
 /**

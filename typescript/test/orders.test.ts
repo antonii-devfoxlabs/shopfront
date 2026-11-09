@@ -10,7 +10,7 @@ import {
   placeOrder,
   reorder,
 } from '../src/orders.ts';
-import { settings } from '../src/settings.ts';
+import * as settings from '../src/settings.ts';
 import { Analytics } from '../src/vendor/analytics.ts';
 import { Mailer } from '../src/vendor/mailer.ts';
 
@@ -114,12 +114,8 @@ test('placing an order takes stock, emails and tracks', () => {
 });
 
 test('the Dutch shop emails from its own address', (context) => {
-  const saved = { ...settings };
-  context.after(() => {
-    Object.assign(settings, saved);
-  });
-  settings.storeName = 'Shopfront NL';
-  settings.storeEmail = 'orders.nl@shopfront.example';
+  const previous = settings.use(settings.DUTCH_SHOP);
+  context.after(() => settings.use(previous));
   const mailer = new Mailer();
   placeOrder(anOrder(), starterCatalog(), mailer, new Analytics());
   const [email] = mailer.outbox;

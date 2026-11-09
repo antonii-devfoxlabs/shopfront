@@ -1,3 +1,5 @@
+import copy
+
 import pytest
 
 from shopfront import settings
@@ -52,14 +54,14 @@ def test_an_empty_cart_pays_the_base_rate():
 
 
 def test_the_threshold_comes_from_the_settings(monkeypatch):
-    monkeypatch.setattr(settings, "FREE_SHIPPING_FROM_CENTS", 1_000)
+    lower = copy.replace(settings.current, free_shipping_from_cents=1_000)
+    monkeypatch.setattr(settings, "current", lower)
     cart = cart_of("MUG-01", 1)
     assert shipping_cost(cart, starter_catalog(), "DE", 1_250) == 0
 
 
 def test_the_dutch_shop_ships_free_at_home_from_60_eur(monkeypatch):
-    monkeypatch.setattr(settings, "HOME_COUNTRY", "NL")
-    monkeypatch.setattr(settings, "FREE_SHIPPING_FROM_CENTS", 6_000)
+    monkeypatch.setattr(settings, "current", settings.DUTCH_SHOP)
     cart = cart_of("MUG-01", 5)
     assert shipping_cost(cart, starter_catalog(), "NL", 6_000) == 0
     assert shipping_cost(cart, starter_catalog(), "NL", 5_999) == 910
