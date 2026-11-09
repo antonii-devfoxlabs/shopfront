@@ -5,7 +5,12 @@ import { test } from 'node:test';
 
 import { Cart } from '../src/cart.ts';
 import { starterCatalog } from '../src/catalog.ts';
-import { OrderBuilder, nextOrderId, placeOrder } from '../src/orders.ts';
+import {
+  OrderBuilder,
+  nextOrderId,
+  placeOrder,
+  reorder,
+} from '../src/orders.ts';
 import { pay } from '../src/payments.ts';
 import { PriceCalculator } from '../src/pricing.ts';
 import { shippingCost } from '../src/shipping.ts';
@@ -49,4 +54,51 @@ test('a whole order', () => {
   assert.equal(order.totalCents, 4_121);
   assert.equal(catalog.find('MUG-01').stock, 38);
   assert.equal(mailer.outbox.length, 1);
+});
+
+test('ordering again', () => {
+  const catalog = starterCatalog();
+  const previous = new OrderBuilder('SF-00001')
+    .email('ada@example.com')
+    .name('Ada')
+    .lines([
+      ['MUG-01', 2],
+      ['TEA-02', 1],
+    ])
+    .subtotal(3_390)
+    .discount(339)
+    .tax(580)
+    .shipping(490)
+    .country('DE')
+    .paidBy('card')
+    .transaction('txn-0001')
+    .build();
+  const cart = new Cart();
+  for (const [sku, quantity] of previous.lines) cart.add(sku, quantity);
+  const country = previous.shippingCountry;
+
+  const calculator = new PriceCalculator(catalog, new TaxService());
+  const quote = calculator.quote(cart, country, null, new Date(2026, 6, 15));
+  const paidCents = quote.subtotalCents - quote.discountCents;
+  const shippingCents = shippingCost(cart, catalog, country, paidCents);
+  const totalCents = paidCents + quote.taxCents + shippingCents;
+
+  const transactionId = pay('card', totalCents, { cardToken: 'tok-4242' });
+  const order = reorder(
+    previous,
+    nextOrderId(),
+    quote.subtotalCents,
+    quote.discountCents,
+    quote.taxCents,
+    shippingCents,
+    'card',
+    transactionId,
+  );
+
+  assert.notEqual(order.orderId, previous.orderId);
+  assert.equal(order.customerName, 'Ada');
+  assert.deepEqual(order.lines, previous.lines);
+  assert.equal(order.shippingCountry, 'DE');
+  assert.equal(order.taxCents, 644);
+  assert.equal(order.totalCents, 4_524);
 });

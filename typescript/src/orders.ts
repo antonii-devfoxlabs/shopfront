@@ -158,6 +158,31 @@ function given<T>(value: T | undefined, part: string): T {
   return value;
 }
 
+// The same items, to the same shopper, at today's prices.
+export function reorder(
+  previous: Order,
+  orderId: string,
+  subtotalCents: number,
+  discountCents: number,
+  taxCents: number,
+  shippingCents: number,
+  paymentMethod: string,
+  transactionId: string,
+): Order {
+  return new OrderBuilder(orderId)
+    .email(previous.customerEmail)
+    .name(previous.customerName)
+    .lines(previous.lines)
+    .subtotal(subtotalCents)
+    .discount(discountCents)
+    .tax(taxCents)
+    .shipping(shippingCents)
+    .country(previous.shippingCountry)
+    .paidBy(paymentMethod)
+    .transaction(transactionId)
+    .build();
+}
+
 export function placeOrder(
   order: Order,
   catalog: Catalog,
