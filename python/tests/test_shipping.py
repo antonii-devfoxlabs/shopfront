@@ -57,6 +57,16 @@ def test_the_threshold_comes_from_the_settings(monkeypatch):
     assert shipping_cost(cart, starter_catalog(), "DE", 1_250) == 0
 
 
+def test_the_dutch_shop_ships_free_at_home_from_60_eur(monkeypatch):
+    monkeypatch.setattr(settings, "HOME_COUNTRY", "NL")
+    monkeypatch.setattr(settings, "FREE_SHIPPING_FROM_CENTS", 6_000)
+    cart = cart_of("MUG-01", 5)
+    assert shipping_cost(cart, starter_catalog(), "NL", 6_000) == 0
+    assert shipping_cost(cart, starter_catalog(), "NL", 5_999) == 910
+    # For the Dutch shop, Germany is abroad.
+    assert shipping_cost(cart, starter_catalog(), "DE", 9_800) == 610
+
+
 def test_abroad_pays_even_over_the_threshold():
     cart = cart_of("KTL-03", 2)
     # 2.2 kg: the base rate and two extra kilos.

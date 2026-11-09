@@ -61,6 +61,20 @@ test('the threshold comes from the settings', (context) => {
   assert.equal(shippingCost(cart, starterCatalog(), 'DE', 1_250), 0);
 });
 
+test('the Dutch shop ships free at home from 60 EUR', (context) => {
+  const saved = { ...settings };
+  context.after(() => {
+    Object.assign(settings, saved);
+  });
+  settings.homeCountry = 'NL';
+  settings.freeShippingFromCents = 6_000;
+  const cart = cartOf('MUG-01', 5);
+  assert.equal(shippingCost(cart, starterCatalog(), 'NL', 6_000), 0);
+  assert.equal(shippingCost(cart, starterCatalog(), 'NL', 5_999), 910);
+  // For the Dutch shop, Germany is abroad.
+  assert.equal(shippingCost(cart, starterCatalog(), 'DE', 9_800), 610);
+});
+
 test('abroad pays even over the threshold', () => {
   const cart = cartOf('KTL-03', 2);
   // 2.2 kg: the base rate and two extra kilos.

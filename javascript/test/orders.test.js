@@ -10,6 +10,7 @@ import {
   placeOrder,
   reorder,
 } from '../src/orders.js';
+import { settings } from '../src/settings.js';
 import { Analytics } from '../src/vendor/analytics.js';
 import { Mailer } from '../src/vendor/mailer.js';
 
@@ -109,6 +110,19 @@ test('placing an order takes stock, emails and tracks', () => {
   assert.deepEqual(analytics.events, [
     ['order_placed', { order_id: 'SF-00007', total_cents: 3_168 }],
   ]);
+});
+
+test('the Dutch shop emails from its own address', (context) => {
+  const saved = { ...settings };
+  context.after(() => {
+    Object.assign(settings, saved);
+  });
+  settings.storeName = 'Shopfront NL';
+  settings.storeEmail = 'orders.nl@shopfront.example';
+  const mailer = new Mailer();
+  placeOrder(anOrder(), starterCatalog(), mailer, new Analytics());
+  assert.equal(mailer.outbox[0].from, 'orders.nl@shopfront.example');
+  assert.equal(mailer.outbox[0].subject, 'Shopfront NL: order SF-00007');
 });
 
 test('an order with a short line takes nothing and sends nothing', () => {

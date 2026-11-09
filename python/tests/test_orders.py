@@ -1,5 +1,6 @@
 import pytest
 
+from shopfront import settings
 from shopfront.catalog import OutOfStockError, starter_catalog
 from shopfront.orders import (
     IncompleteOrderError,
@@ -106,6 +107,17 @@ def test_placing_an_order_takes_stock_emails_and_tracks():
     assert analytics.events == [
         ("order_placed", {"order_id": "SF-00007", "total_cents": 3_168})
     ]
+
+
+def test_the_dutch_shop_emails_from_its_own_address(monkeypatch):
+    monkeypatch.setattr(settings, "STORE_NAME", "Shopfront NL")
+    monkeypatch.setattr(
+        settings, "STORE_EMAIL", "orders.nl@shopfront.example"
+    )
+    mailer = Mailer()
+    place_order(an_order(), starter_catalog(), mailer, Analytics())
+    assert mailer.outbox[0]["from"] == "orders.nl@shopfront.example"
+    assert mailer.outbox[0]["subject"] == "Shopfront NL: order SF-00007"
 
 
 def test_an_order_with_a_short_line_takes_nothing_and_sends_nothing():
