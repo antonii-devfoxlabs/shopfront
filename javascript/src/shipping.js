@@ -23,12 +23,19 @@ export class NoShippingError extends Error {
  */
 export function parcelNowQuote(client) {
   return (grams, country) => {
-    const rate = client.getRate({
-      weightKg: grams / 1000,
-      destination: country,
-    });
-    const [euros, cents] = rate.amount.split('.');
-    return Number(euros) * 100 + Number(cents);
+    try {
+      const rate = client.getRate({
+        weightKg: grams / 1000,
+        destination: country,
+      });
+      const [euros, cents] = rate.amount.split('.');
+      return Number(euros) * 100 + Number(cents);
+    } catch (error) {
+      if (error instanceof ParcelNowError) {
+        throw new NoShippingError(country, { cause: error });
+      }
+      throw error;
+    }
   };
 }
 
@@ -37,7 +44,16 @@ export function parcelNowQuote(client) {
  * @returns {ShippingQuote}
  */
 export function swiftShipQuote(client) {
-  return (grams, country) => client.quote({ grams, to: country });
+  return (grams, country) => {
+    try {
+      return client.quote({ grams, to: country });
+    } catch (error) {
+      if (error instanceof SwiftShipError) {
+        throw new NoShippingError(country, { cause: error });
+      }
+      throw error;
+    }
+  };
 }
 
 /**
@@ -45,8 +61,15 @@ export function swiftShipQuote(client) {
  * @type {ShippingQuote}
  */
 export function boxRouteQuote(grams, country) {
-  const price = estimate({ destination: country, kilos: grams / 1000 });
-  return price.euros * 100 + price.cents;
+  try {
+    const price = estimate({ destination: country, kilos: grams / 1000 });
+    return price.euros * 100 + price.cents;
+  } catch (error) {
+    if (error instanceof BoxRouteError) {
+      throw new NoShippingError(country, { cause: error });
+    }
+    throw error;
+  }
 }
 
 export function cartWeightGrams(cart, catalog) {
@@ -78,11 +101,7 @@ export function shippingCost(
     try {
       costs.push(provider(weightGrams, country));
     } catch (error) {
-      if (
-        error instanceof ParcelNowError ||
-        error instanceof SwiftShipError ||
-        error instanceof BoxRouteError
-      ) {
+      if (error instanceof NoShippingError) {
         // This provider does not ship there: ask the others.
         continue;
       }

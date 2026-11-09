@@ -23,7 +23,10 @@ def parcelnow_quote(client: ParcelNowClient) -> ShippingQuote:
     """ParcelNow's client, made to answer as a ShippingQuote."""
 
     def cost(grams: int, country: str) -> int:
-        rate = client.get_rate(grams / 1000, country)
+        try:
+            rate = client.get_rate(grams / 1000, country)
+        except ParcelNowError as error:
+            raise NoShippingError(country) from error
         euros, cents = rate["amount"].split(".")
         return int(euros) * 100 + int(cents)
 
@@ -34,14 +37,20 @@ def swiftship_quote(client: SwiftShip) -> ShippingQuote:
     """SwiftShip's client, made to answer as a ShippingQuote."""
 
     def cost(grams: int, country: str) -> int:
-        return client.quote({"grams": grams, "to": country})
+        try:
+            return client.quote({"grams": grams, "to": country})
+        except SwiftShipError as error:
+            raise NoShippingError(country) from error
 
     return cost
 
 
 def boxroute_quote(grams: int, country: str) -> int:
     """BoxRoute's estimate, made to answer as a ShippingQuote."""
-    price = estimate(country, grams / 1000)
+    try:
+        price = estimate(country, grams / 1000)
+    except BoxRouteError as error:
+        raise NoShippingError(country) from error
     return price["euros"] * 100 + price["cents"]
 
 
@@ -71,7 +80,7 @@ def shipping_cost(
     for provider in providers:
         try:
             costs.append(provider(weight_grams, country))
-        except ParcelNowError, SwiftShipError, BoxRouteError:
+        except NoShippingError:
             # This provider does not ship there: ask the others.
             continue
     if not costs:

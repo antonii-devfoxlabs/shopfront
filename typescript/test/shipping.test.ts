@@ -13,8 +13,8 @@ import {
   shippingCost,
   swiftShipQuote,
 } from '../src/shipping.ts';
-import { ParcelNowClient } from '../src/vendor/parcelnow.ts';
-import { SwiftShip, SwiftShipError } from '../src/vendor/swiftship.ts';
+import { ParcelNowClient, ParcelNowError } from '../src/vendor/parcelnow.ts';
+import { SwiftShip } from '../src/vendor/swiftship.ts';
 
 function cartOf(sku: string, quantity: number): Cart {
   const cart = new Cart();
@@ -308,6 +308,38 @@ test("BoxRoute's adapter answers in cents", () => {
   assert.equal(boxRouteQuote(2_500, 'PL'), 650);
 });
 
+test("ParcelNow's adapter says no in Shopfront's words", () => {
+  const client = new ParcelNowClient({
+    account: GERMAN_SHOP.parcelNowAccount,
+  });
+  const cost = parcelNowQuote(client);
+  assert.throws(
+    () => cost(700, 'ES'),
+    (error: unknown) => {
+      assert.ok(error instanceof NoShippingError);
+      assert.equal(error.message, 'ES');
+      // ParcelNow's own error stays attached, for whoever debugs it.
+      assert.ok(error.cause instanceof ParcelNowError);
+      return true;
+    },
+  );
+});
+
+test("SwiftShip's adapter says no in Shopfront's words", () => {
+  const cost = swiftShipQuote(new SwiftShip());
+  assert.throws(() => cost(700, 'ES'), {
+    constructor: NoShippingError,
+    message: 'ES',
+  });
+});
+
+test("BoxRoute's adapter says no in Shopfront's words", () => {
+  assert.throws(() => boxRouteQuote(700, 'ES'), {
+    constructor: NoShippingError,
+    message: 'ES',
+  });
+});
+
 test('the cheapest provider wins', () => {
   // Two stand-in providers, each with one price for every parcel.
   const providers = [() => 700, () => 450];
@@ -320,7 +352,7 @@ test('the cheapest provider wins', () => {
 
 test('a provider that does not ship there is skipped', () => {
   function nowhere(grams: number, country: string): number {
-    throw new SwiftShipError(`Unsupported country: ${country}`);
+    throw new NoShippingError(country);
   }
   const providers: ShippingQuote[] = [nowhere, () => 700];
   const cart = cartOf('MUG-01', 1);
