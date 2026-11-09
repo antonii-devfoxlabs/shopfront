@@ -83,12 +83,12 @@ def test_a_business_at_home_pays_vat():
     assert quote.tax_cents == 9_025
 
 
-def test_every_quote_asks_the_tax_service_again():
+def test_the_tax_service_is_asked_once_per_country():
     tax_service = TaxService()
     prices = PriceCalculator(starter_catalog(), tax_service, GERMAN_SHOP)
     for _ in range(3):
         prices.quote(cart_of({"MUG-01": 1}), "DE", today=A_JUNE_DAY)
-    assert tax_service.lookups == 3
+    assert tax_service.lookups == 1
 
 
 def test_a_country_without_a_vat_rate_is_an_error():

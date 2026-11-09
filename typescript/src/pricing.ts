@@ -25,6 +25,7 @@ export class PriceCalculator {
   readonly catalog: Catalog;
   readonly taxService: TaxService;
   readonly shop: Settings;
+  readonly #rates = new Map<string, number>();
 
   constructor(catalog: Catalog, taxService: TaxService, shop: Settings) {
     this.catalog = catalog;
@@ -61,7 +62,16 @@ export class PriceCalculator {
   }
 
   tax(amountCents: number, country: string): number {
-    const rate = this.taxService.rateFor(country);
+    let rate = this.#rates.get(country);
+    if (rate === undefined) {
+      const started = performance.now();
+      rate = this.taxService.rateFor(country);
+      const tookMs = performance.now() - started;
+      console.log(
+        `tax rate for ${country}: ${rate}% in ${tookMs.toFixed(0)} ms`,
+      );
+      this.#rates.set(country, rate);
+    }
     return Math.floor((amountCents * rate + 50) / 100);
   }
 

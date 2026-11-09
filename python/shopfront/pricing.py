@@ -1,5 +1,6 @@
 """What a cart costs: the subtotal, the discount and the tax."""
 
+import time
 from dataclasses import dataclass
 from datetime import date
 
@@ -27,6 +28,7 @@ class PriceCalculator:
         self.catalog = catalog
         self.tax_service = tax_service
         self.shop = shop
+        self._rates: dict[str, int] = {}
 
     def subtotal(self, cart: Cart) -> int:
         return sum(
@@ -50,7 +52,13 @@ class PriceCalculator:
         return 0
 
     def tax(self, amount_cents: int, country: str) -> int:
-        rate = self.tax_service.rate_for(country)
+        rate = self._rates.get(country)
+        if rate is None:
+            started = time.perf_counter()
+            rate = self.tax_service.rate_for(country)
+            took_ms = (time.perf_counter() - started) * 1000
+            print(f"tax rate for {country}: {rate}% in {took_ms:.0f} ms")
+            self._rates[country] = rate
         return (amount_cents * rate + 50) // 100
 
     def quote(

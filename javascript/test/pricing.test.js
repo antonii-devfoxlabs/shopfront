@@ -92,7 +92,7 @@ test('a business at home pays VAT', () => {
   assert.equal(quote.taxCents, 9_025);
 });
 
-test('every quote asks the tax service again', () => {
+test('the tax service is asked once per country', () => {
   const taxService = new TaxService();
   const prices = new PriceCalculator(
     starterCatalog(),
@@ -102,7 +102,7 @@ test('every quote asks the tax service again', () => {
   for (let round = 0; round < 3; round += 1) {
     prices.quote(cartOf({ 'MUG-01': 1 }), 'DE', { today: A_JUNE_DAY });
   }
-  assert.equal(taxService.lookups, 3);
+  assert.equal(taxService.lookups, 1);
 });
 
 test('a country without a VAT rate is an error', () => {
