@@ -17,6 +17,16 @@ export const gateway = new PaymentGateway({
 
 const WALLETS = ['apple_pay', 'google_pay', 'samsung_pay'];
 
+const ACCEPTED = [
+  'card',
+  'paypal',
+  'apple_pay',
+  'google_pay',
+  'samsung_pay',
+  'bank_transfer',
+  'gift_card',
+];
+
 /**
  * Every way to pay fills this slot.
  * @typedef {object} PaymentMethod
@@ -115,6 +125,11 @@ export function payment(method, details) {
   } else {
     throw new UnsupportedPaymentMethodError(method);
   }
+}
+
+// The names of the ways to pay, in the order checkout shows them.
+export function accepted() {
+  return [...ACCEPTED];
 }
 
 // Charge the shopper and return the gateway's transaction id.

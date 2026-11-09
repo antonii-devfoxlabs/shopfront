@@ -9,6 +9,7 @@ from shopfront.payments import (
     PayPal,
     UnsupportedPaymentMethodError,
     Wallet,
+    accepted,
     pay,
     payment,
     refund,
@@ -132,3 +133,15 @@ def test_an_unknown_gift_card_is_declined():
 def test_an_unknown_method_is_an_error():
     with pytest.raises(UnsupportedPaymentMethodError):
         pay("cash", 1_000, {})
+
+
+def test_checkout_offers_every_way_to_pay():
+    assert accepted() == [
+        "card",
+        "paypal",
+        "apple_pay",
+        "google_pay",
+        "samsung_pay",
+        "bank_transfer",
+        "gift_card",
+    ]

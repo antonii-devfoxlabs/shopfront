@@ -18,6 +18,16 @@ gateway = PaymentGateway(merchant=settings.MERCHANT_ID)
 
 WALLETS = ("apple_pay", "google_pay", "samsung_pay")
 
+ACCEPTED = (
+    "card",
+    "paypal",
+    "apple_pay",
+    "google_pay",
+    "samsung_pay",
+    "bank_transfer",
+    "gift_card",
+)
+
 
 class PaymentMethod(Protocol):
     def charge(self, amount_cents: int) -> str: ...
@@ -101,6 +111,11 @@ def payment(method: str, details: dict) -> PaymentMethod:
         return GiftCard(required(details, "code"))
     else:
         raise UnsupportedPaymentMethodError(method)
+
+
+def accepted() -> list[str]:
+    """The names of the ways to pay, in the order checkout shows them."""
+    return list(ACCEPTED)
 
 
 def pay(method: str, amount_cents: int, details: dict) -> str:

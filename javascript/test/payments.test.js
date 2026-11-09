@@ -9,6 +9,7 @@ import {
   PayPal,
   UnsupportedPaymentMethodError,
   Wallet,
+  accepted,
   gateway,
   pay,
   payment,
@@ -142,4 +143,16 @@ test('an unknown gift card is declined', () => {
 
 test('an unknown method is an error', () => {
   assert.throws(() => pay('cash', 1_000, {}), UnsupportedPaymentMethodError);
+});
+
+test('checkout offers every way to pay', () => {
+  assert.deepEqual(accepted(), [
+    'card',
+    'paypal',
+    'apple_pay',
+    'google_pay',
+    'samsung_pay',
+    'bank_transfer',
+    'gift_card',
+  ]);
 });
