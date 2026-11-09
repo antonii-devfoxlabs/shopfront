@@ -6,12 +6,12 @@ export class PaymentDeclinedError extends Error {
   override name = 'PaymentDeclinedError';
 }
 
-export interface Charge {
+export type Charge = {
   id: string;
   kind: string;
   amount: number;
   detail: string | null;
-}
+};
 
 export class PaymentGateway {
   readonly merchant: string;

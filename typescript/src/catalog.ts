@@ -1,12 +1,12 @@
 // The products Shopfront sells, and how many of each are left.
 
-export interface Product {
+export type Product = {
   readonly sku: string;
   readonly name: string;
   readonly priceCents: number;
   readonly weightGrams: number;
   stock: number;
-}
+};
 
 export class UnknownProductError extends Error {
   override name = 'UnknownProductError';

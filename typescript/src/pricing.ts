@@ -8,11 +8,11 @@ export class UnknownCouponError extends Error {
   override name = 'UnknownCouponError';
 }
 
-export interface PriceQuote {
+export type PriceQuote = {
   subtotalCents: number;
   discountCents: number;
   taxCents: number;
-}
+};
 
 export class PriceCalculator {
   readonly catalog: Catalog;

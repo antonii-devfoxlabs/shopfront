@@ -14,10 +14,10 @@ export class SwiftShipError extends Error {
   override name = 'SwiftShipError';
 }
 
-export interface SwiftShipParcel {
+export type SwiftShipParcel = {
   grams: number;
   to: string;
-}
+};
 
 export class SwiftShip {
   quote(parcel: SwiftShipParcel): number {

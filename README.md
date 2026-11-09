@@ -44,6 +44,9 @@ uv run python -m shopfront
 uv run pytest
 ```
 
+uv reads the Python version from `.python-version` (3.14) and
+downloads that Python the first time if it is not installed yet.
+
 Without uv, in a virtual environment:
 
 ```bash

@@ -14,11 +14,11 @@ export class ParcelNowError extends Error {
   override name = 'ParcelNowError';
 }
 
-export interface ParcelNowRate {
+export type ParcelNowRate = {
   amount: string;
   currency: 'EUR';
   service: 'standard';
-}
+};
 
 export class ParcelNowClient {
   readonly account: string;

@@ -13,13 +13,13 @@ export class MissingPaymentDetailError extends Error {
 
 // Every way to pay needs something different, so every field is
 // optional and each branch checks the one it needs.
-export interface PaymentDetails {
+export type PaymentDetails = {
   cardToken?: string;
   payerEmail?: string;
   walletToken?: string;
   orderId?: string;
   code?: string;
-}
+};
 
 export const gateway = new PaymentGateway({
   merchant: settings.merchantId,

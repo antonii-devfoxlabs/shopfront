@@ -1,11 +1,11 @@
 // The mail provider's SDK. It keeps what it sends in an outbox.
 
-export interface Email {
+export type Email = {
   from: string;
   to: string;
   subject: string;
   body: string;
-}
+};
 
 export class Mailer {
   readonly outbox: Email[] = [];

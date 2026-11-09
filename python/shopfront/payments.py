@@ -45,6 +45,7 @@ def pay(method: str, amount_cents: int, details: dict) -> str:
 
 
 def required(details: dict, name: str) -> str:
-    if name not in details:
+    value = details.get(name)
+    if value is None:
         raise MissingPaymentDetailError(name)
-    return details[name]
+    return value

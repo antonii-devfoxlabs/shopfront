@@ -55,6 +55,13 @@ def test_a_missing_detail_is_an_error_not_a_charge():
     assert len(payments.gateway.charges) == charges_before
 
 
+def test_a_detail_set_to_none_is_missing():
+    charges_before = len(payments.gateway.charges)
+    with pytest.raises(MissingPaymentDetailError, match="card_token"):
+        pay("card", 1_000, {"card_token": None})
+    assert len(payments.gateway.charges) == charges_before
+
+
 def test_a_gift_card_pays_down_to_its_balance():
     gateway = PaymentGateway(merchant="test")
     gateway.redeem_gift_card("GIFT-2026-0001", 4_000)
