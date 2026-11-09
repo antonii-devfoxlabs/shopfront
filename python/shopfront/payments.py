@@ -87,7 +87,7 @@ class GiftCard:
         return gateway.top_up_gift_card(self.code, amount_cents)
 
 
-def payment_for(method: str, details: dict) -> PaymentMethod:
+def payment(method: str, details: dict) -> PaymentMethod:
     """Create the way to pay that the method's name stands for."""
     if method == "card":
         return Card(required(details, "card_token"))
@@ -105,12 +105,12 @@ def payment_for(method: str, details: dict) -> PaymentMethod:
 
 def pay(method: str, amount_cents: int, details: dict) -> str:
     """Charge the shopper and return the gateway's transaction id."""
-    return payment_for(method, details).charge(amount_cents)
+    return payment(method, details).charge(amount_cents)
 
 
 def refund(method: str, amount_cents: int, details: dict) -> str:
     """Give the shopper's money back and return the gateway's refund id."""
-    return payment_for(method, details).refund(amount_cents)
+    return payment(method, details).refund(amount_cents)
 
 
 def required(details: dict, name: str) -> str:
