@@ -70,6 +70,7 @@ def test_ordering_again():
         .transaction("txn-0001")
         .build()
     )
+    builder = reorder(previous, next_order_id())
     cart = Cart()
     for sku, quantity in previous.lines.items():
         cart.add(sku, quantity)
@@ -77,21 +78,18 @@ def test_ordering_again():
 
     calculator = PriceCalculator(catalog, TaxService())
     quote = calculator.quote(cart, country, None, date(2026, 7, 15))
+    builder.subtotal(quote.subtotal_cents)
+    builder.discount(quote.discount_cents)
+    builder.tax(quote.tax_cents)
+
     paid_cents = quote.subtotal_cents - quote.discount_cents
     shipping_cents = shipping_cost(cart, catalog, country, paid_cents)
-    total_cents = paid_cents + quote.tax_cents + shipping_cents
+    builder.shipping(shipping_cents)
 
+    total_cents = paid_cents + quote.tax_cents + shipping_cents
     transaction_id = pay("card", total_cents, {"card_token": "tok-4242"})
-    order = reorder(
-        previous,
-        next_order_id(),
-        quote.subtotal_cents,
-        quote.discount_cents,
-        quote.tax_cents,
-        shipping_cents,
-        "card",
-        transaction_id,
-    )
+    builder.paid_by("card").transaction(transaction_id)
+    order = builder.build()
 
     assert order.order_id != previous.order_id
     assert order.customer_name == "Ada"

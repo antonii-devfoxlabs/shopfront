@@ -7,6 +7,7 @@ import {
   formatMoney,
   nextOrderId,
   placeOrder,
+  reorder,
 } from '../src/orders.ts';
 import { Analytics } from '../src/vendor/analytics.ts';
 import { Mailer } from '../src/vendor/mailer.ts';
@@ -63,6 +64,14 @@ test('an order with a part missing is refused', () => {
   assert.throws(() => builder.build(), {
     name: 'IncompleteOrderError',
     message: 'lines',
+  });
+});
+
+test('an order again keeps no prices', () => {
+  const builder = reorder(anOrder(), 'SF-00010');
+  assert.throws(() => builder.build(), {
+    name: 'IncompleteOrderError',
+    message: 'subtotal',
   });
 });
 

@@ -73,27 +73,25 @@ test('ordering again', () => {
     .paidBy('card')
     .transaction('txn-0001')
     .build();
+  const builder = reorder(previous, nextOrderId());
   const cart = new Cart();
   for (const [sku, quantity] of previous.lines) cart.add(sku, quantity);
   const country = previous.shippingCountry;
 
   const calculator = new PriceCalculator(catalog, new TaxService());
   const quote = calculator.quote(cart, country, null, new Date(2026, 6, 15));
+  builder.subtotal(quote.subtotalCents);
+  builder.discount(quote.discountCents);
+  builder.tax(quote.taxCents);
+
   const paidCents = quote.subtotalCents - quote.discountCents;
   const shippingCents = shippingCost(cart, catalog, country, paidCents);
-  const totalCents = paidCents + quote.taxCents + shippingCents;
+  builder.shipping(shippingCents);
 
+  const totalCents = paidCents + quote.taxCents + shippingCents;
   const transactionId = pay('card', totalCents, { cardToken: 'tok-4242' });
-  const order = reorder(
-    previous,
-    nextOrderId(),
-    quote.subtotalCents,
-    quote.discountCents,
-    quote.taxCents,
-    shippingCents,
-    'card',
-    transactionId,
-  );
+  builder.paidBy('card').transaction(transactionId);
+  const order = builder.build();
 
   assert.notEqual(order.orderId, previous.orderId);
   assert.equal(order.customerName, 'Ada');

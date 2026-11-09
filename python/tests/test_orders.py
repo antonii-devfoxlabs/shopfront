@@ -8,6 +8,7 @@ from shopfront.orders import (
     format_money,
     next_order_id,
     place_order,
+    reorder,
 )
 from shopfront.vendor.analytics import Analytics
 from shopfront.vendor.mailer import Mailer
@@ -65,6 +66,12 @@ def test_an_order_without_a_discount_has_none():
 def test_an_order_with_a_part_missing_is_refused():
     builder = OrderBuilder("SF-00009").email("ada@example.com").name("Ada")
     with pytest.raises(IncompleteOrderError, match="lines"):
+        builder.build()
+
+
+def test_an_order_again_keeps_no_prices():
+    builder = reorder(an_order(), "SF-00010")
+    with pytest.raises(IncompleteOrderError, match="subtotal"):
         builder.build()
 
 

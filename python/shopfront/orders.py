@@ -134,30 +134,14 @@ def given[T](value: T | None, part: str) -> T:
     return value
 
 
-def reorder(
-    previous: Order,
-    order_id: str,
-    subtotal_cents: int,
-    discount_cents: int,
-    tax_cents: int,
-    shipping_cents: int,
-    payment_method: str,
-    transaction_id: str,
-) -> Order:
-    """The same items, to the same shopper, at today's prices."""
+def reorder(previous: Order, order_id: str) -> OrderBuilder:
+    """A new order with the parts that stay: who, what and where."""
     return (
         OrderBuilder(order_id)
         .email(previous.customer_email)
         .name(previous.customer_name)
         .lines(previous.lines)
-        .subtotal(subtotal_cents)
-        .discount(discount_cents)
-        .tax(tax_cents)
-        .shipping(shipping_cents)
         .country(previous.shipping_country)
-        .paid_by(payment_method)
-        .transaction(transaction_id)
-        .build()
     )
 
 
