@@ -4,6 +4,10 @@ from shopfront.orders import Order
 from shopfront.payments import PaymentMethod, payment
 
 
+class ReturnRefusedError(Exception):
+    pass
+
+
 class Return:
     """The shopper who paid sends the order back."""
 
@@ -12,7 +16,11 @@ class Return:
         self.details = details
 
     def process(self) -> str:
-        """Give the money back and mark the order returned."""
+        """Give the money back once, and mark the order returned."""
+        if self.order.status != "placed":
+            raise ReturnRefusedError(
+                f"{self.order.order_id} is {self.order.status}"
+            )
         refund_id = self.destination().refund(self.order.total_cents)
         self.order.status = "returned"
         return refund_id

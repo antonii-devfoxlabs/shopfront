@@ -58,3 +58,16 @@ for (const [ReturnClass, details, expected] of EVERY_RETURN) {
     assert.equal(gateway.refunds.length, refundsBefore);
   });
 }
+
+for (const [ReturnClass, details] of EVERY_RETURN) {
+  test(`${ReturnClass.name} returns an order once`, () => {
+    const order = aCardOrder();
+    new ReturnClass(order, details).process();
+    const refundsBefore = gateway.refunds.length;
+    assert.throws(() => new ReturnClass(order, details).process(), {
+      name: 'ReturnRefusedError',
+      message: 'SF-00007 is returned',
+    });
+    assert.equal(gateway.refunds.length, refundsBefore);
+  });
+}

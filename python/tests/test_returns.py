@@ -3,7 +3,7 @@ import pytest
 from shopfront import payments
 from shopfront.orders import Order
 from shopfront.payments import Card, GiftCard
-from shopfront.returns import GiftReturn, Return
+from shopfront.returns import GiftReturn, Return, ReturnRefusedError
 
 
 def a_card_order() -> Order:
@@ -57,4 +57,20 @@ def test_each_return_creates_its_destination(return_class, details, expected):
     refunds_before = len(payments.gateway.refunds)
     destination = return_class(a_card_order(), details).destination()
     assert isinstance(destination, expected)
+    assert len(payments.gateway.refunds) == refunds_before
+
+
+@pytest.mark.parametrize(
+    ("return_class", "details"),
+    [
+        (Return, {"card_token": "tok-4242"}),
+        (GiftReturn, {"code": "GIFT-2026-0001"}),
+    ],
+)
+def test_an_order_is_returned_once(return_class, details):
+    order = a_card_order()
+    return_class(order, details).process()
+    refunds_before = len(payments.gateway.refunds)
+    with pytest.raises(ReturnRefusedError, match="SF-00007 is returned"):
+        return_class(order, details).process()
     assert len(payments.gateway.refunds) == refunds_before

@@ -7,6 +7,10 @@ import {
   type PaymentMethod,
 } from './payments.ts';
 
+export class ReturnRefusedError extends Error {
+  override name = 'ReturnRefusedError';
+}
+
 // The shopper who paid sends the order back.
 export class Return {
   readonly order: Order;
@@ -17,8 +21,13 @@ export class Return {
     this.details = details;
   }
 
-  // Give the money back and mark the order returned.
+  // Give the money back once, and mark the order returned.
   process(): string {
+    if (this.order.status !== 'placed') {
+      throw new ReturnRefusedError(
+        `${this.order.orderId} is ${this.order.status}`,
+      );
+    }
     const refundId = this.destination().refund(this.order.totalCents);
     this.order.status = 'returned';
     return refundId;
