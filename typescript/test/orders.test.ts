@@ -128,6 +128,16 @@ test('an unknown order number is refused', () => {
   );
 });
 
+test('every test starts with an empty order book', () => {
+  assert.throws(() => OrderBook.instance().find('SF-00007'), {
+    message: 'SF-00007',
+  });
+});
+
+test('every test starts with order number one', () => {
+  assert.equal(nextOrderId(), 'SF-00001');
+});
+
 test('the store has one order book', () => {
   assert.equal(OrderBook.instance(), OrderBook.instance());
 });

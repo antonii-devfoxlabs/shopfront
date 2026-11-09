@@ -214,6 +214,11 @@ export class OrderBook {
     return OrderBook.#instance;
   }
 
+  // For tests only: forget the book, so the next ask makes a new one.
+  static reset(): void {
+    OrderBook.#instance = undefined;
+  }
+
   add(order: Order): void {
     this.#orders.set(order.orderId, order);
   }
@@ -223,6 +228,12 @@ export class OrderBook {
     if (order === undefined) throw new UnknownOrderError(orderId);
     return order;
   }
+}
+
+// For tests only: no orders, and numbers from SF-00001 again.
+export function reset(): void {
+  lastOrderNumber = 0;
+  OrderBook.reset();
 }
 
 export function placeOrder(

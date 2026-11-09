@@ -57,7 +57,7 @@ test('a whole order', () => {
 
 test('ordering again', () => {
   const catalog = starterCatalog();
-  const previous = new OrderBuilder('SF-00001')
+  const previous = new OrderBuilder(nextOrderId())
     .email('ada@example.com')
     .name('Ada')
     .lines([

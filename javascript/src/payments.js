@@ -25,6 +25,11 @@ export function gateway() {
   return client;
 }
 
+// For tests only: forget every gateway, with its charges and refunds.
+export function reset() {
+  gateways.clear();
+}
+
 /**
  * Every way to pay fills this slot.
  * @typedef {object} PaymentMethod

@@ -10,7 +10,7 @@
   "scripts": {
     "start": "node src/main.ts",
     "typecheck": "tsc",
-    "test": "tsc && node --test"
+    "test": "tsc && node --test --import ./fresh-store.ts"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

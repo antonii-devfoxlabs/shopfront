@@ -29,6 +29,11 @@ def gateway() -> PaymentGateway:
     return client
 
 
+def reset() -> None:
+    """For tests only: forget every gateway, with its charges and refunds."""
+    _gateways.clear()
+
+
 class PaymentMethod(Protocol):
     def charge(self, amount_cents: int) -> str: ...
 

@@ -35,6 +35,11 @@ export function gateway(): PaymentGateway {
   return client;
 }
 
+// For tests only: forget every gateway, with its charges and refunds.
+export function reset(): void {
+  gateways.clear();
+}
+
 export interface PaymentMethod {
   charge(amountCents: number): string;
   refund(amountCents: number): string;

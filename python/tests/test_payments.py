@@ -144,3 +144,8 @@ def test_the_dutch_shop_charges_its_own_merchant_account(monkeypatch):
     transaction_id = pay("card", 2_500, {"card_token": "tok-4242"})
     assert payments.gateway().merchant == "shopfront-nl"
     assert payments.gateway().charges[-1]["id"] == transaction_id
+
+
+def test_one_payment_one_charge():
+    pay("card", 1_000, {"card_token": "tok-4242"})
+    assert len(payments.gateway().charges) == 1

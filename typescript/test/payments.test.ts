@@ -151,3 +151,8 @@ test('the Dutch shop charges its own merchant account', (context) => {
   assert.equal(gateway().merchant, 'shopfront-nl');
   assert.equal(gateway().charges.at(-1)?.id, transactionId);
 });
+
+test('one payment, one charge', () => {
+  pay('card', 1_000, { cardToken: 'tok-4242' });
+  assert.equal(gateway().charges.length, 1);
+});

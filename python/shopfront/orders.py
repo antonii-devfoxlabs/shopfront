@@ -192,6 +192,11 @@ class OrderBook:
             return cls()
         return cls._instance
 
+    @classmethod
+    def reset(cls) -> None:
+        """For tests only: forget the book, so the next ask makes a new one."""
+        OrderBook._instance = None
+
     def add(self, order: Order) -> None:
         self._orders[order.order_id] = order
 
@@ -200,6 +205,13 @@ class OrderBook:
         if order is None:
             raise UnknownOrderError(order_id)
         return order
+
+
+def reset() -> None:
+    """For tests only: no orders, and numbers from SF-00001 again."""
+    global _last_order_number
+    _last_order_number = 0
+    OrderBook.reset()
 
 
 def place_order(

@@ -60,7 +60,7 @@ def test_a_whole_order():
 def test_ordering_again():
     catalog = starter_catalog()
     previous = (
-        OrderBuilder("SF-00001")
+        OrderBuilder(next_order_id())
         .email("ada@example.com")
         .name("Ada")
         .lines({"MUG-01": 2, "TEA-02": 1})

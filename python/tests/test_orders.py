@@ -122,6 +122,15 @@ def test_an_unknown_order_number_is_refused():
         OrderBook.instance().find("SF-99999")
 
 
+def test_every_test_starts_with_an_empty_order_book():
+    with pytest.raises(UnknownOrderError, match="SF-00007"):
+        OrderBook.instance().find("SF-00007")
+
+
+def test_every_test_starts_with_order_number_one():
+    assert next_order_id() == "SF-00001"
+
+
 def test_the_store_has_one_order_book():
     assert OrderBook.instance() is OrderBook.instance()
     with pytest.raises(RuntimeError, match="the store has one order book"):
