@@ -213,6 +213,7 @@ export class OrderBook {
     return order;
   }
 }
+
 export function placeOrder(order, catalog, mailer, analytics) {
   catalog.takeAllFromStock(order.lines);
   OrderBook.instance().add(order);

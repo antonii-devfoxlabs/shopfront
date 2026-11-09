@@ -224,6 +224,7 @@ export class OrderBook {
     return order;
   }
 }
+
 export function placeOrder(
   order: Order,
   catalog: Catalog,
