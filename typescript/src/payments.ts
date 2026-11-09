@@ -117,7 +117,7 @@ export class GiftCard implements PaymentMethod {
 }
 
 // Create the way to pay that the method's name stands for.
-export function paymentMethod(
+export function paymentFor(
   method: string,
   details: PaymentDetails,
 ): PaymentMethod {
@@ -143,7 +143,7 @@ export function pay(
   amountCents: number,
   details: PaymentDetails,
 ): string {
-  return paymentMethod(method, details).charge(amountCents);
+  return paymentFor(method, details).charge(amountCents);
 }
 
 // Give the shopper's money back and return the gateway's refund id.
@@ -152,7 +152,7 @@ export function refund(
   amountCents: number,
   details: PaymentDetails,
 ): string {
-  return paymentMethod(method, details).refund(amountCents);
+  return paymentFor(method, details).refund(amountCents);
 }
 
 function required(value: string | undefined, name: string): string {

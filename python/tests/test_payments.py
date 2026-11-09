@@ -10,7 +10,7 @@ from shopfront.payments import (
     UnsupportedPaymentMethodError,
     Wallet,
     pay,
-    payment_method,
+    payment_for,
     refund,
 )
 from shopfront.vendor.payment_gateway import (
@@ -84,9 +84,9 @@ def test_each_way_to_pay_charges_on_its_own(payment, kind):
         ("gift_card", {"code": "GIFT-2026-0001"}, GiftCard),
     ],
 )
-def test_payment_method_creates_without_charging(method, details, expected):
+def test_payment_for_creates_without_charging(method, details, expected):
     charges_before = len(payments.gateway.charges)
-    assert isinstance(payment_method(method, details), expected)
+    assert isinstance(payment_for(method, details), expected)
     assert len(payments.gateway.charges) == charges_before
 
 

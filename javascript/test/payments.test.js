@@ -11,7 +11,7 @@ import {
   Wallet,
   gateway,
   pay,
-  paymentMethod,
+  paymentFor,
   refund,
 } from '../src/payments.js';
 import {
@@ -80,9 +80,9 @@ const EVERY_CLASS = [
 ];
 
 for (const [method, details, expected] of EVERY_CLASS) {
-  test(`paymentMethod creates ${method} without charging`, () => {
+  test(`paymentFor creates ${method} without charging`, () => {
     const chargesBefore = gateway.charges.length;
-    assert.ok(paymentMethod(method, details) instanceof expected);
+    assert.ok(paymentFor(method, details) instanceof expected);
     assert.equal(gateway.charges.length, chargesBefore);
   });
 }

@@ -101,7 +101,7 @@ export class GiftCard {
  * Create the way to pay that the method's name stands for.
  * @returns {PaymentMethod}
  */
-export function paymentMethod(method, details) {
+export function paymentFor(method, details) {
   if (method === 'card') {
     return new Card(required(details, 'cardToken'));
   } else if (method === 'paypal') {
@@ -119,12 +119,12 @@ export function paymentMethod(method, details) {
 
 // Charge the shopper and return the gateway's transaction id.
 export function pay(method, amountCents, details) {
-  return paymentMethod(method, details).charge(amountCents);
+  return paymentFor(method, details).charge(amountCents);
 }
 
 // Give the shopper's money back and return the gateway's refund id.
 export function refund(method, amountCents, details) {
-  return paymentMethod(method, details).refund(amountCents);
+  return paymentFor(method, details).refund(amountCents);
 }
 
 // A detail set to null is as missing as one left out, as in Python.
