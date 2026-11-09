@@ -5,6 +5,7 @@ import { Cart } from '../src/cart.ts';
 import { starterCatalog } from '../src/catalog.ts';
 import { DUTCH_SHOP, GERMAN_SHOP, type Settings } from '../src/settings.ts';
 import {
+  NoShippingError,
   type ShippingQuote,
   boxRouteQuote,
   cartWeightGrams,
@@ -12,8 +13,8 @@ import {
   shippingCost,
   swiftShipQuote,
 } from '../src/shipping.ts';
-import { ParcelNowClient, ParcelNowError } from '../src/vendor/parcelnow.ts';
-import { SwiftShip } from '../src/vendor/swiftship.ts';
+import { ParcelNowClient } from '../src/vendor/parcelnow.ts';
+import { SwiftShip, SwiftShipError } from '../src/vendor/swiftship.ts';
 
 function cartOf(sku: string, quantity: number): Cart {
   const cart = new Cart();
@@ -171,6 +172,22 @@ test('a parcel to Poland goes by BoxRoute', () => {
   );
 });
 
+test('a parcel to Austria goes by SwiftShip', () => {
+  const cart = cartOf('MUG-01', 2);
+  // 700 g to Austria: only SwiftShip ships there, 7 x 0.80.
+  assert.equal(
+    shippingCost(
+      cart,
+      starterCatalog(),
+      'AT',
+      2_500,
+      providersFor(GERMAN_SHOP),
+      GERMAN_SHOP,
+    ),
+    560,
+  );
+});
+
 test('the threshold comes from the settings', () => {
   const lower = { ...GERMAN_SHOP, freeShippingFromCents: 1_000 };
   const cart = cartOf('MUG-01', 1);
@@ -256,18 +273,18 @@ test('heavy parcels abroad go as freight', () => {
   );
 });
 
-test('ParcelNow does not ship everywhere', () => {
+test('nobody ships to Spain', () => {
   assert.throws(
     () =>
       shippingCost(
         cartOf('MUG-01', 1),
         starterCatalog(),
-        'US',
+        'ES',
         1_250,
         providersFor(GERMAN_SHOP),
         GERMAN_SHOP,
       ),
-    ParcelNowError,
+    { constructor: NoShippingError, message: 'ES' },
   );
 });
 
@@ -298,5 +315,17 @@ test('the cheapest provider wins', () => {
   assert.equal(
     shippingCost(cart, starterCatalog(), 'FR', 1_250, providers, GERMAN_SHOP),
     450,
+  );
+});
+
+test('a provider that does not ship there is skipped', () => {
+  function nowhere(grams: number, country: string): number {
+    throw new SwiftShipError(`Unsupported country: ${country}`);
+  }
+  const providers: ShippingQuote[] = [nowhere, () => 700];
+  const cart = cartOf('MUG-01', 1);
+  assert.equal(
+    shippingCost(cart, starterCatalog(), 'FR', 1_250, providers, GERMAN_SHOP),
+    700,
   );
 });

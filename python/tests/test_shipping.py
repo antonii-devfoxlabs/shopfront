@@ -6,6 +6,7 @@ from shopfront.cart import Cart
 from shopfront.catalog import starter_catalog
 from shopfront.settings import DUTCH_SHOP, GERMAN_SHOP, Settings
 from shopfront.shipping import (
+    NoShippingError,
     ShippingQuote,
     boxroute_quote,
     cart_weight_grams,
@@ -13,8 +14,8 @@ from shopfront.shipping import (
     shipping_cost,
     swiftship_quote,
 )
-from shopfront.vendor.parcelnow import ParcelNowClient, ParcelNowError
-from shopfront.vendor.swiftship import SwiftShip
+from shopfront.vendor.parcelnow import ParcelNowClient
+from shopfront.vendor.swiftship import SwiftShip, SwiftShipError
 
 
 def cart_of(sku: str, quantity: int) -> Cart:
@@ -173,6 +174,22 @@ def test_a_parcel_to_poland_goes_by_boxroute():
     )
 
 
+def test_a_parcel_to_austria_goes_by_swiftship():
+    cart = cart_of("MUG-01", 2)
+    # 700 g to Austria: only SwiftShip ships there, 7 x 0.80.
+    assert (
+        shipping_cost(
+            cart,
+            starter_catalog(),
+            "AT",
+            2_500,
+            providers_for(GERMAN_SHOP),
+            GERMAN_SHOP,
+        )
+        == 560
+    )
+
+
 def test_the_threshold_comes_from_the_settings():
     lower = copy.replace(GERMAN_SHOP, free_shipping_from_cents=1_000)
     cart = cart_of("MUG-01", 1)
@@ -253,12 +270,12 @@ def test_heavy_parcels_abroad_go_as_freight():
     )
 
 
-def test_parcelnow_does_not_ship_everywhere():
-    with pytest.raises(ParcelNowError):
+def test_nobody_ships_to_spain():
+    with pytest.raises(NoShippingError, match="ES"):
         shipping_cost(
             cart_of("MUG-01", 1),
             starter_catalog(),
-            "US",
+            "ES",
             1_250,
             providers_for(GERMAN_SHOP),
             GERMAN_SHOP,
@@ -295,4 +312,18 @@ def test_the_cheapest_provider_wins():
             cart, starter_catalog(), "FR", 1_250, providers, GERMAN_SHOP
         )
         == 450
+    )
+
+
+def test_a_provider_that_does_not_ship_there_is_skipped():
+    def nowhere(grams: int, country: str) -> int:
+        raise SwiftShipError(f"Unsupported country: {country}")
+
+    providers: list[ShippingQuote] = [nowhere, lambda grams, country: 700]
+    cart = cart_of("MUG-01", 1)
+    assert (
+        shipping_cost(
+            cart, starter_catalog(), "FR", 1_250, providers, GERMAN_SHOP
+        )
+        == 700
     )

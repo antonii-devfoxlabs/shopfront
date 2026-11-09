@@ -1,6 +1,12 @@
 // What it costs to ship a cart.
 
-import { estimate } from './vendor/boxroute.js';
+import { BoxRouteError, estimate } from './vendor/boxroute.js';
+import { ParcelNowError } from './vendor/parcelnow.js';
+import { SwiftShipError } from './vendor/swiftship.js';
+
+export class NoShippingError extends Error {
+  name = 'NoShippingError';
+}
 
 /**
  * Every shipping provider fills this slot: a function of a parcel's
@@ -67,7 +73,22 @@ export function shippingCost(
     // Heavy parcels abroad go as freight: one flat price.
     return 3_500;
   }
-  return Math.min(
-    ...providers.map((provider) => provider(weightGrams, country)),
-  );
+  const costs = [];
+  for (const provider of providers) {
+    try {
+      costs.push(provider(weightGrams, country));
+    } catch (error) {
+      if (
+        error instanceof ParcelNowError ||
+        error instanceof SwiftShipError ||
+        error instanceof BoxRouteError
+      ) {
+        // This provider does not ship there: ask the others.
+        continue;
+      }
+      throw error;
+    }
+  }
+  if (costs.length === 0) throw new NoShippingError(country);
+  return Math.min(...costs);
 }

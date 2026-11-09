@@ -5,9 +5,14 @@ from collections.abc import Callable
 from shopfront.cart import Cart
 from shopfront.catalog import Catalog
 from shopfront.settings import Settings
-from shopfront.vendor.boxroute import estimate
-from shopfront.vendor.parcelnow import ParcelNowClient
-from shopfront.vendor.swiftship import SwiftShip
+from shopfront.vendor.boxroute import BoxRouteError, estimate
+from shopfront.vendor.parcelnow import ParcelNowClient, ParcelNowError
+from shopfront.vendor.swiftship import SwiftShip, SwiftShipError
+
+
+class NoShippingError(Exception):
+    pass
+
 
 # Every shipping provider fills this slot: a function of a parcel's
 # grams and its country that answers what the parcel costs, in cents.
@@ -62,4 +67,13 @@ def shipping_cost(
     elif weight_grams > 5_000:
         # Heavy parcels abroad go as freight: one flat price.
         return 3_500
-    return min(provider(weight_grams, country) for provider in providers)
+    costs = []
+    for provider in providers:
+        try:
+            costs.append(provider(weight_grams, country))
+        except ParcelNowError, SwiftShipError, BoxRouteError:
+            # This provider does not ship there: ask the others.
+            continue
+    if not costs:
+        raise NoShippingError(country)
+    return min(costs)

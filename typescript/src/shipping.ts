@@ -3,9 +3,13 @@
 import type { Cart } from './cart.ts';
 import type { Catalog } from './catalog.ts';
 import type { Settings } from './settings.ts';
-import { estimate } from './vendor/boxroute.ts';
-import type { ParcelNowClient } from './vendor/parcelnow.ts';
-import type { SwiftShip } from './vendor/swiftship.ts';
+import { BoxRouteError, estimate } from './vendor/boxroute.ts';
+import { type ParcelNowClient, ParcelNowError } from './vendor/parcelnow.ts';
+import { type SwiftShip, SwiftShipError } from './vendor/swiftship.ts';
+
+export class NoShippingError extends Error {
+  override name = 'NoShippingError';
+}
 
 // Every shipping provider fills this slot: a function of a parcel's
 // grams and its country that answers what the parcel costs, in cents.
@@ -57,7 +61,22 @@ export function shippingCost(
     // Heavy parcels abroad go as freight: one flat price.
     return 3_500;
   }
-  return Math.min(
-    ...providers.map((provider) => provider(weightGrams, country)),
-  );
+  const costs: number[] = [];
+  for (const provider of providers) {
+    try {
+      costs.push(provider(weightGrams, country));
+    } catch (error) {
+      if (
+        error instanceof ParcelNowError ||
+        error instanceof SwiftShipError ||
+        error instanceof BoxRouteError
+      ) {
+        // This provider does not ship there: ask the others.
+        continue;
+      }
+      throw error;
+    }
+  }
+  if (costs.length === 0) throw new NoShippingError(country);
+  return Math.min(...costs);
 }
