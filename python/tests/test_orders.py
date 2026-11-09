@@ -7,6 +7,7 @@ from shopfront.orders import (
     OrderBuilder,
     format_money,
     next_order_id,
+    packing_slip,
     place_order,
     reorder,
 )
@@ -106,6 +107,24 @@ def test_an_order_with_a_short_line_takes_nothing_and_sends_nothing():
     assert catalog.find("MUG-01").stock == 40
     assert mailer.outbox == []
     assert analytics.events == []
+
+
+def test_a_packing_slip_lists_every_line():
+    assert packing_slip(an_order()) == ["2 x MUG-01"]
+
+
+def test_a_parcel_of_40_eur_or_more_gets_a_free_sample():
+    order = (
+        reorder(an_order(), "SF-00011")
+        .lines({"MUG-01": 4})
+        .subtotal(5_000)
+        .tax(950)
+        .shipping(0)
+        .paid_by("card")
+        .transaction("txn-0003")
+        .build()
+    )
+    assert packing_slip(order) == ["4 x MUG-01", "1 x TEA-SAMPLE"]
 
 
 def test_money_is_shown_in_euros():

@@ -145,6 +145,18 @@ def reorder(previous: Order, order_id: str) -> OrderBuilder:
     )
 
 
+FREE_SAMPLE = "TEA-SAMPLE"
+FREE_SAMPLE_FROM_CENTS = 4_000
+
+
+def packing_slip(order: Order) -> list[str]:
+    """What goes into the parcel, one line per product."""
+    lines = order.lines
+    if order.total_cents >= FREE_SAMPLE_FROM_CENTS:
+        lines[FREE_SAMPLE] = 1
+    return [f"{quantity} x {sku}" for sku, quantity in lines.items()]
+
+
 def place_order(
     order: Order, catalog: Catalog, mailer: Mailer, analytics: Analytics
 ) -> None:

@@ -6,6 +6,7 @@ import {
   OrderBuilder,
   formatMoney,
   nextOrderId,
+  packingSlip,
   placeOrder,
   reorder,
 } from '../src/orders.ts';
@@ -114,6 +115,22 @@ test('an order with a short line takes nothing and sends nothing', () => {
   assert.equal(catalog.find('MUG-01').stock, 40);
   assert.deepEqual(mailer.outbox, []);
   assert.deepEqual(analytics.events, []);
+});
+
+test('a packing slip lists every line', () => {
+  assert.deepEqual(packingSlip(anOrder()), ['2 x MUG-01']);
+});
+
+test('a parcel of 40 EUR or more gets a free sample', () => {
+  const order = reorder(anOrder(), 'SF-00011')
+    .lines([['MUG-01', 4]])
+    .subtotal(5_000)
+    .tax(950)
+    .shipping(0)
+    .paidBy('card')
+    .transaction('txn-0003')
+    .build();
+  assert.deepEqual(packingSlip(order), ['4 x MUG-01', '1 x TEA-SAMPLE']);
 });
 
 test('money is shown in euros', () => {

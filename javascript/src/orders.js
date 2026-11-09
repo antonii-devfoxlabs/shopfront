@@ -150,6 +150,16 @@ export function reorder(previous, orderId) {
     .country(previous.shippingCountry);
 }
 
+const FREE_SAMPLE = 'TEA-SAMPLE';
+const FREE_SAMPLE_FROM_CENTS = 4_000;
+
+// What goes into the parcel, one line per product.
+export function packingSlip(order) {
+  const lines = order.lines;
+  if (order.totalCents >= FREE_SAMPLE_FROM_CENTS) lines.set(FREE_SAMPLE, 1);
+  return [...lines].map(([sku, quantity]) => `${quantity} x ${sku}`);
+}
+
 export function placeOrder(order, catalog, mailer, analytics) {
   catalog.takeAllFromStock(order.lines);
   mailer.send({
