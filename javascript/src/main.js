@@ -17,6 +17,7 @@ import {
 } from './providers.js';
 import { GERMAN_SHOP } from './settings.js';
 import { shippingCost } from './shipping.js';
+import { CachedRates, TimedRates } from './taxes.js';
 import { Analytics } from './vendor/analytics.js';
 import { Mailer } from './vendor/mailer.js';
 import { ParcelNowClient } from './vendor/parcelnow.js';
@@ -38,7 +39,9 @@ const cart = new Cart();
 cart.add('MUG-01', 2);
 cart.add('TEA-02');
 
-const calculator = new PriceCalculator(catalog, new TaxService(), shop);
+// Each rate is asked once, and each real lookup is timed and logged.
+const taxes = new CachedRates(new TimedRates(new TaxService(), console.log));
+const calculator = new PriceCalculator(catalog, taxes, shop);
 const quote = calculator.quote(cart, 'DE', {
   today: new Date(),
   coupon: 'WELCOME10',

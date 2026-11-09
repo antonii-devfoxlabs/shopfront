@@ -4,9 +4,16 @@ export class UnknownCouponError extends Error {
   name = 'UnknownCouponError';
 }
 
-export class PriceCalculator {
-  #rates = new Map();
+/**
+ * The calculator's slot for tax rates; the tax service fills it.
+ * @typedef {object} TaxRates
+ * @property {(country: string) => number} rateFor
+ */
 
+export class PriceCalculator {
+  /**
+   * @param {TaxRates} taxService
+   */
   constructor(catalog, taxService, shop) {
     this.catalog = catalog;
     this.taxService = taxService;
@@ -38,16 +45,7 @@ export class PriceCalculator {
   }
 
   tax(amountCents, country) {
-    let rate = this.#rates.get(country);
-    if (rate === undefined) {
-      const started = performance.now();
-      rate = this.taxService.rateFor(country);
-      const tookMs = performance.now() - started;
-      console.log(
-        `tax rate for ${country}: ${rate}% in ${tookMs.toFixed(0)} ms`,
-      );
-      this.#rates.set(country, rate);
-    }
+    const rate = this.taxService.rateFor(country);
     return Math.floor((amountCents * rate + 50) / 100);
   }
 

@@ -1,17 +1,22 @@
 """What a cart costs: the subtotal, the discount and the tax."""
 
-import time
 from dataclasses import dataclass
 from datetime import date
+from typing import Protocol
 
 from shopfront.cart import Cart
 from shopfront.catalog import Catalog
 from shopfront.settings import Settings
-from shopfront.vendor.tax_service import TaxService
 
 
 class UnknownCouponError(Exception):
     pass
+
+
+class TaxRates(Protocol):
+    """The calculator's slot for tax rates; the tax service fills it."""
+
+    def rate_for(self, country: str) -> int: ...
 
 
 @dataclass
@@ -23,12 +28,11 @@ class PriceQuote:
 
 class PriceCalculator:
     def __init__(
-        self, catalog: Catalog, tax_service: TaxService, shop: Settings
+        self, catalog: Catalog, tax_service: TaxRates, shop: Settings
     ) -> None:
         self.catalog = catalog
         self.tax_service = tax_service
         self.shop = shop
-        self._rates: dict[str, int] = {}
 
     def subtotal(self, cart: Cart) -> int:
         return sum(
@@ -52,13 +56,7 @@ class PriceCalculator:
         return 0
 
     def tax(self, amount_cents: int, country: str) -> int:
-        rate = self._rates.get(country)
-        if rate is None:
-            started = time.perf_counter()
-            rate = self.tax_service.rate_for(country)
-            took_ms = (time.perf_counter() - started) * 1000
-            print(f"tax rate for {country}: {rate}% in {took_ms:.0f} ms")
-            self._rates[country] = rate
+        rate = self.tax_service.rate_for(country)
         return (amount_cents * rate + 50) // 100
 
     def quote(

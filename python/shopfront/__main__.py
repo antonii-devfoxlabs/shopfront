@@ -19,6 +19,7 @@ from shopfront.providers import (
 )
 from shopfront.settings import GERMAN_SHOP
 from shopfront.shipping import ShippingQuote, shipping_cost
+from shopfront.taxes import CachedRates, TimedRates
 from shopfront.vendor.analytics import Analytics
 from shopfront.vendor.mailer import Mailer
 from shopfront.vendor.parcelnow import ParcelNowClient
@@ -41,7 +42,9 @@ def main() -> None:
     cart.add("MUG-01", 2)
     cart.add("TEA-02")
 
-    calculator = PriceCalculator(catalog, TaxService(), shop)
+    # Each rate is asked once, and each real lookup is timed and logged.
+    taxes = CachedRates(TimedRates(TaxService(), print))
+    calculator = PriceCalculator(catalog, taxes, shop)
     quote = calculator.quote(
         cart, "DE", today=date.today(), coupon="WELCOME10"
     )

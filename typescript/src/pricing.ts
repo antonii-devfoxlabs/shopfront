@@ -3,10 +3,14 @@
 import type { Cart } from './cart.ts';
 import type { Catalog } from './catalog.ts';
 import type { Settings } from './settings.ts';
-import type { TaxService } from './vendor/taxService.ts';
 
 export class UnknownCouponError extends Error {
   override name = 'UnknownCouponError';
+}
+
+// The calculator's slot for tax rates; the tax service fills it.
+export interface TaxRates {
+  rateFor(country: string): number;
 }
 
 export type PriceQuote = {
@@ -23,11 +27,10 @@ export type QuoteOptions = {
 
 export class PriceCalculator {
   readonly catalog: Catalog;
-  readonly taxService: TaxService;
+  readonly taxService: TaxRates;
   readonly shop: Settings;
-  readonly #rates = new Map<string, number>();
 
-  constructor(catalog: Catalog, taxService: TaxService, shop: Settings) {
+  constructor(catalog: Catalog, taxService: TaxRates, shop: Settings) {
     this.catalog = catalog;
     this.taxService = taxService;
     this.shop = shop;
@@ -62,16 +65,7 @@ export class PriceCalculator {
   }
 
   tax(amountCents: number, country: string): number {
-    let rate = this.#rates.get(country);
-    if (rate === undefined) {
-      const started = performance.now();
-      rate = this.taxService.rateFor(country);
-      const tookMs = performance.now() - started;
-      console.log(
-        `tax rate for ${country}: ${rate}% in ${tookMs.toFixed(0)} ms`,
-      );
-      this.#rates.set(country, rate);
-    }
+    const rate = this.taxService.rateFor(country);
     return Math.floor((amountCents * rate + 50) / 100);
   }
 
