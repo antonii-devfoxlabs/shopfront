@@ -3,7 +3,7 @@ import { test } from 'node:test';
 
 import { Order } from '../src/orders.ts';
 import { Card, GiftCard, gateway } from '../src/payments.ts';
-import { GiftReturn, Return } from '../src/returns.ts';
+import { GiftReturn, Return, returnFor } from '../src/returns.ts';
 
 function aCardOrder() {
   return new Order(
@@ -71,3 +71,20 @@ for (const [ReturnClass, details] of EVERY_RETURN) {
     assert.equal(gateway.refunds.length, refundsBefore);
   });
 }
+
+for (const [kind, expected] of [
+  ['standard', Return],
+  ['gift', GiftReturn],
+] as const) {
+  test(`the ${kind} kind creates a ${expected.name}`, () => {
+    const created = returnFor(kind, aCardOrder(), {});
+    assert.equal(created.constructor, expected);
+  });
+}
+
+test('an unknown kind is refused', () => {
+  assert.throws(() => returnFor('exchange', aCardOrder(), {}), {
+    name: 'UnsupportedReturnError',
+    message: 'exchange',
+  });
+});

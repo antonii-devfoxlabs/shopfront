@@ -3,7 +3,13 @@ import pytest
 from shopfront import payments
 from shopfront.orders import Order
 from shopfront.payments import Card, GiftCard
-from shopfront.returns import GiftReturn, Return, ReturnRefusedError
+from shopfront.returns import (
+    GiftReturn,
+    Return,
+    ReturnRefusedError,
+    UnsupportedReturnError,
+    return_for,
+)
 
 
 def a_card_order() -> Order:
@@ -74,3 +80,17 @@ def test_an_order_is_returned_once(return_class, details):
     with pytest.raises(ReturnRefusedError, match="SF-00007 is returned"):
         return_class(order, details).process()
     assert len(payments.gateway.refunds) == refunds_before
+
+
+@pytest.mark.parametrize(
+    ("kind", "expected"),
+    [("standard", Return), ("gift", GiftReturn)],
+)
+def test_each_kind_creates_its_return(kind, expected):
+    created = return_for(kind, a_card_order(), {})
+    assert type(created) is expected
+
+
+def test_an_unknown_kind_is_refused():
+    with pytest.raises(UnsupportedReturnError, match="exchange"):
+        return_for("exchange", a_card_order(), {})

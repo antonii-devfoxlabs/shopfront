@@ -6,6 +6,10 @@ export class ReturnRefusedError extends Error {
   name = 'ReturnRefusedError';
 }
 
+export class UnsupportedReturnError extends Error {
+  name = 'UnsupportedReturnError';
+}
+
 // The shopper who paid sends the order back.
 export class Return {
   constructor(order, details) {
@@ -36,4 +40,18 @@ export class GiftReturn extends Return {
   destination() {
     return payment('gift_card', this.details);
   }
+}
+
+const RETURNS = new Map([
+  ['standard', Return],
+  ['gift', GiftReturn],
+]);
+
+// Create the return that the kind's name stands for.
+export function returnFor(kind, order, details) {
+  const ReturnClass = RETURNS.get(kind);
+  if (ReturnClass === undefined) {
+    throw new UnsupportedReturnError(kind);
+  }
+  return new ReturnClass(order, details);
 }
