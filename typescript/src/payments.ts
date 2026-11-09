@@ -1,4 +1,4 @@
-// Taking the money, in whichever way the shopper chose.
+// Taking the money, and giving it back, in whichever way the shopper chose.
 
 import { settings } from './settings.ts';
 import { PaymentGateway } from './vendor/paymentGateway.ts';
@@ -29,6 +29,7 @@ const WALLETS = ['apple_pay', 'google_pay', 'samsung_pay'];
 
 export interface PaymentMethod {
   charge(amountCents: number): string;
+  refund(amountCents: number): string;
 }
 
 export class Card implements PaymentMethod {
@@ -41,6 +42,10 @@ export class Card implements PaymentMethod {
   charge(amountCents: number): string {
     return gateway.chargeCard(this.cardToken, amountCents);
   }
+
+  refund(amountCents: number): string {
+    return gateway.refundCard(this.cardToken, amountCents);
+  }
 }
 
 export class PayPal implements PaymentMethod {
@@ -52,6 +57,10 @@ export class PayPal implements PaymentMethod {
 
   charge(amountCents: number): string {
     return gateway.chargePaypal(this.payerEmail, amountCents);
+  }
+
+  refund(amountCents: number): string {
+    return gateway.refundPaypal(this.payerEmail, amountCents);
   }
 }
 
@@ -67,6 +76,10 @@ export class Wallet implements PaymentMethod {
   charge(amountCents: number): string {
     return gateway.chargeWallet(this.wallet, this.walletToken, amountCents);
   }
+
+  refund(amountCents: number): string {
+    return gateway.refundWallet(this.wallet, this.walletToken, amountCents);
+  }
 }
 
 export class BankTransfer implements PaymentMethod {
@@ -80,6 +93,11 @@ export class BankTransfer implements PaymentMethod {
     const reference = `SHOPFRONT-${this.orderId}`;
     return gateway.expectTransfer(amountCents, reference);
   }
+
+  refund(amountCents: number): string {
+    const reference = `SHOPFRONT-${this.orderId}`;
+    return gateway.sendTransfer(amountCents, reference);
+  }
 }
 
 export class GiftCard implements PaymentMethod {
@@ -91,6 +109,10 @@ export class GiftCard implements PaymentMethod {
 
   charge(amountCents: number): string {
     return gateway.redeemGiftCard(this.code, amountCents);
+  }
+
+  refund(amountCents: number): string {
+    return gateway.topUpGiftCard(this.code, amountCents);
   }
 }
 
@@ -116,6 +138,30 @@ export function pay(
     throw new UnsupportedPaymentMethodError(method);
   }
   return payment.charge(amountCents);
+}
+
+// Give the shopper's money back and return the gateway's refund id.
+export function refund(
+  method: string,
+  amountCents: number,
+  details: PaymentDetails,
+): string {
+  let payment: PaymentMethod;
+  if (method === 'card') {
+    payment = new Card(required(details.cardToken, 'cardToken'));
+  } else if (method === 'paypal') {
+    payment = new PayPal(required(details.payerEmail, 'payerEmail'));
+  } else if (WALLETS.includes(method)) {
+    const walletToken = required(details.walletToken, 'walletToken');
+    payment = new Wallet(method, walletToken);
+  } else if (method === 'bank_transfer') {
+    payment = new BankTransfer(required(details.orderId, 'orderId'));
+  } else if (method === 'gift_card') {
+    payment = new GiftCard(required(details.code, 'code'));
+  } else {
+    throw new UnsupportedPaymentMethodError(method);
+  }
+  return payment.refund(amountCents);
 }
 
 function required(value: string | undefined, name: string): string {

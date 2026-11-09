@@ -1,4 +1,4 @@
-// The payment gateway's SDK: one client, a call per way to pay.
+// The payment gateway's SDK: one client, a call per way to pay or refund.
 
 export const DECLINED_TOKEN = 'declined';
 
@@ -8,6 +8,7 @@ export class PaymentDeclinedError extends Error {
 
 export class PaymentGateway {
   charges = [];
+  refunds = [];
   giftCards = new Map([['GIFT-2026-0001', 5_000]]);
 
   constructor({ merchant }) {
@@ -48,9 +49,40 @@ export class PaymentGateway {
     return this.#record('gift_card', amountCents, code);
   }
 
+  refundCard(cardToken, amountCents) {
+    return this.#recordRefund('card', amountCents, null);
+  }
+
+  refundPaypal(payerEmail, amountCents) {
+    return this.#recordRefund('paypal', amountCents, payerEmail);
+  }
+
+  refundWallet(wallet, walletToken, amountCents) {
+    return this.#recordRefund(wallet, amountCents, null);
+  }
+
+  sendTransfer(amountCents, reference) {
+    return this.#recordRefund('bank_transfer', amountCents, reference);
+  }
+
+  topUpGiftCard(code, amountCents) {
+    const balance = this.giftCards.get(code);
+    if (balance === undefined) {
+      throw new PaymentDeclinedError(`No gift card ${code}`);
+    }
+    this.giftCards.set(code, balance + amountCents);
+    return this.#recordRefund('gift_card', amountCents, code);
+  }
+
   #record(kind, amountCents, detail) {
     const id = `txn-${String(this.charges.length + 1).padStart(4, '0')}`;
     this.charges.push({ id, kind, amount: amountCents, detail });
+    return id;
+  }
+
+  #recordRefund(kind, amountCents, detail) {
+    const id = `rfd-${String(this.refunds.length + 1).padStart(4, '0')}`;
+    this.refunds.push({ id, kind, amount: amountCents, detail });
     return id;
   }
 }

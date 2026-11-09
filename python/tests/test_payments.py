@@ -10,6 +10,7 @@ from shopfront.payments import (
     UnsupportedPaymentMethodError,
     Wallet,
     pay,
+    refund,
 )
 from shopfront.vendor.payment_gateway import (
     PaymentDeclinedError,
@@ -21,22 +22,33 @@ def last_charge() -> dict:
     return payments.gateway.charges[-1]
 
 
-@pytest.mark.parametrize(
-    ("method", "details", "detail"),
-    [
-        ("card", {"card_token": "tok-4242"}, None),
-        ("paypal", {"payer_email": "ada@example.com"}, "ada@example.com"),
-        ("apple_pay", {"wallet_token": "wallet-1"}, None),
-        ("google_pay", {"wallet_token": "wallet-2"}, None),
-        ("samsung_pay", {"wallet_token": "wallet-3"}, None),
-        ("bank_transfer", {"order_id": "SF-00042"}, "SHOPFRONT-SF-00042"),
-        ("gift_card", {"code": "GIFT-2026-0001"}, "GIFT-2026-0001"),
-    ],
-)
+EVERY_METHOD = [
+    ("card", {"card_token": "tok-4242"}, None),
+    ("paypal", {"payer_email": "ada@example.com"}, "ada@example.com"),
+    ("apple_pay", {"wallet_token": "wallet-1"}, None),
+    ("google_pay", {"wallet_token": "wallet-2"}, None),
+    ("samsung_pay", {"wallet_token": "wallet-3"}, None),
+    ("bank_transfer", {"order_id": "SF-00042"}, "SHOPFRONT-SF-00042"),
+    ("gift_card", {"code": "GIFT-2026-0001"}, "GIFT-2026-0001"),
+]
+
+
+@pytest.mark.parametrize(("method", "details", "detail"), EVERY_METHOD)
 def test_every_method_charges_the_gateway(method, details, detail):
     transaction_id = pay(method, 1_000, details)
     assert last_charge() == {
         "id": transaction_id,
+        "kind": method,
+        "amount": 1_000,
+        "detail": detail,
+    }
+
+
+@pytest.mark.parametrize(("method", "details", "detail"), EVERY_METHOD)
+def test_every_method_refunds_through_the_gateway(method, details, detail):
+    refund_id = refund(method, 1_000, details)
+    assert payments.gateway.refunds[-1] == {
+        "id": refund_id,
         "kind": method,
         "amount": 1_000,
         "detail": detail,

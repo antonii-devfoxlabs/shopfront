@@ -1,4 +1,4 @@
-// Taking the money, in whichever way the shopper chose.
+// Taking the money, and giving it back, in whichever way the shopper chose.
 
 import { settings } from './settings.js';
 import { PaymentGateway } from './vendor/paymentGateway.js';
@@ -21,6 +21,7 @@ const WALLETS = ['apple_pay', 'google_pay', 'samsung_pay'];
  * Every way to pay fills this slot.
  * @typedef {object} PaymentMethod
  * @property {(amountCents: number) => string} charge
+ * @property {(amountCents: number) => string} refund
  */
 
 export class Card {
@@ -31,6 +32,10 @@ export class Card {
   charge(amountCents) {
     return gateway.chargeCard(this.cardToken, amountCents);
   }
+
+  refund(amountCents) {
+    return gateway.refundCard(this.cardToken, amountCents);
+  }
 }
 
 export class PayPal {
@@ -40,6 +45,10 @@ export class PayPal {
 
   charge(amountCents) {
     return gateway.chargePaypal(this.payerEmail, amountCents);
+  }
+
+  refund(amountCents) {
+    return gateway.refundPaypal(this.payerEmail, amountCents);
   }
 }
 
@@ -52,6 +61,10 @@ export class Wallet {
   charge(amountCents) {
     return gateway.chargeWallet(this.wallet, this.walletToken, amountCents);
   }
+
+  refund(amountCents) {
+    return gateway.refundWallet(this.wallet, this.walletToken, amountCents);
+  }
 }
 
 export class BankTransfer {
@@ -63,6 +76,11 @@ export class BankTransfer {
     const reference = `SHOPFRONT-${this.orderId}`;
     return gateway.expectTransfer(amountCents, reference);
   }
+
+  refund(amountCents) {
+    const reference = `SHOPFRONT-${this.orderId}`;
+    return gateway.sendTransfer(amountCents, reference);
+  }
 }
 
 export class GiftCard {
@@ -72,6 +90,10 @@ export class GiftCard {
 
   charge(amountCents) {
     return gateway.redeemGiftCard(this.code, amountCents);
+  }
+
+  refund(amountCents) {
+    return gateway.topUpGiftCard(this.code, amountCents);
   }
 }
 
@@ -93,6 +115,26 @@ export function pay(method, amountCents, details) {
     throw new UnsupportedPaymentMethodError(method);
   }
   return payment.charge(amountCents);
+}
+
+// Give the shopper's money back and return the gateway's refund id.
+export function refund(method, amountCents, details) {
+  /** @type {PaymentMethod} */
+  let payment;
+  if (method === 'card') {
+    payment = new Card(required(details, 'cardToken'));
+  } else if (method === 'paypal') {
+    payment = new PayPal(required(details, 'payerEmail'));
+  } else if (WALLETS.includes(method)) {
+    payment = new Wallet(method, required(details, 'walletToken'));
+  } else if (method === 'bank_transfer') {
+    payment = new BankTransfer(required(details, 'orderId'));
+  } else if (method === 'gift_card') {
+    payment = new GiftCard(required(details, 'code'));
+  } else {
+    throw new UnsupportedPaymentMethodError(method);
+  }
+  return payment.refund(amountCents);
 }
 
 // A detail set to null is as missing as one left out, as in Python.

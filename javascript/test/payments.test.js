@@ -11,6 +11,7 @@ import {
   Wallet,
   gateway,
   pay,
+  refund,
 } from '../src/payments.js';
 import {
   PaymentDeclinedError,
@@ -32,6 +33,18 @@ for (const [method, details, detail] of EVERY_METHOD) {
     const transactionId = pay(method, 1_000, details);
     assert.deepEqual(gateway.charges.at(-1), {
       id: transactionId,
+      kind: method,
+      amount: 1_000,
+      detail,
+    });
+  });
+}
+
+for (const [method, details, detail] of EVERY_METHOD) {
+  test(`${method} refunds through the gateway`, () => {
+    const refundId = refund(method, 1_000, details);
+    assert.deepEqual(gateway.refunds.at(-1), {
+      id: refundId,
       kind: method,
       amount: 1_000,
       detail,
