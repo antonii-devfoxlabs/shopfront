@@ -1,5 +1,8 @@
+import pytest
+
 from shopfront import payments
 from shopfront.orders import Order
+from shopfront.payments import Card, GiftCard
 from shopfront.returns import GiftReturn, Return
 
 
@@ -41,3 +44,17 @@ def test_a_gift_return_refunds_onto_a_gift_card():
         "detail": "GIFT-2026-0001",
     }
     assert order.status == "returned"
+
+
+@pytest.mark.parametrize(
+    ("return_class", "details", "expected"),
+    [
+        (Return, {"card_token": "tok-4242"}, Card),
+        (GiftReturn, {"code": "GIFT-2026-0001"}, GiftCard),
+    ],
+)
+def test_each_return_creates_its_destination(return_class, details, expected):
+    refunds_before = len(payments.gateway.refunds)
+    destination = return_class(a_card_order(), details).destination()
+    assert isinstance(destination, expected)
+    assert len(payments.gateway.refunds) == refunds_before

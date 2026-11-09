@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { Order } from '../src/orders.js';
-import { gateway } from '../src/payments.js';
+import { Card, GiftCard, gateway } from '../src/payments.js';
 import { GiftReturn, Return } from '../src/returns.js';
 
 function aCardOrder() {
@@ -44,3 +44,17 @@ test('a gift return refunds onto a gift card', () => {
   });
   assert.equal(order.status, 'returned');
 });
+
+const EVERY_RETURN = [
+  [Return, { cardToken: 'tok-4242' }, Card],
+  [GiftReturn, { code: 'GIFT-2026-0001' }, GiftCard],
+];
+
+for (const [ReturnClass, details, expected] of EVERY_RETURN) {
+  test(`${ReturnClass.name} creates its destination`, () => {
+    const refundsBefore = gateway.refunds.length;
+    const destination = new ReturnClass(aCardOrder(), details).destination();
+    assert.ok(destination instanceof expected);
+    assert.equal(gateway.refunds.length, refundsBefore);
+  });
+}

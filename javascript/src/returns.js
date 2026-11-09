@@ -11,20 +11,20 @@ export class Return {
 
   // Give the money back and mark the order returned.
   process() {
-    const destination = payment(this.order.paymentMethod, this.details);
-    const refundId = destination.refund(this.order.totalCents);
+    const refundId = this.destination().refund(this.order.totalCents);
     this.order.status = 'returned';
     return refundId;
+  }
+
+  // Create the way to pay that the money goes back to.
+  destination() {
+    return payment(this.order.paymentMethod, this.details);
   }
 }
 
 // The person who got the order as a gift sends it back.
 export class GiftReturn extends Return {
-  // Give the money back and mark the order returned.
-  process() {
-    const destination = payment('gift_card', this.details);
-    const refundId = destination.refund(this.order.totalCents);
-    this.order.status = 'returned';
-    return refundId;
+  destination() {
+    return payment('gift_card', this.details);
   }
 }
