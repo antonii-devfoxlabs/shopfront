@@ -214,7 +214,7 @@ export class OrderBook {
     return OrderBook.#instance;
   }
 
-  // For tests only: forget the book, so the next ask makes a new one.
+  // For tests only: forget the book; the next ask makes a new one.
   static reset(): void {
     OrderBook.#instance = undefined;
   }

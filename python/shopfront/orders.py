@@ -194,7 +194,7 @@ class OrderBook:
 
     @classmethod
     def reset(cls) -> None:
-        """For tests only: forget the book, so the next ask makes a new one."""
+        """For tests only: forget the book; the next ask makes a new one."""
         OrderBook._instance = None
 
     def add(self, order: Order) -> None:
