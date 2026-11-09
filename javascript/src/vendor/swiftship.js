@@ -3,6 +3,7 @@
 // object and answers in cents.
 
 const CENTS_PER_100_GRAMS = new Map([
+  ['AT', 80],
   ['DE', 60],
   ['FR', 70],
   ['NL', 65],

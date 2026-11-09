@@ -6,7 +6,7 @@ dictionary and answers in cents.
 
 import math
 
-_CENTS_PER_100_GRAMS = {"DE": 60, "FR": 70, "NL": 65, "PL": 75}
+_CENTS_PER_100_GRAMS = {"AT": 80, "DE": 60, "FR": 70, "NL": 65, "PL": 75}
 _MINIMUM_CENTS = 390
 
 
