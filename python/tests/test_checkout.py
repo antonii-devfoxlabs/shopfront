@@ -16,10 +16,25 @@ from shopfront.orders import (
 from shopfront.payments import pay
 from shopfront.pricing import PriceCalculator
 from shopfront.settings import DUTCH_SHOP, GERMAN_SHOP, Settings
-from shopfront.shipping import shipping_cost
+from shopfront.shipping import (
+    ParcelNowQuote,
+    ShippingQuote,
+    SwiftShipQuote,
+    shipping_cost,
+)
 from shopfront.vendor.analytics import Analytics
 from shopfront.vendor.mailer import Mailer
+from shopfront.vendor.parcelnow import ParcelNowClient
+from shopfront.vendor.swiftship import SwiftShip
 from shopfront.vendor.tax_service import TaxService
+
+
+def providers_for(shop: Settings) -> list[ShippingQuote]:
+    """Both shipping providers, with the shop's ParcelNow account."""
+    return [
+        ParcelNowQuote(ParcelNowClient(account=shop.parcelnow_account)),
+        SwiftShipQuote(SwiftShip()),
+    ]
 
 
 def test_a_whole_order(gateway):
@@ -34,7 +49,9 @@ def test_a_whole_order(gateway):
         cart, "DE", today=date(2026, 6, 15), coupon="WELCOME10"
     )
     paid_cents = quote.subtotal_cents - quote.discount_cents
-    shipping_cents = shipping_cost(cart, catalog, "DE", paid_cents, shop)
+    shipping_cents = shipping_cost(
+        cart, catalog, "DE", paid_cents, providers_for(shop), shop
+    )
     total_cents = paid_cents + quote.tax_cents + shipping_cents
 
     transaction_id = pay(
@@ -93,7 +110,9 @@ def test_ordering_again(gateway):
     builder.tax(quote.tax_cents)
 
     paid_cents = quote.subtotal_cents - quote.discount_cents
-    shipping_cents = shipping_cost(cart, catalog, country, paid_cents, shop)
+    shipping_cents = shipping_cost(
+        cart, catalog, country, paid_cents, providers_for(shop), shop
+    )
     builder.shipping(shipping_cents)
 
     total_cents = paid_cents + quote.tax_cents + shipping_cents
@@ -116,7 +135,9 @@ def test_two_shops_in_one_run():
         await asyncio.sleep(0.01)  # The bank answers.
         cart = Cart()
         cart.add("MUG-01", 5)
-        return shipping_cost(cart, starter_catalog(), country, 6_000, shop)
+        return shipping_cost(
+            cart, starter_catalog(), country, 6_000, providers_for(shop), shop
+        )
 
     async def both() -> list[int]:
         return await asyncio.gather(

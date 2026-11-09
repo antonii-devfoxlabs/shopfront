@@ -16,11 +16,28 @@ import {
 import { pay } from '../src/payments.ts';
 import { PriceCalculator } from '../src/pricing.ts';
 import { DUTCH_SHOP, GERMAN_SHOP, type Settings } from '../src/settings.ts';
-import { shippingCost } from '../src/shipping.ts';
+import {
+  ParcelNowQuote,
+  type ShippingQuote,
+  SwiftShipQuote,
+  shippingCost,
+} from '../src/shipping.ts';
 import { Analytics } from '../src/vendor/analytics.ts';
 import { Mailer } from '../src/vendor/mailer.ts';
+import { ParcelNowClient } from '../src/vendor/parcelnow.ts';
 import { PaymentGateway } from '../src/vendor/paymentGateway.ts';
+import { SwiftShip } from '../src/vendor/swiftship.ts';
 import { TaxService } from '../src/vendor/taxService.ts';
+
+// Both shipping providers, with the shop's ParcelNow account.
+function providersFor(shop: Settings): ShippingQuote[] {
+  return [
+    new ParcelNowQuote(
+      new ParcelNowClient({ account: shop.parcelNowAccount }),
+    ),
+    new SwiftShipQuote(new SwiftShip()),
+  ];
+}
 
 // A new payment gateway of the German shop, for one test.
 function aGateway(): PaymentGateway {
@@ -41,7 +58,14 @@ test('a whole order', () => {
     coupon: 'WELCOME10',
   });
   const paidCents = quote.subtotalCents - quote.discountCents;
-  const shippingCents = shippingCost(cart, catalog, 'DE', paidCents, shop);
+  const shippingCents = shippingCost(
+    cart,
+    catalog,
+    'DE',
+    paidCents,
+    providersFor(shop),
+    shop,
+  );
   const totalCents = paidCents + quote.taxCents + shippingCents;
 
   const transactionId = pay(
@@ -104,7 +128,14 @@ test('ordering again', () => {
   builder.tax(quote.taxCents);
 
   const paidCents = quote.subtotalCents - quote.discountCents;
-  const shippingCents = shippingCost(cart, catalog, country, paidCents, shop);
+  const shippingCents = shippingCost(
+    cart,
+    catalog,
+    country,
+    paidCents,
+    providersFor(shop),
+    shop,
+  );
   builder.shipping(shippingCents);
 
   const totalCents = paidCents + quote.taxCents + shippingCents;
@@ -130,7 +161,14 @@ test('two shops in one run', async () => {
     await sleep(10); // The bank answers.
     const cart = new Cart();
     cart.add('MUG-01', 5);
-    return shippingCost(cart, starterCatalog(), country, 6_000, shop);
+    return shippingCost(
+      cart,
+      starterCatalog(),
+      country,
+      6_000,
+      providersFor(shop),
+      shop,
+    );
   }
 
   const both = await Promise.all([

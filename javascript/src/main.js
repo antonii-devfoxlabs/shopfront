@@ -11,15 +11,21 @@ import {
 import { pay } from './payments.js';
 import { PriceCalculator } from './pricing.js';
 import { GERMAN_SHOP } from './settings.js';
-import { shippingCost } from './shipping.js';
+import { ParcelNowQuote, SwiftShipQuote, shippingCost } from './shipping.js';
 import { Analytics } from './vendor/analytics.js';
 import { Mailer } from './vendor/mailer.js';
+import { ParcelNowClient } from './vendor/parcelnow.js';
 import { PaymentGateway } from './vendor/paymentGateway.js';
+import { SwiftShip } from './vendor/swiftship.js';
 import { TaxService } from './vendor/taxService.js';
 
 // The one place that picks the shop, and hands it to every part.
 const shop = GERMAN_SHOP;
 const gateway = new PaymentGateway({ merchant: shop.merchantId });
+const providers = [
+  new ParcelNowQuote(new ParcelNowClient({ account: shop.parcelNowAccount })),
+  new SwiftShipQuote(new SwiftShip()),
+];
 
 const catalog = starterCatalog();
 const cart = new Cart();
@@ -32,7 +38,14 @@ const quote = calculator.quote(cart, 'DE', {
   coupon: 'WELCOME10',
 });
 const paidCents = quote.subtotalCents - quote.discountCents;
-const shippingCents = shippingCost(cart, catalog, 'DE', paidCents, shop);
+const shippingCents = shippingCost(
+  cart,
+  catalog,
+  'DE',
+  paidCents,
+  providers,
+  shop,
+);
 const totalCents = paidCents + quote.taxCents + shippingCents;
 
 const orderId = nextOrderId();

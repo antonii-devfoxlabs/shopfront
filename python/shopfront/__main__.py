@@ -13,10 +13,12 @@ from shopfront.orders import (
 from shopfront.payments import pay
 from shopfront.pricing import PriceCalculator
 from shopfront.settings import GERMAN_SHOP
-from shopfront.shipping import shipping_cost
+from shopfront.shipping import ParcelNowQuote, SwiftShipQuote, shipping_cost
 from shopfront.vendor.analytics import Analytics
 from shopfront.vendor.mailer import Mailer
+from shopfront.vendor.parcelnow import ParcelNowClient
 from shopfront.vendor.payment_gateway import PaymentGateway
+from shopfront.vendor.swiftship import SwiftShip
 from shopfront.vendor.tax_service import TaxService
 
 
@@ -24,6 +26,10 @@ def main() -> None:
     # The one place that picks the shop, and hands it to every part.
     shop = GERMAN_SHOP
     gateway = PaymentGateway(merchant=shop.merchant_id)
+    providers = [
+        ParcelNowQuote(ParcelNowClient(account=shop.parcelnow_account)),
+        SwiftShipQuote(SwiftShip()),
+    ]
     catalog = starter_catalog()
     cart = Cart()
     cart.add("MUG-01", 2)
@@ -34,7 +40,9 @@ def main() -> None:
         cart, "DE", today=date.today(), coupon="WELCOME10"
     )
     paid_cents = quote.subtotal_cents - quote.discount_cents
-    shipping_cents = shipping_cost(cart, catalog, "DE", paid_cents, shop)
+    shipping_cents = shipping_cost(
+        cart, catalog, "DE", paid_cents, providers, shop
+    )
     total_cents = paid_cents + quote.tax_cents + shipping_cents
 
     order_id = next_order_id()
