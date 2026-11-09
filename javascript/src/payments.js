@@ -10,17 +10,22 @@ export class MissingPaymentDetailError extends Error {
 
 /**
  * The ways to pay's slot for the payment gateway; its SDK fills it.
- * @typedef {object} Gateway
- * @property {(cardToken: string, amountCents: number) => string} chargeCard
- * @property {(payerEmail: string, amountCents: number) => string} chargePaypal
- * @property {(wallet: string, walletToken: string, amountCents: number) => string} chargeWallet
- * @property {(amountCents: number, reference: string) => string} expectTransfer
- * @property {(code: string, amountCents: number) => string} redeemGiftCard
- * @property {(cardToken: string, amountCents: number) => string} refundCard
- * @property {(payerEmail: string, amountCents: number) => string} refundPaypal
- * @property {(wallet: string, walletToken: string, amountCents: number) => string} refundWallet
- * @property {(amountCents: number, reference: string) => string} sendTransfer
- * @property {(code: string, amountCents: number) => string} topUpGiftCard
+ * @typedef {{
+ *   chargeCard(cardToken: string, amountCents: number): string,
+ *   chargePaypal(payerEmail: string, amountCents: number): string,
+ *   chargeWallet(
+ *     wallet: string, walletToken: string, amountCents: number,
+ *   ): string,
+ *   expectTransfer(amountCents: number, reference: string): string,
+ *   redeemGiftCard(code: string, amountCents: number): string,
+ *   refundCard(cardToken: string, amountCents: number): string,
+ *   refundPaypal(payerEmail: string, amountCents: number): string,
+ *   refundWallet(
+ *     wallet: string, walletToken: string, amountCents: number,
+ *   ): string,
+ *   sendTransfer(amountCents: number, reference: string): string,
+ *   topUpGiftCard(code: string, amountCents: number): string,
+ * }} Gateway
  */
 
 /**
