@@ -17,6 +17,7 @@ from shopfront.providers import (
     parcelnow_quote,
     swiftship_quote,
 )
+from shopfront.returns import Refunds
 from shopfront.settings import DUTCH_SHOP, GERMAN_SHOP, Settings
 from shopfront.shipping import ShippingQuote, shipping_cost
 from shopfront.vendor.analytics import Analytics
@@ -150,24 +151,12 @@ def test_ordering_again(gateway):
     assert len(mailer.outbox) == 1
 
 
-def test_a_refund_gives_the_money_back_and_tells_the_shopper(gateway):
-    mailer = Mailer()
-    checkout = checkout_for(GERMAN_SHOP, starter_catalog(), gateway, mailer)
-    order = buy_adas_order(checkout)
-
-    refund_id = checkout.refund(order.order_id, {"card_token": "tok-4242"})
-
-    assert gateway.refunds[-1]["id"] == refund_id
-    assert gateway.refunds[-1]["amount"] == 4_121
-    assert order.status == "returned"
-    assert mailer.outbox[-1]["subject"] == "Shopfront: refund for SF-00001"
-
-
 def test_the_sales_report_counts_only_the_orders_kept(gateway):
     checkout = checkout_for(GERMAN_SHOP, starter_catalog(), gateway, Mailer())
     buy_adas_order(checkout)
     sent_back = buy_adas_order(checkout)
-    checkout.refund(sent_back.order_id, {"card_token": "tok-4242"})
+    refunds = Refunds(gateway=gateway, mailer=Mailer(), shop=GERMAN_SHOP)
+    refunds.refund(sent_back.order_id, {"card_token": "tok-4242"})
 
     assert checkout.sales_report() == "Orders: 1, takings: 41.21 EUR"
 

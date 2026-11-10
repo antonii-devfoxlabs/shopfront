@@ -1,7 +1,11 @@
 """Orders sent back, and the money that goes back with them."""
 
-from shopfront.orders import Order
+from dataclasses import dataclass
+
+from shopfront.orders import Order, OrderBook, format_money
 from shopfront.payments import Gateway, PaymentMethod, payment
+from shopfront.settings import Settings
+from shopfront.vendor.mailer import Mailer
 
 
 class ReturnRefusedError(Exception):
@@ -36,3 +40,30 @@ class GiftReturn(Return):
 
     def destination(self) -> PaymentMethod:
         return payment("gift_card", self.details, self.gateway)
+
+
+@dataclass(frozen=True, kw_only=True)
+class Refunds:
+    """One call that gives an order's money back, and tells the shopper.
+
+    main hands it the parts once; the return page calls refund().
+    """
+
+    gateway: Gateway
+    mailer: Mailer
+    shop: Settings
+
+    def refund(self, order_id: str, details: dict) -> str:
+        """Give an order's money back, and tell the shopper."""
+        order = OrderBook.instance().find(order_id)
+        refund_id = Return(order, details, self.gateway).process()
+        self.mailer.send(
+            sender=self.shop.store_email,
+            to=order.customer_email,
+            subject=f"{self.shop.store_name}: refund for {order.order_id}",
+            body=(
+                f"Hi {order.customer_name}, we have refunded "
+                f"{format_money(order.total_cents, self.shop)}."
+            ),
+        )
+        return refund_id

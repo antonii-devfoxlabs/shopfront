@@ -16,7 +16,6 @@ from shopfront.orders import (
 )
 from shopfront.payments import Gateway, pay
 from shopfront.pricing import PriceQuote
-from shopfront.returns import Return
 from shopfront.settings import Settings
 from shopfront.shipping import ShippingQuote
 from shopfront.vendor.analytics import Analytics
@@ -81,21 +80,6 @@ class Checkout:
             order, self.catalog, self.mailer, self.analytics, self.shop
         )
         return order
-
-    def refund(self, order_id: str, details: dict) -> str:
-        """Give an order's money back, and tell the shopper."""
-        order = OrderBook.instance().find(order_id)
-        refund_id = Return(order, details, self.gateway).process()
-        self.mailer.send(
-            sender=self.shop.store_email,
-            to=order.customer_email,
-            subject=f"{self.shop.store_name}: refund for {order.order_id}",
-            body=(
-                f"Hi {order.customer_name}, we have refunded "
-                f"{format_money(order.total_cents, self.shop)}."
-            ),
-        )
-        return refund_id
 
     def sales_report(self) -> str:
         """The owner's Monday line: the orders kept, and what they took."""

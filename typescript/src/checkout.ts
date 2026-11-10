@@ -12,7 +12,6 @@ import {
 } from './orders.ts';
 import { type Gateway, type PaymentDetails, pay } from './payments.ts';
 import type { PriceQuote, QuoteOptions } from './pricing.ts';
-import { Return } from './returns.ts';
 import type { Settings } from './settings.ts';
 import { type ShippingQuote, shippingCost } from './shipping.ts';
 import type { Analytics } from './vendor/analytics.ts';
@@ -93,22 +92,6 @@ export class Checkout {
       parts.shop,
     );
     return order;
-  }
-
-  // Give an order's money back, and tell the shopper.
-  refund(orderId: string, details: PaymentDetails): string {
-    const { gateway, mailer, shop } = this.#parts;
-    const order = OrderBook.instance().find(orderId);
-    const refundId = new Return(order, details, gateway).process();
-    mailer.send({
-      from: shop.storeEmail,
-      to: order.customerEmail,
-      subject: `${shop.storeName}: refund for ${order.orderId}`,
-      body:
-        `Hi ${order.customerName}, we have refunded ` +
-        `${formatMoney(order.totalCents, shop)}.`,
-    });
-    return refundId;
   }
 
   // The owner's Monday line: the orders kept, and what they took.

@@ -1,5 +1,6 @@
 // Orders sent back, and the money that goes back with them.
 
+import { OrderBook, formatMoney } from './orders.js';
 import { payment } from './payments.js';
 
 export class ReturnRefusedError extends Error {
@@ -36,5 +37,32 @@ export class Return {
 export class GiftReturn extends Return {
   destination() {
     return payment('gift_card', this.details, this.gateway);
+  }
+}
+
+// One call that gives an order's money back, and tells the shopper.
+// main hands it the parts once; the return page calls refund().
+export class Refunds {
+  #parts;
+
+  // The parts, by name: gateway, mailer and shop.
+  constructor(parts) {
+    this.#parts = parts;
+  }
+
+  // Give an order's money back, and tell the shopper.
+  refund(orderId, details) {
+    const { gateway, mailer, shop } = this.#parts;
+    const order = OrderBook.instance().find(orderId);
+    const refundId = new Return(order, details, gateway).process();
+    mailer.send({
+      from: shop.storeEmail,
+      to: order.customerEmail,
+      subject: `${shop.storeName}: refund for ${order.orderId}`,
+      body:
+        `Hi ${order.customerName}, we have refunded ` +
+        `${formatMoney(order.totalCents, shop)}.`,
+    });
+    return refundId;
   }
 }

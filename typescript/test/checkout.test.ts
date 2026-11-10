@@ -24,6 +24,7 @@ import {
   parcelNowQuote,
   swiftShipQuote,
 } from '../src/providers.ts';
+import { Refunds } from '../src/returns.ts';
 import { DUTCH_SHOP, GERMAN_SHOP, type Settings } from '../src/settings.ts';
 import { type ShippingQuote, shippingCost } from '../src/shipping.ts';
 import { Analytics } from '../src/vendor/analytics.ts';
@@ -171,38 +172,22 @@ test('ordering again', () => {
   assert.equal(mailer.outbox.length, 1);
 });
 
-test('a refund gives the money back and tells the shopper', () => {
+test('the sales report counts only the orders kept', () => {
   const gateway = aGateway();
-  const mailer = new Mailer();
   const checkout = checkoutFor(
     GERMAN_SHOP,
     starterCatalog(),
     gateway,
-    mailer,
-  );
-  const order = buyAdasOrder(checkout);
-
-  const refundId = checkout.refund(order.orderId, { cardToken: 'tok-4242' });
-
-  assert.equal(gateway.refunds.at(-1)?.id, refundId);
-  assert.equal(gateway.refunds.at(-1)?.amount, 4_121);
-  assert.equal(order.status, 'returned');
-  assert.equal(
-    mailer.outbox.at(-1)?.subject,
-    'Shopfront: refund for SF-00001',
-  );
-});
-
-test('the sales report counts only the orders kept', () => {
-  const checkout = checkoutFor(
-    GERMAN_SHOP,
-    starterCatalog(),
-    aGateway(),
     new Mailer(),
   );
   buyAdasOrder(checkout);
   const sentBack = buyAdasOrder(checkout);
-  checkout.refund(sentBack.orderId, { cardToken: 'tok-4242' });
+  const refunds = new Refunds({
+    gateway,
+    mailer: new Mailer(),
+    shop: GERMAN_SHOP,
+  });
+  refunds.refund(sentBack.orderId, { cardToken: 'tok-4242' });
 
   assert.equal(checkout.salesReport(), 'Orders: 1, takings: 41.21 EUR');
 });

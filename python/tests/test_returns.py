@@ -1,8 +1,12 @@
 import pytest
 
-from shopfront.orders import Order, OrderBuilder
+from shopfront.catalog import starter_catalog
+from shopfront.orders import Order, OrderBuilder, place_order
 from shopfront.payments import Card, GiftCard
-from shopfront.returns import GiftReturn, Return, ReturnRefusedError
+from shopfront.returns import GiftReturn, Refunds, Return, ReturnRefusedError
+from shopfront.settings import GERMAN_SHOP
+from shopfront.vendor.analytics import Analytics
+from shopfront.vendor.mailer import Mailer
 
 
 def a_card_order() -> Order:
@@ -32,6 +36,27 @@ def test_a_return_refunds_the_way_the_shopper_paid(gateway):
         "detail": None,
     }
     assert order.status == "returned"
+
+
+def test_a_refund_gives_the_money_back_and_tells_the_shopper(gateway):
+    order = a_card_order()
+    place_order(order, starter_catalog(), Mailer(), Analytics(), GERMAN_SHOP)
+    mailer = Mailer()
+    refunds = Refunds(gateway=gateway, mailer=mailer, shop=GERMAN_SHOP)
+
+    refund_id = refunds.refund("SF-00007", {"card_token": "tok-4242"})
+
+    assert gateway.refunds[-1]["id"] == refund_id
+    assert gateway.refunds[-1]["amount"] == 3_168
+    assert order.status == "returned"
+    assert mailer.outbox == [
+        {
+            "from": "orders@shopfront.example",
+            "to": "ada@example.com",
+            "subject": "Shopfront: refund for SF-00007",
+            "body": "Hi Ada, we have refunded 31.68 EUR.",
+        }
+    ]
 
 
 def test_a_gift_return_refunds_onto_a_gift_card(gateway):

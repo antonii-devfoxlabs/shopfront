@@ -1,10 +1,13 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { OrderBuilder } from '../src/orders.ts';
+import { starterCatalog } from '../src/catalog.ts';
+import { OrderBuilder, placeOrder } from '../src/orders.ts';
 import { Card, GiftCard } from '../src/payments.ts';
-import { GiftReturn, Return } from '../src/returns.ts';
+import { GiftReturn, Refunds, Return } from '../src/returns.ts';
 import { GERMAN_SHOP } from '../src/settings.ts';
+import { Analytics } from '../src/vendor/analytics.ts';
+import { Mailer } from '../src/vendor/mailer.ts';
 import { PaymentGateway } from '../src/vendor/paymentGateway.ts';
 
 // A new payment gateway of the German shop, for one test.
@@ -39,6 +42,34 @@ test('a return refunds the way the shopper paid', () => {
     detail: null,
   });
   assert.equal(order.status, 'returned');
+});
+
+test('a refund gives the money back and tells the shopper', () => {
+  const gateway = aGateway();
+  const order = aCardOrder();
+  placeOrder(
+    order,
+    starterCatalog(),
+    new Mailer(),
+    new Analytics(),
+    GERMAN_SHOP,
+  );
+  const mailer = new Mailer();
+  const refunds = new Refunds({ gateway, mailer, shop: GERMAN_SHOP });
+
+  const refundId = refunds.refund('SF-00007', { cardToken: 'tok-4242' });
+
+  assert.equal(gateway.refunds.at(-1)?.id, refundId);
+  assert.equal(gateway.refunds.at(-1)?.amount, 3_168);
+  assert.equal(order.status, 'returned');
+  assert.deepEqual(mailer.outbox, [
+    {
+      from: 'orders@shopfront.example',
+      to: 'ada@example.com',
+      subject: 'Shopfront: refund for SF-00007',
+      body: 'Hi Ada, we have refunded 31.68 EUR.',
+    },
+  ]);
 });
 
 test('a gift return refunds onto a gift card', () => {
