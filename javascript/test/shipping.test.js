@@ -10,6 +10,8 @@ import {
 } from '../src/providers.js';
 import { DUTCH_SHOP, GERMAN_SHOP } from '../src/settings.js';
 import {
+  Cheapest,
+  Flat,
   NoShippingError,
   cartWeightGrams,
   shippingCost,
@@ -370,6 +372,23 @@ test('nobody ships to Spain', () => {
       ),
     { constructor: NoShippingError, message: 'ES' },
   );
+});
+
+test('a flat rule charges every parcel the same', () => {
+  const swiss = new Flat(990);
+  assert.equal(swiss.cost(350, 'CH'), 990);
+  assert.equal(swiss.cost(6_600, 'CH'), 990);
+});
+
+test('the cheapest rule says no when nobody ships there', () => {
+  function nowhere(grams, country) {
+    throw new NoShippingError(country);
+  }
+
+  assert.throws(() => new Cheapest([nowhere]).cost(350, 'ES'), {
+    name: 'NoShippingError',
+    message: 'ES',
+  });
 });
 
 test('the cheapest provider wins', () => {

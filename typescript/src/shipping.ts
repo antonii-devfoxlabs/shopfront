@@ -22,6 +22,51 @@ export function cartWeightGrams(cart: Cart, catalog: Catalog): number {
   return grams;
 }
 
+// One way the store prices a parcel: its grams and its country in, whole
+// cents out.
+export interface ShippingRule {
+  cost(grams: number, country: string): number;
+}
+
+// One price for every parcel, whatever it weighs; new Flat(0) is free.
+export class Flat implements ShippingRule {
+  readonly cents: number;
+
+  constructor(cents: number) {
+    this.cents = cents;
+  }
+
+  cost(grams: number, country: string): number {
+    return this.cents;
+  }
+}
+
+// Ask every shipping provider, and take the cheapest answer.
+export class Cheapest implements ShippingRule {
+  readonly providers: readonly ShippingQuote[];
+
+  constructor(providers: readonly ShippingQuote[]) {
+    this.providers = providers;
+  }
+
+  cost(grams: number, country: string): number {
+    const costs: number[] = [];
+    for (const provider of this.providers) {
+      try {
+        costs.push(provider(grams, country));
+      } catch (error) {
+        if (error instanceof NoShippingError) {
+          // This provider does not ship there: ask the others.
+          continue;
+        }
+        throw error;
+      }
+    }
+    if (costs.length === 0) throw new NoShippingError(country);
+    return Math.min(...costs);
+  }
+}
+
 export function shippingCost(
   cart: Cart,
   catalog: Catalog,

@@ -12,6 +12,8 @@ from shopfront.providers import (
 )
 from shopfront.settings import DUTCH_SHOP, GERMAN_SHOP, Settings
 from shopfront.shipping import (
+    Cheapest,
+    Flat,
     NoShippingError,
     ShippingQuote,
     cart_weight_grams,
@@ -371,6 +373,20 @@ def test_nobody_ships_to_spain():
             providers_for(GERMAN_SHOP),
             GERMAN_SHOP,
         )
+
+
+def test_a_flat_rule_charges_every_parcel_the_same():
+    swiss = Flat(990)
+    assert swiss.cost(350, "CH") == 990
+    assert swiss.cost(6_600, "CH") == 990
+
+
+def test_the_cheapest_rule_says_no_when_nobody_ships_there():
+    def nowhere(grams: int, country: str) -> int:
+        raise NoShippingError(country)
+
+    with pytest.raises(NoShippingError, match="ES"):
+        Cheapest([nowhere]).cost(350, "ES")
 
 
 def test_the_cheapest_provider_wins():

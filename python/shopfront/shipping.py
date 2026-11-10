@@ -1,7 +1,9 @@
 """What it costs to ship a cart."""
 
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import date
+from typing import Protocol
 
 from shopfront.cart import Cart
 from shopfront.catalog import Catalog
@@ -24,6 +26,42 @@ def cart_weight_grams(cart: Cart, catalog: Catalog) -> int:
         catalog.find(sku).weight_grams * quantity
         for sku, quantity in cart.lines.items()
     )
+
+
+class ShippingRule(Protocol):
+    """One way the store prices a parcel: its grams and its country in,
+    whole cents out."""
+
+    def cost(self, grams: int, country: str) -> int: ...
+
+
+@dataclass(frozen=True)
+class Flat:
+    """One price for every parcel, whatever it weighs; Flat(0) is free."""
+
+    cents: int
+
+    def cost(self, grams: int, country: str) -> int:
+        return self.cents
+
+
+@dataclass(frozen=True)
+class Cheapest:
+    """Ask every shipping provider, and take the cheapest answer."""
+
+    providers: list[ShippingQuote]
+
+    def cost(self, grams: int, country: str) -> int:
+        costs = []
+        for provider in self.providers:
+            try:
+                costs.append(provider(grams, country))
+            except NoShippingError:
+                # This provider does not ship there: ask the others.
+                continue
+        if not costs:
+            raise NoShippingError(country)
+        return min(costs)
 
 
 def shipping_cost(
