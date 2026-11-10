@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
 import {
@@ -69,4 +70,16 @@ test('checking the stock takes nothing', () => {
     OutOfStockError,
   );
   assert.equal(catalog.find('MUG-01').stock, 40);
+});
+
+test("the shop's catalog file holds what it sells", () => {
+  const text = readFileSync('catalog.json', 'utf8');
+  const products = JSON.parse(text).map((row) => ({
+    sku: row.sku,
+    name: row.name,
+    priceCents: row.price_cents,
+    weightGrams: row.weight_grams,
+    stock: row.stock,
+  }));
+  assert.deepEqual(products, starterCatalog().allProducts());
 });

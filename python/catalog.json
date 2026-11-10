@@ -1,0 +1,37 @@
+[
+  {
+    "sku": "MUG-01",
+    "name": "Enamel mug",
+    "price_cents": 1250,
+    "weight_grams": 350,
+    "stock": 40
+  },
+  {
+    "sku": "TEA-02",
+    "name": "Green tea, 100 g",
+    "price_cents": 890,
+    "weight_grams": 120,
+    "stock": 120
+  },
+  {
+    "sku": "KTL-03",
+    "name": "Pour-over kettle",
+    "price_cents": 4900,
+    "weight_grams": 1100,
+    "stock": 8
+  },
+  {
+    "sku": "CUP-04",
+    "name": "Glass cup, set of two",
+    "price_cents": 2400,
+    "weight_grams": 600,
+    "stock": 25
+  },
+  {
+    "sku": "FLT-05",
+    "name": "Paper filters, 100",
+    "price_cents": 450,
+    "weight_grams": 90,
+    "stock": 200
+  }
+]

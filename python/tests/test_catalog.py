@@ -1,7 +1,10 @@
+import json
+
 import pytest
 
 from shopfront.catalog import (
     OutOfStockError,
+    Product,
     UnknownProductError,
     starter_catalog,
 )
@@ -51,3 +54,19 @@ def test_checking_the_stock_takes_nothing():
     with pytest.raises(OutOfStockError):
         catalog.check_stock({"MUG-01": 2, "KTL-03": 9})
     assert catalog.find("MUG-01").stock == 40
+
+
+def test_the_shops_catalog_file_holds_what_it_sells():
+    with open("catalog.json", encoding="utf-8") as file:
+        rows = json.load(file)
+    products = [
+        Product(
+            sku=row["sku"],
+            name=row["name"],
+            price_cents=row["price_cents"],
+            weight_grams=row["weight_grams"],
+            stock=row["stock"],
+        )
+        for row in rows
+    ]
+    assert products == starter_catalog().all_products()

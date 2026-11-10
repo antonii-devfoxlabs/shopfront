@@ -16,7 +16,9 @@ one you chose in the course and work in its folder only:
 | [`typescript/`](typescript) | Node.js 24.11 or later, TS 7    |
 
 Everything runs in memory: no database, no network, no account
-anywhere. The services a real store would call (a shipping
+anywhere. The one file the store reads is `catalog.json` in each
+language folder: the products the owner sells, with their prices and
+stock, which the owner edits by hand. The services a real store would call (a shipping
 provider, a payment gateway, a tax service, a mailer, analytics)
 are small stand-ins in each language's `vendor/` folder, and
 Shopfront's own code treats them exactly as it would the real
