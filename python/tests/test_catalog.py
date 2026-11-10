@@ -1,13 +1,13 @@
-import json
+from pathlib import Path
 
 import pytest
 
 from shopfront.catalog import (
     OutOfStockError,
-    Product,
     UnknownProductError,
     starter_catalog,
 )
+from shopfront.catalog_file import load_catalog
 
 
 def test_finds_a_product_by_its_sku():
@@ -57,16 +57,5 @@ def test_checking_the_stock_takes_nothing():
 
 
 def test_the_shops_catalog_file_holds_what_it_sells():
-    with open("catalog.json", encoding="utf-8") as file:
-        rows = json.load(file)
-    products = [
-        Product(
-            sku=row["sku"],
-            name=row["name"],
-            price_cents=row["price_cents"],
-            weight_grams=row["weight_grams"],
-            stock=row["stock"],
-        )
-        for row in rows
-    ]
-    assert products == starter_catalog().all_products()
+    catalog = load_catalog(Path("catalog.json"))
+    assert catalog.all_products() == starter_catalog().all_products()

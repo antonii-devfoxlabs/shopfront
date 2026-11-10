@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
 import {
@@ -7,6 +6,7 @@ import {
   UnknownProductError,
   starterCatalog,
 } from '../src/catalog.js';
+import { loadCatalog } from '../src/catalogFile.js';
 
 test('finds a product by its sku', () => {
   assert.equal(starterCatalog().find('MUG-01').name, 'Enamel mug');
@@ -73,13 +73,6 @@ test('checking the stock takes nothing', () => {
 });
 
 test("the shop's catalog file holds what it sells", () => {
-  const text = readFileSync('catalog.json', 'utf8');
-  const products = JSON.parse(text).map((row) => ({
-    sku: row.sku,
-    name: row.name,
-    priceCents: row.price_cents,
-    weightGrams: row.weight_grams,
-    stock: row.stock,
-  }));
-  assert.deepEqual(products, starterCatalog().allProducts());
+  const catalog = loadCatalog('catalog.json');
+  assert.deepEqual(catalog.allProducts(), starterCatalog().allProducts());
 });

@@ -1,10 +1,10 @@
 """One order through the whole store: `python -m shopfront`."""
 
-import json
 from datetime import date
+from pathlib import Path
 
 from shopfront.cart import Cart
-from shopfront.catalog import Catalog, Product
+from shopfront.catalog_file import load_catalog
 from shopfront.checkout import Checkout
 from shopfront.gateways import TimedGateway
 from shopfront.orders import format_money
@@ -39,20 +39,7 @@ def main() -> None:
         timed("boxroute quote", boxroute_quote, print),
     ]
     # The owner edits catalog.json; the shop reads it when it starts.
-    with open("catalog.json", encoding="utf-8") as file:
-        rows = json.load(file)
-    catalog = Catalog(
-        [
-            Product(
-                sku=row["sku"],
-                name=row["name"],
-                price_cents=row["price_cents"],
-                weight_grams=row["weight_grams"],
-                stock=row["stock"],
-            )
-            for row in rows
-        ]
-    )
+    catalog = load_catalog(Path("catalog.json"))
     cart = Cart()
     cart.add("MUG-01", 2)
     cart.add("TEA-02")

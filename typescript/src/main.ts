@@ -1,9 +1,7 @@
 // One order through the whole store: `npm start`.
 
-import { readFileSync } from 'node:fs';
-
 import { Cart } from './cart.ts';
-import { Catalog } from './catalog.ts';
+import { loadCatalog } from './catalogFile.ts';
 import { Checkout } from './checkout.ts';
 import { TimedGateway } from './gateways.ts';
 import { formatMoney } from './orders.ts';
@@ -40,23 +38,7 @@ const providers = [
 ];
 
 // The owner edits catalog.json; the shop reads it when it starts.
-const text = readFileSync('catalog.json', 'utf8');
-const rows: {
-  sku: string;
-  name: string;
-  price_cents: number;
-  weight_grams: number;
-  stock: number;
-}[] = JSON.parse(text);
-const catalog = new Catalog(
-  rows.map((row) => ({
-    sku: row.sku,
-    name: row.name,
-    priceCents: row.price_cents,
-    weightGrams: row.weight_grams,
-    stock: row.stock,
-  })),
-);
+const catalog = loadCatalog('catalog.json');
 const cart = new Cart();
 cart.add('MUG-01', 2);
 cart.add('TEA-02');
