@@ -141,8 +141,10 @@ def test_two_shops_in_one_run():
         )
 
     async def both() -> list[int]:
-        return await asyncio.gather(
-            checkout(DUTCH_SHOP, "NL"), checkout(GERMAN_SHOP, "DE")
+        return list(
+            await asyncio.gather(
+                checkout(DUTCH_SHOP, "NL"), checkout(GERMAN_SHOP, "DE")
+            )
         )
 
     assert asyncio.run(both()) == [0, 0]

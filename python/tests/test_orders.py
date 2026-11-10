@@ -88,7 +88,8 @@ def test_a_built_order_cannot_change():
     with pytest.raises(AttributeError, match="tax_cents cannot change"):
         order.tax_cents = 0
     with pytest.raises(TypeError):
-        order.lines["KTL-03"] = 9
+        # The point of the test: mypy refuses it as well.
+        order.lines["KTL-03"] = 9  # type: ignore[index]
     assert order.lines == {"MUG-01": 2}
     assert order.total_cents == 3_168
 
