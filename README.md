@@ -75,10 +75,11 @@ npm start
 npm test
 ```
 
-`npm start` runs the `.ts` files directly: Node.js removes the
-types and runs what is left (without a warning since 24.11, the
-first Node.js 24 LTS release). `npm test` checks the types with
-`tsc` first, then runs the tests.
+`npm start` and `npm test` both check the types with `tsc` first,
+so a type error stops the demo as it stops the tests. Then Node.js
+runs the `.ts` files directly: it removes the types and runs what is
+left (without a warning since 24.11, the first Node.js 24 LTS
+release).
 
 Every version prints the same order:
 
