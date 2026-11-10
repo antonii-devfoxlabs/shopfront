@@ -3,9 +3,10 @@ import { test } from 'node:test';
 
 import { Cart } from '../src/cart.ts';
 import { starterCatalog } from '../src/catalog.ts';
-import { PriceCalculator } from '../src/pricing.ts';
+import { PriceCalculator, type QuoteOptions } from '../src/pricing.ts';
 import { GERMAN_SHOP } from '../src/settings.ts';
 import { CachedRates, TimedRates } from '../src/taxes.ts';
+import { timed } from '../src/timing.ts';
 import { TaxService, TaxServiceError } from '../src/vendor/taxService.ts';
 
 test('timed rates pass the answer on', () => {
@@ -51,4 +52,30 @@ test('three quotes through the wrappers ask once', () => {
   }
   assert.equal(taxService.lookups, 1);
   assert.equal(lines.length, 1);
+});
+
+test('every quote is timed, and only the real lookup', () => {
+  // main's order: the quote's timer outside the calculator, the cache
+  // outside the tax service's timer. One call cannot show an order;
+  // three quotes show both timers.
+  const lines: string[] = [];
+  const log = (line: string) => lines.push(line);
+  const taxes = new CachedRates(new TimedRates(new TaxService(), log));
+  const prices = new PriceCalculator(starterCatalog(), taxes, GERMAN_SHOP);
+  const timedQuote = timed(
+    'price quote',
+    (cart: Cart, country: string, options: QuoteOptions) =>
+      prices.quote(cart, country, options),
+    log,
+  );
+  const cart = new Cart();
+  cart.add('MUG-01');
+  for (let round = 0; round < 3; round += 1) {
+    const quote = timedQuote(cart, 'DE', { today: new Date(2026, 5, 15) });
+    assert.equal(quote.taxCents, 238);
+  }
+  assert.deepEqual(
+    lines.map((line) => line.replace(/ in \d+ ms$/, '')),
+    ['tax rate for DE: 19%', 'price quote', 'price quote', 'price quote'],
+  );
 });

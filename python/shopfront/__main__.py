@@ -47,12 +47,14 @@ def main() -> None:
     cart.add("MUG-01", 2)
     cart.add("TEA-02")
 
-    # Every rate the calculator asks for is timed and logged.
-    taxes = TimedRates(CachedRates(TaxService()), print)
+    # The cache is outside the timer, so the log shows each real lookup
+    # of the tax service, and how long the service took.
+    taxes = CachedRates(TimedRates(TaxService(), print))
     calculator = PriceCalculator(catalog, taxes, shop)
-    quote = calculator.quote(
-        cart, "DE", today=date.today(), coupon="WELCOME10"
-    )
+    # The timer is outside the calculator, so every quote is timed:
+    # what a shopper waits for a price, cached rate or not.
+    timed_quote = timed("price quote", calculator.quote, print)
+    quote = timed_quote(cart, "DE", today=date.today(), coupon="WELCOME10")
     paid_cents = quote.subtotal_cents - quote.discount_cents
     timed_shipping_cost = timed("shipping cost", shipping_cost, print)
     shipping_cents = timed_shipping_cost(

@@ -10,7 +10,7 @@ import {
   placeOrder,
 } from './orders.ts';
 import { pay } from './payments.ts';
-import { PriceCalculator } from './pricing.ts';
+import { PriceCalculator, type QuoteOptions } from './pricing.ts';
 import {
   boxRouteQuote,
   parcelNowQuote,
@@ -47,10 +47,19 @@ const cart = new Cart();
 cart.add('MUG-01', 2);
 cart.add('TEA-02');
 
-// Every rate the calculator asks for is timed and logged.
-const taxes = new TimedRates(new CachedRates(new TaxService()), console.log);
+// The cache is outside the timer, so the log shows each real lookup
+// of the tax service, and how long the service took.
+const taxes = new CachedRates(new TimedRates(new TaxService(), console.log));
 const calculator = new PriceCalculator(catalog, taxes, shop);
-const quote = calculator.quote(cart, 'DE', {
+// The timer is outside the calculator, so every quote is timed:
+// what a shopper waits for a price, cached rate or not.
+const timedQuote = timed(
+  'price quote',
+  (cart: Cart, country: string, options: QuoteOptions) =>
+    calculator.quote(cart, country, options),
+  console.log,
+);
+const quote = timedQuote(cart, 'DE', {
   today: new Date(),
   coupon: 'WELCOME10',
 });
