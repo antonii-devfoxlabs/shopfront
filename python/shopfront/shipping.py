@@ -74,26 +74,22 @@ def shipping_cost(
     shop: Settings,
 ) -> int:
     weight_grams = cart_weight_grams(cart, catalog)
-    if country == shop.home_country:
-        if paid_cents >= shop.free_shipping_from_cents:
-            return 0
-        if today.weekday() == FRIDAY and paid_cents >= 4_000:
-            # Free Friday: at home, orders from 40.00 EUR ship free.
-            return 0
+    at_home = country == shop.home_country
+    # Pick the rule for this order. The first question that says yes
+    # wins, so a rule's place in the list is part of the rule.
+    rule: ShippingRule
+    if at_home and paid_cents >= shop.free_shipping_from_cents:
+        rule = Flat(0)
+    elif at_home and today.weekday() == FRIDAY and paid_cents >= 4_000:
+        # Free Friday: at home, orders from 40.00 EUR ship free.
+        rule = Flat(0)
     elif country == "CH":
         # No provider ships to Switzerland: a courier, one flat price,
         # heavy parcels too, so this comes before the freight rule.
-        return 990
-    elif weight_grams > 5_000:
+        rule = Flat(990)
+    elif not at_home and weight_grams > 5_000:
         # Heavy parcels abroad go as freight: one flat price.
-        return 3_500
-    costs = []
-    for provider in providers:
-        try:
-            costs.append(provider(weight_grams, country))
-        except NoShippingError:
-            # This provider does not ship there: ask the others.
-            continue
-    if not costs:
-        raise NoShippingError(country)
-    return min(costs)
+        rule = Flat(3_500)
+    else:
+        rule = Cheapest(providers)
+    return rule.cost(weight_grams, country)

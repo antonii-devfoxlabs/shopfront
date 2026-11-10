@@ -77,32 +77,25 @@ export function shippingCost(
   shop,
 ) {
   const weightGrams = cartWeightGrams(cart, catalog);
-  if (country === shop.homeCountry) {
-    if (paidCents >= shop.freeShippingFromCents) return 0;
-    if (today.getDay() === FRIDAY && paidCents >= 4_000) {
-      // Free Friday: at home, orders from 40.00 EUR ship free.
-      return 0;
-    }
+  const atHome = country === shop.homeCountry;
+  // Pick the rule for this order. The first question that says yes
+  // wins, so a rule's place in the list is part of the rule.
+  /** @type {ShippingRule} */
+  let rule;
+  if (atHome && paidCents >= shop.freeShippingFromCents) {
+    rule = new Flat(0);
+  } else if (atHome && today.getDay() === FRIDAY && paidCents >= 4_000) {
+    // Free Friday: at home, orders from 40.00 EUR ship free.
+    rule = new Flat(0);
   } else if (country === 'CH') {
     // No provider ships to Switzerland: a courier, one flat price,
     // heavy parcels too, so this comes before the freight rule.
-    return 990;
-  } else if (weightGrams > 5_000) {
+    rule = new Flat(990);
+  } else if (!atHome && weightGrams > 5_000) {
     // Heavy parcels abroad go as freight: one flat price.
-    return 3_500;
+    rule = new Flat(3_500);
+  } else {
+    rule = new Cheapest(providers);
   }
-  const costs = [];
-  for (const provider of providers) {
-    try {
-      costs.push(provider(weightGrams, country));
-    } catch (error) {
-      if (error instanceof NoShippingError) {
-        // This provider does not ship there: ask the others.
-        continue;
-      }
-      throw error;
-    }
-  }
-  if (costs.length === 0) throw new NoShippingError(country);
-  return Math.min(...costs);
+  return rule.cost(weightGrams, country);
 }

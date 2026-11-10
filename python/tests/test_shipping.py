@@ -391,42 +391,18 @@ def test_the_cheapest_rule_says_no_when_nobody_ships_there():
 
 def test_the_cheapest_provider_wins():
     # Two stand-in providers, each with one price for every parcel.
-    providers: list[ShippingQuote] = [
-        lambda grams, country: 700,
-        lambda grams, country: 450,
-    ]
-    cart = cart_of("MUG-01", 1)
-    assert (
-        shipping_cost(
-            cart,
-            starter_catalog(),
-            "FR",
-            1_250,
-            A_WEDNESDAY,
-            providers,
-            GERMAN_SHOP,
-        )
-        == 450
+    cheapest = Cheapest(
+        [lambda grams, country: 700, lambda grams, country: 450]
     )
+    assert cheapest.cost(350, "FR") == 450
 
 
 def test_a_provider_that_does_not_ship_there_is_skipped():
     def nowhere(grams: int, country: str) -> int:
         raise NoShippingError(country)
 
-    providers: list[ShippingQuote] = [nowhere, lambda grams, country: 700]
-    cart = cart_of("MUG-01", 1)
     assert (
-        shipping_cost(
-            cart,
-            starter_catalog(),
-            "FR",
-            1_250,
-            A_WEDNESDAY,
-            providers,
-            GERMAN_SHOP,
-        )
-        == 700
+        Cheapest([nowhere, lambda grams, country: 700]).cost(350, "FR") == 700
     )
 
 

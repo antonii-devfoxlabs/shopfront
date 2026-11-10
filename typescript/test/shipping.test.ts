@@ -394,40 +394,15 @@ test('the cheapest rule says no when nobody ships there', () => {
 
 test('the cheapest provider wins', () => {
   // Two stand-in providers, each with one price for every parcel.
-  const providers = [() => 700, () => 450];
-  const cart = cartOf('MUG-01', 1);
-  assert.equal(
-    shippingCost(
-      cart,
-      starterCatalog(),
-      'FR',
-      1_250,
-      A_WEDNESDAY,
-      providers,
-      GERMAN_SHOP,
-    ),
-    450,
-  );
+  const cheapest = new Cheapest([() => 700, () => 450]);
+  assert.equal(cheapest.cost(350, 'FR'), 450);
 });
 
 test('a provider that does not ship there is skipped', () => {
   function nowhere(grams: number, country: string): number {
     throw new NoShippingError(country);
   }
-  const providers: ShippingQuote[] = [nowhere, () => 700];
-  const cart = cartOf('MUG-01', 1);
-  assert.equal(
-    shippingCost(
-      cart,
-      starterCatalog(),
-      'FR',
-      1_250,
-      A_WEDNESDAY,
-      providers,
-      GERMAN_SHOP,
-    ),
-    700,
-  );
+  assert.equal(new Cheapest([nowhere, () => 700]).cost(350, 'FR'), 700);
 });
 
 test('the shipping cost logs nothing itself', () => {
