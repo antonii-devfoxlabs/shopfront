@@ -47,8 +47,8 @@ const cart = new Cart();
 cart.add('MUG-01', 2);
 cart.add('TEA-02');
 
-// Each rate is asked once, and each real lookup is timed and logged.
-const taxes = new CachedRates(new TimedRates(new TaxService(), console.log));
+// Every rate the calculator asks for is timed and logged.
+const taxes = new TimedRates(new CachedRates(new TaxService()), console.log);
 const calculator = new PriceCalculator(catalog, taxes, shop);
 const quote = calculator.quote(cart, 'DE', {
   today: new Date(),

@@ -47,8 +47,8 @@ def main() -> None:
     cart.add("MUG-01", 2)
     cart.add("TEA-02")
 
-    # Each rate is asked once, and each real lookup is timed and logged.
-    taxes = CachedRates(TimedRates(TaxService(), print))
+    # Every rate the calculator asks for is timed and logged.
+    taxes = TimedRates(CachedRates(TaxService()), print)
     calculator = PriceCalculator(catalog, taxes, shop)
     quote = calculator.quote(
         cart, "DE", today=date.today(), coupon="WELCOME10"
