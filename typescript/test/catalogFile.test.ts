@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
 
-import { CatalogFileError, loadCatalog } from '../src/catalogFile.ts';
+import { CatalogError, loadCatalog } from '../src/catalogFile.ts';
 
 const KETTLE = {
   sku: 'KTL-03',
@@ -30,7 +30,7 @@ test('a typo in a field names the file and the product', () => {
   };
   writeFileSync(path, JSON.stringify([KETTLE, typo]));
   assert.throws(() => loadCatalog(path), {
-    name: 'CatalogFileError',
+    name: 'CatalogError',
     message: /catalog\.json, product 2: price_cents must be a whole number$/,
   });
 });
@@ -39,14 +39,14 @@ test('broken JSON names the file and the line', () => {
   const path = freshPath();
   writeFileSync(path, '[\n  {"sku": "KTL-03"\n  "name": "Kettle"}\n]\n');
   assert.throws(() => loadCatalog(path), {
-    name: 'CatalogFileError',
+    name: 'CatalogError',
     message: /catalog\.json: .*\(line 3 column 3\)$/,
   });
 });
 
 test("a missing file is said in the store's words", () => {
   assert.throws(() => loadCatalog(freshPath()), {
-    name: 'CatalogFileError',
+    name: 'CatalogError',
     message: /catalog\.json: no such file$/,
   });
 });

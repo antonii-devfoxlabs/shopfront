@@ -4,9 +4,9 @@ import { readFileSync } from 'node:fs';
 
 import { Catalog } from './catalog.js';
 
-// The owner's catalog file cannot be read: the message says where.
-export class CatalogFileError extends Error {
-  name = 'CatalogFileError';
+// The catalog cannot be read: the message says where, and why.
+export class CatalogError extends Error {
+  name = 'CatalogError';
 }
 
 // Read the owner's catalog file into a Catalog, or say what is wrong
@@ -17,7 +17,7 @@ export function loadCatalog(path) {
     text = readFileSync(path, 'utf8');
   } catch (error) {
     if (error.code === 'ENOENT') {
-      throw new CatalogFileError(`${path}: no such file`, { cause: error });
+      throw new CatalogError(`${path}: no such file`, { cause: error });
     }
     throw error;
   }
@@ -26,46 +26,51 @@ export function loadCatalog(path) {
     rows = JSON.parse(text);
   } catch (error) {
     if (error instanceof SyntaxError) {
-      throw new CatalogFileError(`${path}: ${error.message}`, {
+      throw new CatalogError(`${path}: ${error.message}`, {
         cause: error,
       });
     }
     throw error;
   }
+  return catalog(rows, path);
+}
+
+// The rows, wherever they were read from, checked into a Catalog.
+function catalog(rows, where) {
   if (!Array.isArray(rows)) {
-    throw new CatalogFileError(`${path}: not a list of products`);
+    throw new CatalogError(`${where}: not a list of products`);
   }
   return new Catalog(
-    rows.map((row, index) => product(row, `${path}, product ${index + 1}`)),
+    rows.map((row, index) => product(row, `${where}, product ${index + 1}`)),
   );
 }
 
 // One row of the file, in the file's words, as a product.
 function product(row, where) {
   if (typeof row !== 'object' || row === null) {
-    throw new CatalogFileError(`${where}: not a product`);
+    throw new CatalogError(`${where}: not a product`);
   }
   return {
-    sku: text(row, 'sku', where),
-    name: text(row, 'name', where),
-    priceCents: wholeNumber(row, 'price_cents', where),
-    weightGrams: wholeNumber(row, 'weight_grams', where),
-    stock: wholeNumber(row, 'stock', where),
+    sku: textField(row, 'sku', where),
+    name: textField(row, 'name', where),
+    priceCents: wholeNumberField(row, 'price_cents', where),
+    weightGrams: wholeNumberField(row, 'weight_grams', where),
+    stock: wholeNumberField(row, 'stock', where),
   };
 }
 
-function text(row, field, where) {
+function textField(row, field, where) {
   const value = row[field];
   if (typeof value !== 'string') {
-    throw new CatalogFileError(`${where}: ${field} must be text`);
+    throw new CatalogError(`${where}: ${field} must be text`);
   }
   return value;
 }
 
-function wholeNumber(row, field, where) {
+function wholeNumberField(row, field, where) {
   const value = row[field];
   if (!Number.isInteger(value)) {
-    throw new CatalogFileError(`${where}: ${field} must be a whole number`);
+    throw new CatalogError(`${where}: ${field} must be a whole number`);
   }
   return value;
 }

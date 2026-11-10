@@ -6,8 +6,8 @@ from pathlib import Path
 from shopfront.catalog import Catalog, Product
 
 
-class CatalogFileError(Exception):
-    """The owner's catalog file cannot be read: the message says where."""
+class CatalogError(Exception):
+    """The catalog cannot be read: the message says where, and why."""
 
 
 def load_catalog(path: Path) -> Catalog:
@@ -16,18 +16,23 @@ def load_catalog(path: Path) -> Catalog:
     try:
         text = path.read_text(encoding="utf-8")
     except FileNotFoundError as error:
-        raise CatalogFileError(f"{path}: no such file") from error
+        raise CatalogError(f"{path}: no such file") from error
     try:
         rows = json.loads(text)
     except json.JSONDecodeError as error:
-        raise CatalogFileError(
+        raise CatalogError(
             f"{path}, line {error.lineno}: {error.msg}"
         ) from error
+    return _catalog(rows, str(path))
+
+
+def _catalog(rows: object, where: str) -> Catalog:
+    """The rows, wherever they were read from, checked into a Catalog."""
     if not isinstance(rows, list):
-        raise CatalogFileError(f"{path}: not a list of products")
+        raise CatalogError(f"{where}: not a list of products")
     return Catalog(
         [
-            _product(row, f"{path}, product {number}")
+            _product(row, f"{where}, product {number}")
             for number, row in enumerate(rows, start=1)
         ]
     )
@@ -36,25 +41,25 @@ def load_catalog(path: Path) -> Catalog:
 def _product(row: object, where: str) -> Product:
     """One row of the file, in the file's words, as a Product."""
     if not isinstance(row, dict):
-        raise CatalogFileError(f"{where}: not a product")
+        raise CatalogError(f"{where}: not a product")
     return Product(
-        sku=_text(row, "sku", where),
-        name=_text(row, "name", where),
-        price_cents=_whole_number(row, "price_cents", where),
-        weight_grams=_whole_number(row, "weight_grams", where),
-        stock=_whole_number(row, "stock", where),
+        sku=_text_field(row, "sku", where),
+        name=_text_field(row, "name", where),
+        price_cents=_whole_number_field(row, "price_cents", where),
+        weight_grams=_whole_number_field(row, "weight_grams", where),
+        stock=_whole_number_field(row, "stock", where),
     )
 
 
-def _text(row: dict, field: str, where: str) -> str:
+def _text_field(row: dict, field: str, where: str) -> str:
     value = row.get(field)
     if not isinstance(value, str):
-        raise CatalogFileError(f"{where}: {field} must be text")
+        raise CatalogError(f"{where}: {field} must be text")
     return value
 
 
-def _whole_number(row: dict, field: str, where: str) -> int:
+def _whole_number_field(row: dict, field: str, where: str) -> int:
     value = row.get(field)
     if not isinstance(value, int):
-        raise CatalogFileError(f"{where}: {field} must be a whole number")
+        raise CatalogError(f"{where}: {field} must be a whole number")
     return value

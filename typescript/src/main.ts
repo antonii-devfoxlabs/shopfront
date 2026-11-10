@@ -2,7 +2,7 @@
 
 import { Cart } from './cart.ts';
 import type { Catalog } from './catalog.ts';
-import { CatalogFileError, loadCatalog } from './catalogFile.ts';
+import { CatalogError, loadCatalog } from './catalogFile.ts';
 import { Checkout } from './checkout.ts';
 import { TimedGateway } from './gateways.ts';
 import { formatMoney } from './orders.ts';
@@ -44,7 +44,7 @@ let catalog: Catalog;
 try {
   catalog = loadCatalog('catalog.json');
 } catch (error) {
-  if (!(error instanceof CatalogFileError)) throw error;
+  if (!(error instanceof CatalogError)) throw error;
   console.error(`Shopfront cannot start: ${error.message}`);
   process.exit(1);
 }

@@ -5,7 +5,7 @@ from datetime import date
 from pathlib import Path
 
 from shopfront.cart import Cart
-from shopfront.catalog_file import CatalogFileError, load_catalog
+from shopfront.catalog_file import CatalogError, load_catalog
 from shopfront.checkout import Checkout
 from shopfront.gateways import TimedGateway
 from shopfront.orders import format_money
@@ -43,7 +43,7 @@ def main() -> None:
     # and will not start on a file it cannot read.
     try:
         catalog = load_catalog(Path("catalog.json"))
-    except CatalogFileError as error:
+    except CatalogError as error:
         sys.exit(f"Shopfront cannot start: {error}")
     cart = Cart()
     cart.add("MUG-01", 2)

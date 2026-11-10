@@ -1,7 +1,7 @@
 // One order through the whole store: `npm start`.
 
 import { Cart } from './cart.js';
-import { CatalogFileError, loadCatalog } from './catalogFile.js';
+import { CatalogError, loadCatalog } from './catalogFile.js';
 import { Checkout } from './checkout.js';
 import { TimedGateway } from './gateways.js';
 import { formatMoney } from './orders.js';
@@ -43,7 +43,7 @@ let catalog;
 try {
   catalog = loadCatalog('catalog.json');
 } catch (error) {
-  if (!(error instanceof CatalogFileError)) throw error;
+  if (!(error instanceof CatalogError)) throw error;
   console.error(`Shopfront cannot start: ${error.message}`);
   process.exit(1);
 }
