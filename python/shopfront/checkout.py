@@ -10,7 +10,6 @@ from shopfront.orders import Order, OrderBuilder, next_order_id, place_order
 from shopfront.payments import Gateway, pay
 from shopfront.pricing import PriceQuote
 from shopfront.settings import Settings
-from shopfront.shipping import ShippingQuote
 from shopfront.vendor.analytics import Analytics
 from shopfront.vendor.mailer import Mailer
 
@@ -24,7 +23,6 @@ class Checkout:
 
     quote: Callable[..., PriceQuote]
     shipping_cost: Callable[..., int]
-    providers: list[ShippingQuote]
     catalog: Catalog
     gateway: Gateway
     mailer: Mailer
@@ -50,13 +48,7 @@ class Checkout:
         quote = self.quote(cart, country, today=today, coupon=coupon)
         paid_cents = quote.subtotal_cents - quote.discount_cents
         shipping_cents = self.shipping_cost(
-            cart,
-            self.catalog,
-            country,
-            paid_cents,
-            today,
-            self.providers,
-            self.shop,
+            cart, self.catalog, country, paid_cents
         )
         total_cents = paid_cents + quote.tax_cents + shipping_cents
 

@@ -16,7 +16,7 @@ from shopfront.providers import (
     swiftship_quote,
 )
 from shopfront.settings import GERMAN_SHOP
-from shopfront.shipping import ShippingQuote, shipping_cost
+from shopfront.shipping import FreeFriday, Shipping, ShippingQuote
 from shopfront.taxes import CachedRates, TimedRates
 from shopfront.timing import timed
 from shopfront.vendor.analytics import Analytics
@@ -39,6 +39,13 @@ def main() -> None:
         timed("swiftship quote", swiftship_quote(SwiftShip()), print),
         timed("boxroute quote", boxroute_quote, print),
     ]
+    # The offer the shop runs, picked here with the shop: Free Friday,
+    # from the shop's own line, on the real clock.
+    shipping = Shipping(
+        offer=FreeFriday(shop.free_friday_from_cents, today=date.today),
+        providers=providers,
+        shop=shop,
+    )
     # The owner edits catalog.json; the shop reads it when it starts,
     # and will not start on a file it cannot read.
     try:
@@ -60,8 +67,7 @@ def main() -> None:
         # The timer is outside the calculator, so every quote is timed:
         # what a shopper waits for a price, cached rate or not.
         quote=timed("price quote", calculator.quote, print),
-        shipping_cost=timed("shipping cost", shipping_cost, print),
-        providers=providers,
+        shipping_cost=timed("shipping cost", shipping.cost, print),
         catalog=catalog,
         gateway=gateway,
         mailer=mailer,

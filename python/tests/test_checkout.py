@@ -18,7 +18,7 @@ from shopfront.providers import (
     swiftship_quote,
 )
 from shopfront.settings import DUTCH_SHOP, GERMAN_SHOP, Settings
-from shopfront.shipping import ShippingQuote, shipping_cost
+from shopfront.shipping import FreeFriday, Shipping, ShippingQuote
 from shopfront.vendor.analytics import Analytics
 from shopfront.vendor.mailer import Mailer
 from shopfront.vendor.parcelnow import ParcelNowClient
@@ -35,14 +35,27 @@ def providers_for(shop: Settings) -> list[ShippingQuote]:
     ]
 
 
+A_MONDAY = date(2026, 6, 15)
+
+
+def shipping_for(shop: Settings) -> Shipping:
+    """The shop's shipping, with Free Friday on a clock that says Monday:
+    the offer reads its own clock, so these tests never depend on the day
+    they run."""
+    return Shipping(
+        offer=FreeFriday(shop.free_friday_from_cents, today=lambda: A_MONDAY),
+        providers=providers_for(shop),
+        shop=shop,
+    )
+
+
 def checkout_for(
     shop: Settings, catalog: Catalog, gateway: Gateway, mailer: Mailer
 ) -> Checkout:
     """A checkout with the real parts, and the test's own to look into."""
     return Checkout(
         quote=PriceCalculator(catalog, TaxService(), shop).quote,
-        shipping_cost=shipping_cost,
-        providers=providers_for(shop),
+        shipping_cost=shipping_for(shop).cost,
         catalog=catalog,
         gateway=gateway,
         mailer=mailer,
@@ -138,14 +151,8 @@ def test_two_shops_in_one_run():
         await asyncio.sleep(0.01)  # The bank answers.
         cart = Cart()
         cart.add("MUG-01", 5)
-        return shipping_cost(
-            cart,
-            starter_catalog(),
-            country,
-            6_000,
-            date(2026, 6, 15),
-            providers_for(shop),
-            shop,
+        return shipping_for(shop).cost(
+            cart, starter_catalog(), country, 6_000
         )
 
     async def both() -> list[int]:

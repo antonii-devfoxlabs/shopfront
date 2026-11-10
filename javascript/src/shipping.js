@@ -87,40 +87,43 @@ export class FreeFriday {
   }
 }
 
-/** @param {ShippingQuote[]} providers */
-export function shippingCost(
-  cart,
-  catalog,
-  country,
-  paidCents,
-  today,
-  providers,
-  shop,
-) {
-  const weightGrams = cartWeightGrams(cart, catalog);
-  const atHome = country === shop.homeCountry;
-  // Pick the rule for this order. The first question that says yes
-  // wins, so a rule's place in the list is part of the rule.
-  /** @type {ShippingRule} */
-  let rule;
-  if (atHome && paidCents >= shop.freeShippingFromCents) {
-    rule = new Flat(0);
-  } else if (
-    atHome &&
-    today.getDay() === FRIDAY &&
-    paidCents >= shop.freeFridayFromCents
-  ) {
-    // Free Friday: at home, orders from the shop's Friday line.
-    rule = new Flat(0);
-  } else if (country === 'CH') {
-    // No provider ships to Switzerland: a courier, one flat price,
-    // heavy parcels too, so this comes before the freight rule.
-    rule = new Flat(990);
-  } else if (!atHome && weightGrams > 5_000) {
-    // Heavy parcels abroad go as freight: one flat price.
-    rule = new Flat(3_500);
-  } else {
-    rule = new Cheapest(providers);
+// What one shop charges to ship an order. main hands it the shop, the
+// providers and the offer the shop runs; it never picks an offer itself.
+export class Shipping {
+  /**
+   * @param {object} parts
+   * @param {ShippingOffer} parts.offer
+   * @param {ShippingQuote[]} parts.providers
+   * @param {import('./settings.js').Settings} parts.shop
+   */
+  constructor({ offer, providers, shop }) {
+    this.offer = offer;
+    this.providers = providers;
+    this.shop = shop;
   }
-  return rule.cost(weightGrams, country);
+
+  cost(cart, catalog, country, paidCents) {
+    const weightGrams = cartWeightGrams(cart, catalog);
+    const atHome = country === this.shop.homeCountry;
+    // Pick the rule for this order. The first question that says yes
+    // wins, so a rule's place in the list is part of the rule.
+    /** @type {ShippingRule} */
+    let rule;
+    if (atHome && paidCents >= this.shop.freeShippingFromCents) {
+      rule = new Flat(0);
+    } else if (atHome && this.offer.shipsFree(paidCents)) {
+      // The shop's offer, whichever one main handed in.
+      rule = new Flat(0);
+    } else if (country === 'CH') {
+      // No provider ships to Switzerland: a courier, one flat price,
+      // heavy parcels too, so this comes before the freight rule.
+      rule = new Flat(990);
+    } else if (!atHome && weightGrams > 5_000) {
+      // Heavy parcels abroad go as freight: one flat price.
+      rule = new Flat(3_500);
+    } else {
+      rule = new Cheapest(this.providers);
+    }
+    return rule.cost(weightGrams, country);
+  }
 }

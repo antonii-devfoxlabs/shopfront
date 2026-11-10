@@ -11,7 +11,6 @@ import {
 import { type Gateway, type PaymentDetails, pay } from './payments.ts';
 import type { PriceQuote, QuoteOptions } from './pricing.ts';
 import type { Settings } from './settings.ts';
-import { type ShippingQuote, shippingCost } from './shipping.ts';
 import type { Analytics } from './vendor/analytics.ts';
 import type { Mailer } from './vendor/mailer.ts';
 
@@ -19,8 +18,12 @@ import type { Mailer } from './vendor/mailer.ts';
 // functions it calls, timed or not, as main chooses.
 export type CheckoutParts = {
   quote: (cart: Cart, country: string, options: QuoteOptions) => PriceQuote;
-  shippingCost: typeof shippingCost;
-  providers: readonly ShippingQuote[];
+  shippingCost: (
+    cart: Cart,
+    catalog: Catalog,
+    country: string,
+    paidCents: number,
+  ) => number;
   catalog: Catalog;
   gateway: Gateway;
   mailer: Mailer;
@@ -64,9 +67,6 @@ export class Checkout {
       parts.catalog,
       country,
       paidCents,
-      today,
-      parts.providers,
-      parts.shop,
     );
     const totalCents = paidCents + quote.taxCents + shippingCents;
 

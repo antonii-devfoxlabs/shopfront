@@ -85,36 +85,36 @@ class FreeFriday:
         )
 
 
-def shipping_cost(
-    cart: Cart,
-    catalog: Catalog,
-    country: str,
-    paid_cents: int,
-    today: date,
-    providers: list[ShippingQuote],
-    shop: Settings,
-) -> int:
-    weight_grams = cart_weight_grams(cart, catalog)
-    at_home = country == shop.home_country
-    # Pick the rule for this order. The first question that says yes
-    # wins, so a rule's place in the list is part of the rule.
-    rule: ShippingRule
-    if at_home and paid_cents >= shop.free_shipping_from_cents:
-        rule = Flat(0)
-    elif (
-        at_home
-        and today.weekday() == FRIDAY
-        and paid_cents >= shop.free_friday_from_cents
-    ):
-        # Free Friday: at home, orders from the shop's Friday line.
-        rule = Flat(0)
-    elif country == "CH":
-        # No provider ships to Switzerland: a courier, one flat price,
-        # heavy parcels too, so this comes before the freight rule.
-        rule = Flat(990)
-    elif not at_home and weight_grams > 5_000:
-        # Heavy parcels abroad go as freight: one flat price.
-        rule = Flat(3_500)
-    else:
-        rule = Cheapest(providers)
-    return rule.cost(weight_grams, country)
+@dataclass(frozen=True, kw_only=True)
+class Shipping:
+    """What one shop charges to ship an order. main hands it the shop,
+    the providers and the offer the shop runs; it never picks an offer
+    itself."""
+
+    offer: ShippingOffer
+    providers: list[ShippingQuote]
+    shop: Settings
+
+    def cost(
+        self, cart: Cart, catalog: Catalog, country: str, paid_cents: int
+    ) -> int:
+        weight_grams = cart_weight_grams(cart, catalog)
+        at_home = country == self.shop.home_country
+        # Pick the rule for this order. The first question that says yes
+        # wins, so a rule's place in the list is part of the rule.
+        rule: ShippingRule
+        if at_home and paid_cents >= self.shop.free_shipping_from_cents:
+            rule = Flat(0)
+        elif at_home and self.offer.ships_free(paid_cents):
+            # The shop's offer, whichever one main handed in.
+            rule = Flat(0)
+        elif country == "CH":
+            # No provider ships to Switzerland: a courier, one flat price,
+            # heavy parcels too, so this comes before the freight rule.
+            rule = Flat(990)
+        elif not at_home and weight_grams > 5_000:
+            # Heavy parcels abroad go as freight: one flat price.
+            rule = Flat(3_500)
+        else:
+            rule = Cheapest(self.providers)
+        return rule.cost(weight_grams, country)

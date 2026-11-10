@@ -13,7 +13,7 @@ import {
   swiftShipQuote,
 } from './providers.ts';
 import { GERMAN_SHOP } from './settings.ts';
-import { shippingCost } from './shipping.ts';
+import { FreeFriday, Shipping } from './shipping.ts';
 import { CachedRates, TimedRates } from './taxes.ts';
 import { timed } from './timing.ts';
 import { Analytics } from './vendor/analytics.ts';
@@ -37,6 +37,13 @@ const providers = [
   timed('swiftship quote', swiftShipQuote(new SwiftShip()), console.log),
   timed('boxroute quote', boxRouteQuote, console.log),
 ];
+// The offer the shop runs, picked here with the shop: Free Friday, from
+// the shop's own line, on the real clock.
+const shipping = new Shipping({
+  offer: new FreeFriday(shop.freeFridayFromCents, () => new Date()),
+  providers,
+  shop,
+});
 
 // The owner edits catalog.json; the shop reads it when it starts, and
 // will not start on a file it cannot read.
@@ -68,8 +75,12 @@ const checkout = new Checkout({
       calculator.quote(cart, country, options),
     console.log,
   ),
-  shippingCost: timed('shipping cost', shippingCost, console.log),
-  providers,
+  shippingCost: timed(
+    'shipping cost',
+    (cart: Cart, catalog: Catalog, country: string, paidCents: number) =>
+      shipping.cost(cart, catalog, country, paidCents),
+    console.log,
+  ),
   catalog,
   gateway,
   mailer,

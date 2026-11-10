@@ -15,7 +15,7 @@ import {
   swiftShipQuote,
 } from '../src/providers.js';
 import { DUTCH_SHOP, GERMAN_SHOP } from '../src/settings.js';
-import { shippingCost } from '../src/shipping.js';
+import { FreeFriday, Shipping } from '../src/shipping.js';
 import { Analytics } from '../src/vendor/analytics.js';
 import { Mailer } from '../src/vendor/mailer.js';
 import { ParcelNowClient } from '../src/vendor/parcelnow.js';
@@ -32,6 +32,19 @@ function providersFor(shop) {
   ];
 }
 
+const A_MONDAY = new Date(2026, 5, 15);
+
+// The shop's shipping, with Free Friday on a clock that says Monday: the
+// offer reads its own clock, so these tests never depend on the day they
+// run.
+function shippingFor(shop) {
+  return new Shipping({
+    offer: new FreeFriday(shop.freeFridayFromCents, () => A_MONDAY),
+    providers: providersFor(shop),
+    shop,
+  });
+}
+
 // A new payment gateway of the German shop, for one test.
 function aGateway() {
   return new PaymentGateway({ merchant: GERMAN_SHOP.merchantId });
@@ -40,11 +53,12 @@ function aGateway() {
 // A checkout with the real parts, and the test's own to look into.
 function checkoutFor(shop, catalog, gateway, mailer) {
   const calculator = new PriceCalculator(catalog, new TaxService(), shop);
+  const shipping = shippingFor(shop);
   return new Checkout({
     quote: (cart, country, options) =>
       calculator.quote(cart, country, options),
-    shippingCost,
-    providers: providersFor(shop),
+    shippingCost: (cart, catalog, country, paidCents) =>
+      shipping.cost(cart, catalog, country, paidCents),
     catalog,
     gateway,
     mailer,
@@ -146,15 +160,7 @@ test('two shops in one run', async () => {
     await sleep(10); // The bank answers.
     const cart = new Cart();
     cart.add('MUG-01', 5);
-    return shippingCost(
-      cart,
-      starterCatalog(),
-      country,
-      6_000,
-      new Date(2026, 5, 15),
-      providersFor(shop),
-      shop,
-    );
+    return shippingFor(shop).cost(cart, starterCatalog(), country, 6_000);
   }
 
   const both = await Promise.all([

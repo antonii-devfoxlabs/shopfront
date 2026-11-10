@@ -20,7 +20,7 @@ import {
   swiftShipQuote,
 } from '../src/providers.ts';
 import { DUTCH_SHOP, GERMAN_SHOP, type Settings } from '../src/settings.ts';
-import { type ShippingQuote, shippingCost } from '../src/shipping.ts';
+import { FreeFriday, Shipping, type ShippingQuote } from '../src/shipping.ts';
 import { Analytics } from '../src/vendor/analytics.ts';
 import { Mailer } from '../src/vendor/mailer.ts';
 import { ParcelNowClient } from '../src/vendor/parcelnow.ts';
@@ -37,6 +37,19 @@ function providersFor(shop: Settings): ShippingQuote[] {
   ];
 }
 
+const A_MONDAY = new Date(2026, 5, 15);
+
+// The shop's shipping, with Free Friday on a clock that says Monday: the
+// offer reads its own clock, so these tests never depend on the day they
+// run.
+function shippingFor(shop: Settings): Shipping {
+  return new Shipping({
+    offer: new FreeFriday(shop.freeFridayFromCents, () => A_MONDAY),
+    providers: providersFor(shop),
+    shop,
+  });
+}
+
 // A new payment gateway of the German shop, for one test.
 function aGateway(): PaymentGateway {
   return new PaymentGateway({ merchant: GERMAN_SHOP.merchantId });
@@ -50,11 +63,16 @@ function checkoutFor(
   mailer: Mailer,
 ): Checkout {
   const calculator = new PriceCalculator(catalog, new TaxService(), shop);
+  const shipping = shippingFor(shop);
   return new Checkout({
     quote: (cart: Cart, country: string, options: QuoteOptions) =>
       calculator.quote(cart, country, options),
-    shippingCost,
-    providers: providersFor(shop),
+    shippingCost: (
+      cart: Cart,
+      catalog: Catalog,
+      country: string,
+      paidCents: number,
+    ) => shipping.cost(cart, catalog, country, paidCents),
     catalog,
     gateway,
     mailer,
@@ -156,15 +174,7 @@ test('two shops in one run', async () => {
     await sleep(10); // The bank answers.
     const cart = new Cart();
     cart.add('MUG-01', 5);
-    return shippingCost(
-      cart,
-      starterCatalog(),
-      country,
-      6_000,
-      new Date(2026, 5, 15),
-      providersFor(shop),
-      shop,
-    );
+    return shippingFor(shop).cost(cart, starterCatalog(), country, 6_000);
   }
 
   const both = await Promise.all([
