@@ -34,7 +34,7 @@ const gateway = new TimedGateway(
   new PaymentGateway({ merchant: shop.merchantId }),
   console.log,
 );
-// Every shipping quote is timed and logged, and so is the whole cost.
+// Every shipping quote is timed and logged.
 const parcelNow = new ParcelNowClient({ account: shop.parcelNowAccount });
 const providers = [
   timed('parcelnow quote', parcelNowQuote(parcelNow), console.log),
@@ -55,8 +55,7 @@ const quote = calculator.quote(cart, 'DE', {
   coupon: 'WELCOME10',
 });
 const paidCents = quote.subtotalCents - quote.discountCents;
-const timedShippingCost = timed('shipping cost', shippingCost, console.log);
-const shippingCents = timedShippingCost(
+const shippingCents = shippingCost(
   cart,
   catalog,
   'DE',

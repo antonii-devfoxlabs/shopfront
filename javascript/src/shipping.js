@@ -1,5 +1,7 @@
 // What it costs to ship a cart.
 
+import { timed } from './timing.js';
+
 export class NoShippingError extends Error {
   name = 'NoShippingError';
 }
@@ -22,14 +24,7 @@ export function cartWeightGrams(cart, catalog) {
 }
 
 /** @param {ShippingQuote[]} providers */
-export function shippingCost(
-  cart,
-  catalog,
-  country,
-  paidCents,
-  providers,
-  shop,
-) {
+function costOfShipping(cart, catalog, country, paidCents, providers, shop) {
   const weightGrams = cartWeightGrams(cart, catalog);
   if (country === shop.homeCountry) {
     if (paidCents >= shop.freeShippingFromCents) return 0;
@@ -52,3 +47,10 @@ export function shippingCost(
   if (costs.length === 0) throw new NoShippingError(country);
   return Math.min(...costs);
 }
+
+// Every caller gets the timed shipping cost, the tests included.
+export const shippingCost = timed(
+  'shipping cost',
+  costOfShipping,
+  console.log,
+);

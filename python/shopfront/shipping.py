@@ -5,6 +5,7 @@ from collections.abc import Callable
 from shopfront.cart import Cart
 from shopfront.catalog import Catalog
 from shopfront.settings import Settings
+from shopfront.timing import timed
 
 
 class NoShippingError(Exception):
@@ -48,3 +49,7 @@ def shipping_cost(
     if not costs:
         raise NoShippingError(country)
     return min(costs)
+
+
+# Every caller gets the timed shipping cost, the tests included.
+shipping_cost = timed("shipping cost", shipping_cost, print)

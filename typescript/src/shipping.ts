@@ -3,6 +3,7 @@
 import type { Cart } from './cart.ts';
 import type { Catalog } from './catalog.ts';
 import type { Settings } from './settings.ts';
+import { timed } from './timing.ts';
 
 export class NoShippingError extends Error {
   override name = 'NoShippingError';
@@ -20,7 +21,7 @@ export function cartWeightGrams(cart: Cart, catalog: Catalog): number {
   return grams;
 }
 
-export function shippingCost(
+function costOfShipping(
   cart: Cart,
   catalog: Catalog,
   country: string,
@@ -50,3 +51,10 @@ export function shippingCost(
   if (costs.length === 0) throw new NoShippingError(country);
   return Math.min(...costs);
 }
+
+// Every caller gets the timed shipping cost, the tests included.
+export const shippingCost = timed(
+  'shipping cost',
+  costOfShipping,
+  console.log,
+);
