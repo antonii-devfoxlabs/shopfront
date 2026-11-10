@@ -9,7 +9,7 @@ import pytest
 from shopfront.cart import Cart
 from shopfront.catalog import Catalog, OutOfStockError, starter_catalog
 from shopfront.checkout import Checkout, buy_again
-from shopfront.orders import Order, OrderBuilder, next_order_id, packing_slip
+from shopfront.orders import OrderBuilder, next_order_id, packing_slip
 from shopfront.payments import Gateway
 from shopfront.pricing import PriceCalculator
 from shopfront.providers import (
@@ -17,7 +17,6 @@ from shopfront.providers import (
     parcelnow_quote,
     swiftship_quote,
 )
-from shopfront.returns import Refunds
 from shopfront.settings import DUTCH_SHOP, GERMAN_SHOP, Settings
 from shopfront.shipping import ShippingQuote, shipping_cost
 from shopfront.vendor.analytics import Analytics
@@ -49,23 +48,6 @@ def checkout_for(
         mailer=mailer,
         analytics=Analytics(),
         shop=shop,
-    )
-
-
-def buy_adas_order(checkout: Checkout) -> Order:
-    """Ada's order from the demo: two mugs and a tea, to Germany."""
-    cart = Cart()
-    cart.add("MUG-01", 2)
-    cart.add("TEA-02")
-    return checkout.buy(
-        cart,
-        "DE",
-        email="ada@example.com",
-        name="Ada",
-        paid_by="card",
-        details={"card_token": "tok-4242"},
-        today=date(2026, 6, 15),
-        coupon="WELCOME10",
     )
 
 
@@ -149,16 +131,6 @@ def test_ordering_again(gateway):
     assert order.total_cents == 4_524
     assert catalog.find("MUG-01").stock == 38
     assert len(mailer.outbox) == 1
-
-
-def test_the_sales_report_counts_only_the_orders_kept(gateway):
-    checkout = checkout_for(GERMAN_SHOP, starter_catalog(), gateway, Mailer())
-    buy_adas_order(checkout)
-    sent_back = buy_adas_order(checkout)
-    refunds = Refunds(gateway=gateway, mailer=Mailer(), shop=GERMAN_SHOP)
-    refunds.refund(sent_back.order_id, {"card_token": "tok-4242"})
-
-    assert checkout.sales_report() == "Orders: 1, takings: 41.21 EUR"
 
 
 def test_two_shops_in_one_run():

@@ -6,14 +6,7 @@ from datetime import date
 
 from shopfront.cart import Cart
 from shopfront.catalog import Catalog
-from shopfront.orders import (
-    Order,
-    OrderBook,
-    OrderBuilder,
-    format_money,
-    next_order_id,
-    place_order,
-)
+from shopfront.orders import Order, OrderBuilder, next_order_id, place_order
 from shopfront.payments import Gateway, pay
 from shopfront.pricing import PriceQuote
 from shopfront.settings import Settings
@@ -80,19 +73,6 @@ class Checkout:
             order, self.catalog, self.mailer, self.analytics, self.shop
         )
         return order
-
-    def sales_report(self) -> str:
-        """The owner's Monday line: the orders kept, and what they took."""
-        kept = [
-            order
-            for order in OrderBook.instance().orders()
-            if order.status == "placed"
-        ]
-        takings = sum(order.total_cents for order in kept)
-        return (
-            f"Orders: {len(kept)}, "
-            f"takings: {format_money(takings, self.shop)}"
-        )
 
 
 def buy_again(

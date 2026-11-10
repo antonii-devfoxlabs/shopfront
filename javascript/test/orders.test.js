@@ -11,6 +11,7 @@ import {
   packingSlip,
   placeOrder,
   reorder,
+  salesReport,
 } from '../src/orders.js';
 import { DUTCH_SHOP, GERMAN_SHOP } from '../src/settings.js';
 import { Analytics } from '../src/vendor/analytics.js';
@@ -202,6 +203,16 @@ test('a parcel of 40 EUR or more gets a free sample', () => {
     .transaction('txn-0003')
     .build();
   assert.deepEqual(packingSlip(order), ['4 x MUG-01', '1 x TEA-SAMPLE']);
+});
+
+test('the sales report counts only the orders kept', () => {
+  const kept = anOrder(undefined, 'SF-00001');
+  const sentBack = anOrder(undefined, 'SF-00002');
+  sentBack.status = 'returned';
+
+  const report = salesReport([kept, sentBack], GERMAN_SHOP);
+
+  assert.equal(report, 'Orders: 1, takings: 31.68 EUR');
 });
 
 test('money is shown in euros', () => {

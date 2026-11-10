@@ -14,7 +14,6 @@ import {
   parcelNowQuote,
   swiftShipQuote,
 } from '../src/providers.js';
-import { Refunds } from '../src/returns.js';
 import { DUTCH_SHOP, GERMAN_SHOP } from '../src/settings.js';
 import { shippingCost } from '../src/shipping.js';
 import { Analytics } from '../src/vendor/analytics.js';
@@ -51,21 +50,6 @@ function checkoutFor(shop, catalog, gateway, mailer) {
     mailer,
     analytics: new Analytics(),
     shop,
-  });
-}
-
-// Ada's order from the demo: two mugs and a tea, to Germany.
-function buyAdasOrder(checkout) {
-  const cart = new Cart();
-  cart.add('MUG-01', 2);
-  cart.add('TEA-02');
-  return checkout.buy(cart, 'DE', {
-    email: 'ada@example.com',
-    name: 'Ada',
-    paidBy: 'card',
-    details: { cardToken: 'tok-4242' },
-    today: new Date(2026, 5, 15),
-    coupon: 'WELCOME10',
   });
 }
 
@@ -155,26 +139,6 @@ test('ordering again', () => {
   assert.equal(order.totalCents, 4_524);
   assert.equal(catalog.find('MUG-01').stock, 38);
   assert.equal(mailer.outbox.length, 1);
-});
-
-test('the sales report counts only the orders kept', () => {
-  const gateway = aGateway();
-  const checkout = checkoutFor(
-    GERMAN_SHOP,
-    starterCatalog(),
-    gateway,
-    new Mailer(),
-  );
-  buyAdasOrder(checkout);
-  const sentBack = buyAdasOrder(checkout);
-  const refunds = new Refunds({
-    gateway,
-    mailer: new Mailer(),
-    shop: GERMAN_SHOP,
-  });
-  refunds.refund(sentBack.orderId, { cardToken: 'tok-4242' });
-
-  assert.equal(checkout.salesReport(), 'Orders: 1, takings: 41.21 EUR');
 });
 
 test('two shops in one run', async () => {

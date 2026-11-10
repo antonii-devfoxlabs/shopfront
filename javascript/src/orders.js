@@ -246,6 +246,14 @@ export function placeOrder(order, catalog, mailer, analytics, shop) {
   });
 }
 
+// The owner's Monday line: the orders kept, and what they took.
+export function salesReport(orders, shop) {
+  const kept = [...orders].filter((order) => order.status === 'placed');
+  let takings = 0;
+  for (const order of kept) takings += order.totalCents;
+  return `Orders: ${kept.length}, takings: ${formatMoney(takings, shop)}`;
+}
+
 export function formatMoney(cents, shop) {
   const sign = cents < 0 ? '-' : '';
   const euros = Math.floor(Math.abs(cents) / 100);

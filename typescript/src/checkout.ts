@@ -4,9 +4,7 @@ import { Cart } from './cart.ts';
 import type { Catalog } from './catalog.ts';
 import {
   type Order,
-  OrderBook,
   OrderBuilder,
-  formatMoney,
   nextOrderId,
   placeOrder,
 } from './orders.ts';
@@ -92,19 +90,6 @@ export class Checkout {
       parts.shop,
     );
     return order;
-  }
-
-  // The owner's Monday line: the orders kept, and what they took.
-  salesReport(): string {
-    const kept = OrderBook.instance()
-      .orders()
-      .filter((order) => order.status === 'placed');
-    let takings = 0;
-    for (const order of kept) takings += order.totalCents;
-    return (
-      `Orders: ${kept.length}, ` +
-      `takings: ${formatMoney(takings, this.#parts.shop)}`
-    );
   }
 }
 

@@ -1,6 +1,6 @@
 """An order, and what happens once it is placed."""
 
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from types import MappingProxyType
 from typing import ClassVar
 
@@ -241,6 +241,13 @@ def place_order(
         "order_placed",
         {"order_id": order.order_id, "total_cents": order.total_cents},
     )
+
+
+def sales_report(orders: Iterable[Order], shop: Settings) -> str:
+    """The owner's Monday line: the orders kept, and what they took."""
+    kept = [order for order in orders if order.status == "placed"]
+    takings = sum(order.total_cents for order in kept)
+    return f"Orders: {len(kept)}, takings: {format_money(takings, shop)}"
 
 
 def format_money(cents: int, shop: Settings) -> str:

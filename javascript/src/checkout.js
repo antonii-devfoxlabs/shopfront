@@ -1,13 +1,7 @@
 // Selling a cart: what the store's pages call to take an order.
 
 import { Cart } from './cart.js';
-import {
-  OrderBook,
-  OrderBuilder,
-  formatMoney,
-  nextOrderId,
-  placeOrder,
-} from './orders.js';
+import { OrderBuilder, nextOrderId, placeOrder } from './orders.js';
 import { pay } from './payments.js';
 
 // One call that sells a cart: every step of an order, in order.
@@ -61,19 +55,6 @@ export class Checkout {
       parts.shop,
     );
     return order;
-  }
-
-  // The owner's Monday line: the orders kept, and what they took.
-  salesReport() {
-    const kept = OrderBook.instance()
-      .orders()
-      .filter((order) => order.status === 'placed');
-    let takings = 0;
-    for (const order of kept) takings += order.totalCents;
-    return (
-      `Orders: ${kept.length}, ` +
-      `takings: ${formatMoney(takings, this.#parts.shop)}`
-    );
   }
 }
 

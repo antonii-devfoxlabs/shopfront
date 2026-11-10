@@ -12,6 +12,7 @@ from shopfront.orders import (
     packing_slip,
     place_order,
     reorder,
+    sales_report,
 )
 from shopfront.settings import DUTCH_SHOP, GERMAN_SHOP
 from shopfront.vendor.analytics import Analytics
@@ -184,6 +185,16 @@ def test_a_parcel_of_40_eur_or_more_gets_a_free_sample():
         .build()
     )
     assert packing_slip(order) == ["4 x MUG-01", "1 x TEA-SAMPLE"]
+
+
+def test_the_sales_report_counts_only_the_orders_kept():
+    kept = an_order(order_id="SF-00001")
+    sent_back = an_order(order_id="SF-00002")
+    sent_back.status = "returned"
+
+    report = sales_report([kept, sent_back], GERMAN_SHOP)
+
+    assert report == "Orders: 1, takings: 31.68 EUR"
 
 
 def test_money_is_shown_in_euros():
