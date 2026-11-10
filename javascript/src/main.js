@@ -44,7 +44,7 @@ try {
   catalog = loadCatalog('catalog.json');
 } catch (error) {
   if (!(error instanceof CatalogError)) throw error;
-  console.error(`Shopfront cannot start: ${error.message}`);
+  console.error(`Cannot start: ${error.message}`);
   process.exit(1);
 }
 const cart = new Cart();

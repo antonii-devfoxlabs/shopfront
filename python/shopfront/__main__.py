@@ -44,7 +44,7 @@ def main() -> None:
     try:
         catalog = load_catalog(Path("catalog.json"))
     except CatalogError as error:
-        sys.exit(f"Shopfront cannot start: {error}")
+        sys.exit(f"Cannot start: {error}")
     cart = Cart()
     cart.add("MUG-01", 2)
     cart.add("TEA-02")
