@@ -101,16 +101,10 @@ test('ordering again', () => {
   assert.equal(packingSlip(previous).at(-1), '1 x TEA-SAMPLE');
   const mailer = new Mailer();
   const order = buyAgain(
+    checkoutFor(shop, catalog, gateway, mailer),
     previous,
     { cardToken: 'tok-4242' },
     new Date(2026, 6, 15),
-    new PriceCalculator(catalog, new TaxService(), shop),
-    providersFor(shop),
-    catalog,
-    gateway,
-    mailer,
-    new Analytics(),
-    shop,
   );
 
   assert.notEqual(order.orderId, previous.orderId);

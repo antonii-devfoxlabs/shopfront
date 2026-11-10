@@ -93,16 +93,10 @@ def test_ordering_again(gateway):
     assert packing_slip(previous)[-1] == "1 x TEA-SAMPLE"
     mailer = Mailer()
     order = buy_again(
+        checkout_for(shop, catalog, gateway, mailer),
         previous,
         {"card_token": "tok-4242"},
         date(2026, 7, 15),
-        PriceCalculator(catalog, TaxService(), shop),
-        providers_for(shop),
-        catalog,
-        gateway,
-        mailer,
-        Analytics(),
-        shop,
     )
 
     assert order.order_id != previous.order_id

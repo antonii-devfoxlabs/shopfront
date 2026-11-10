@@ -1,9 +1,8 @@
 // Selling a cart: what the store's pages call to take an order.
 
 import { Cart } from './cart.js';
-import { OrderBuilder, nextOrderId, placeOrder, reorder } from './orders.js';
+import { OrderBuilder, nextOrderId, placeOrder } from './orders.js';
 import { pay } from './payments.js';
-import { shippingCost } from './shipping.js';
 
 // One call that sells a cart: every step of an order, in order.
 // main hands it the store's parts once; a page calls buy().
@@ -57,48 +56,14 @@ export class Checkout {
 }
 
 // The Buy again button: the same products, to the same address.
-export function buyAgain(
-  previous,
-  details,
-  today,
-  calculator,
-  providers,
-  catalog,
-  gateway,
-  mailer,
-  analytics,
-  shop,
-) {
-  const builder = reorder(previous, nextOrderId());
+export function buyAgain(checkout, previous, details, today) {
   const cart = new Cart();
   for (const [sku, quantity] of previous.lines) cart.add(sku, quantity);
-  const country = previous.shippingCountry;
-
-  const quote = calculator.quote(cart, country, { today });
-  builder.subtotal(quote.subtotalCents);
-  builder.discount(quote.discountCents);
-  builder.tax(quote.taxCents);
-
-  const paidCents = quote.subtotalCents - quote.discountCents;
-  const shippingCents = shippingCost(
-    cart,
-    catalog,
-    country,
-    paidCents,
-    providers,
-    shop,
-  );
-  builder.shipping(shippingCents);
-
-  const totalCents = paidCents + quote.taxCents + shippingCents;
-  const transactionId = pay(
-    previous.paymentMethod,
-    totalCents,
+  return checkout.buy(cart, previous.shippingCountry, {
+    email: previous.customerEmail,
+    name: previous.customerName,
+    paidBy: previous.paymentMethod,
     details,
-    gateway,
-  );
-  builder.paidBy(previous.paymentMethod).transaction(transactionId);
-  const order = builder.build();
-  placeOrder(order, catalog, mailer, analytics, shop);
-  return order;
+    today,
+  });
 }
