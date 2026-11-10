@@ -328,6 +328,35 @@ def test_on_fridays_home_orders_from_40_eur_ship_free():
     )
 
 
+def test_the_dutch_free_friday_starts_at_50_eur():
+    cart = cart_of("MUG-01", 5)
+    assert (
+        shipping_cost(
+            cart,
+            starter_catalog(),
+            "NL",
+            5_000,
+            A_FRIDAY,
+            providers_for(DUTCH_SHOP),
+            DUTCH_SHOP,
+        )
+        == 0
+    )
+    # 45.00 EUR is over the German Friday line, not the Dutch one.
+    assert (
+        shipping_cost(
+            cart,
+            starter_catalog(),
+            "NL",
+            4_500,
+            A_FRIDAY,
+            providers_for(DUTCH_SHOP),
+            DUTCH_SHOP,
+        )
+        == 910
+    )
+
+
 def test_switzerland_pays_a_flat_price():
     cart = cart_of("MUG-01", 2)
     # No provider ships to Switzerland; a courier takes it for 9.90.

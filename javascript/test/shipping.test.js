@@ -324,6 +324,35 @@ test('on Fridays home orders from 40 EUR ship free', () => {
   );
 });
 
+test('the Dutch Free Friday starts at 50 EUR', () => {
+  const cart = cartOf('MUG-01', 5);
+  assert.equal(
+    shippingCost(
+      cart,
+      starterCatalog(),
+      'NL',
+      5_000,
+      A_FRIDAY,
+      providersFor(DUTCH_SHOP),
+      DUTCH_SHOP,
+    ),
+    0,
+  );
+  // 45.00 EUR is over the German Friday line, not the Dutch one.
+  assert.equal(
+    shippingCost(
+      cart,
+      starterCatalog(),
+      'NL',
+      4_500,
+      A_FRIDAY,
+      providersFor(DUTCH_SHOP),
+      DUTCH_SHOP,
+    ),
+    910,
+  );
+});
+
 test('Switzerland pays a flat price', () => {
   const cart = cartOf('MUG-01', 2);
   // No provider ships to Switzerland; a courier takes it for 9.90.
