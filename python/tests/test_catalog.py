@@ -43,3 +43,11 @@ def test_taking_several_lines_takes_none_if_one_is_short():
     with pytest.raises(OutOfStockError):
         catalog.take_all_from_stock({"MUG-01": 2, "KTL-03": 9})
     assert catalog.find("MUG-01").stock == 40
+
+
+def test_checking_the_stock_takes_nothing():
+    catalog = starter_catalog()
+    catalog.check_stock({"MUG-01": 40})
+    with pytest.raises(OutOfStockError):
+        catalog.check_stock({"MUG-01": 2, "KTL-03": 9})
+    assert catalog.find("MUG-01").stock == 40

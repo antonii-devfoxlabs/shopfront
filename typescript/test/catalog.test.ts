@@ -54,3 +54,19 @@ test('taking several lines takes none if one is short', () => {
   );
   assert.equal(catalog.find('MUG-01').stock, 40);
 });
+
+test('checking the stock takes nothing', () => {
+  const catalog = starterCatalog();
+  catalog.checkStock(new Map([['MUG-01', 40]]));
+  assert.throws(
+    () =>
+      catalog.checkStock(
+        new Map([
+          ['MUG-01', 2],
+          ['KTL-03', 9],
+        ]),
+      ),
+    OutOfStockError,
+  );
+  assert.equal(catalog.find('MUG-01').stock, 40);
+});

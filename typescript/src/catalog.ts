@@ -45,8 +45,8 @@ export class Catalog {
     product.stock -= quantity;
   }
 
-  // Take every line, or none of them if one is short.
-  takeAllFromStock(lines: ReadonlyMap<string, number>): void {
+  // Throw if any line is short; take nothing.
+  checkStock(lines: ReadonlyMap<string, number>): void {
     for (const [sku, quantity] of lines) {
       const product = this.find(sku);
       if (product.stock < quantity) {
@@ -55,6 +55,11 @@ export class Catalog {
         );
       }
     }
+  }
+
+  // Take every line, or none of them if one is short.
+  takeAllFromStock(lines: ReadonlyMap<string, number>): void {
+    this.checkStock(lines);
     for (const [sku, quantity] of lines) {
       this.takeFromStock(sku, quantity);
     }

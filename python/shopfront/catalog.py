@@ -42,14 +42,18 @@ class Catalog:
             )
         product.stock -= quantity
 
-    def take_all_from_stock(self, lines: Mapping[str, int]) -> None:
-        """Take every line, or none of them if one is short."""
+    def check_stock(self, lines: Mapping[str, int]) -> None:
+        """Raise if any line is short; take nothing."""
         for sku, quantity in lines.items():
             product = self.find(sku)
             if product.stock < quantity:
                 raise OutOfStockError(
                     f"{sku}: {quantity} wanted, {product.stock} left"
                 )
+
+    def take_all_from_stock(self, lines: Mapping[str, int]) -> None:
+        """Take every line, or none of them if one is short."""
+        self.check_stock(lines)
         for sku, quantity in lines.items():
             self.take_from_stock(sku, quantity)
 

@@ -4,8 +4,10 @@ runs it."""
 import asyncio
 from datetime import date
 
+import pytest
+
 from shopfront.cart import Cart
-from shopfront.catalog import Catalog, starter_catalog
+from shopfront.catalog import Catalog, OutOfStockError, starter_catalog
 from shopfront.checkout import Checkout, buy_again
 from shopfront.orders import OrderBuilder, next_order_id, packing_slip
 from shopfront.payments import Gateway
@@ -71,6 +73,28 @@ def test_a_whole_order(gateway):
     assert order.total_cents == 4_121
     assert catalog.find("MUG-01").stock == 38
     assert len(mailer.outbox) == 1
+
+
+def test_an_order_out_of_stock_charges_nothing(gateway):
+    shop = GERMAN_SHOP
+    catalog = starter_catalog()
+    mailer = Mailer()
+    cart = Cart()
+    cart.add("KTL-03", 9)
+
+    with pytest.raises(OutOfStockError):
+        checkout_for(shop, catalog, gateway, mailer).buy(
+            cart,
+            "DE",
+            email="ada@example.com",
+            name="Ada",
+            paid_by="card",
+            details={"card_token": "tok-4242"},
+            today=date(2026, 6, 15),
+        )
+
+    assert gateway.charges == []
+    assert mailer.outbox == []
 
 
 def test_ordering_again(gateway):

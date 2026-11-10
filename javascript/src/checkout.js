@@ -16,9 +16,12 @@ export class Checkout {
     this.#parts = parts;
   }
 
-  // Price the cart, ship it, take the money, then place the order.
+  // Check the stock, price the cart, ship it, take the money, then place
+  // the order.
   buy(cart, country, { email, name, paidBy, details, today, coupon = null }) {
     const parts = this.#parts;
+    // Never charge a card for an order the store cannot send.
+    parts.catalog.checkStock(cart.lines);
     const quote = parts.quote(cart, country, { today, coupon });
     const paidCents = quote.subtotalCents - quote.discountCents;
     const shippingCents = parts.shippingCost(

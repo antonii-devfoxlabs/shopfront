@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import { setTimeout as sleep } from 'node:timers/promises';
 
 import { Cart } from '../src/cart.js';
-import { starterCatalog } from '../src/catalog.js';
+import { OutOfStockError, starterCatalog } from '../src/catalog.js';
 import { Checkout, buyAgain } from '../src/checkout.js';
 import { OrderBuilder, nextOrderId, packingSlip } from '../src/orders.js';
 import { PriceCalculator } from '../src/pricing.js';
@@ -77,6 +77,30 @@ test('a whole order', () => {
   assert.equal(order.totalCents, 4_121);
   assert.equal(catalog.find('MUG-01').stock, 38);
   assert.equal(mailer.outbox.length, 1);
+});
+
+test('an order out of stock charges nothing', () => {
+  const shop = GERMAN_SHOP;
+  const gateway = aGateway();
+  const catalog = starterCatalog();
+  const mailer = new Mailer();
+  const cart = new Cart();
+  cart.add('KTL-03', 9);
+
+  assert.throws(
+    () =>
+      checkoutFor(shop, catalog, gateway, mailer).buy(cart, 'DE', {
+        email: 'ada@example.com',
+        name: 'Ada',
+        paidBy: 'card',
+        details: { cardToken: 'tok-4242' },
+        today: new Date(2026, 5, 15),
+      }),
+    OutOfStockError,
+  );
+
+  assert.deepEqual(gateway.charges, []);
+  assert.deepEqual(mailer.outbox, []);
 });
 
 test('ordering again', () => {

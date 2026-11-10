@@ -43,7 +43,10 @@ class Checkout:
         today: date,
         coupon: str | None = None,
     ) -> Order:
-        """Price the cart, ship it, take the money, then place the order."""
+        """Check the stock, price the cart, ship it, take the money, then
+        place the order."""
+        # Never charge a card for an order the store cannot send.
+        self.catalog.check_stock(cart.lines)
         quote = self.quote(cart, country, today=today, coupon=coupon)
         paid_cents = quote.subtotal_cents - quote.discount_cents
         shipping_cents = self.shipping_cost(
