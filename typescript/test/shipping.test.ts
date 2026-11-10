@@ -340,6 +340,23 @@ test('Switzerland pays a flat price', () => {
   );
 });
 
+test('a heavy parcel to Switzerland pays the flat price too', () => {
+  const cart = cartOf('KTL-03', 6);
+  // 6.6 kg: heavy, but Switzerland's rule is one price for every parcel.
+  assert.equal(
+    shippingCost(
+      cart,
+      starterCatalog(),
+      'CH',
+      29_400,
+      A_WEDNESDAY,
+      providersFor(GERMAN_SHOP),
+      GERMAN_SHOP,
+    ),
+    990,
+  );
+});
+
 test('nobody ships to Spain', () => {
   assert.throws(
     () =>

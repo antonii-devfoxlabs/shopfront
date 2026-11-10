@@ -42,12 +42,13 @@ def shipping_cost(
         if today.weekday() == FRIDAY and paid_cents >= 4_000:
             # Free Friday: at home, orders from 40.00 EUR ship free.
             return 0
+    elif country == "CH":
+        # No provider ships to Switzerland: a courier, one flat price,
+        # heavy parcels too, so this comes before the freight rule.
+        return 990
     elif weight_grams > 5_000:
         # Heavy parcels abroad go as freight: one flat price.
         return 3_500
-    elif country == "CH":
-        # No provider ships to Switzerland: a courier, one flat price.
-        return 990
     costs = []
     for provider in providers:
         try:

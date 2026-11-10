@@ -40,12 +40,13 @@ export function shippingCost(
       // Free Friday: at home, orders from 40.00 EUR ship free.
       return 0;
     }
+  } else if (country === 'CH') {
+    // No provider ships to Switzerland: a courier, one flat price,
+    // heavy parcels too, so this comes before the freight rule.
+    return 990;
   } else if (weightGrams > 5_000) {
     // Heavy parcels abroad go as freight: one flat price.
     return 3_500;
-  } else if (country === 'CH') {
-    // No provider ships to Switzerland: a courier, one flat price.
-    return 990;
   }
   const costs = [];
   for (const provider of providers) {

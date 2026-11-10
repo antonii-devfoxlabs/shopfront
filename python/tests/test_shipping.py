@@ -343,6 +343,23 @@ def test_switzerland_pays_a_flat_price():
     )
 
 
+def test_a_heavy_parcel_to_switzerland_pays_the_flat_price_too():
+    cart = cart_of("KTL-03", 6)
+    # 6.6 kg: heavy, but Switzerland's rule is one price for every parcel.
+    assert (
+        shipping_cost(
+            cart,
+            starter_catalog(),
+            "CH",
+            29_400,
+            A_WEDNESDAY,
+            providers_for(GERMAN_SHOP),
+            GERMAN_SHOP,
+        )
+        == 990
+    )
+
+
 def test_nobody_ships_to_spain():
     with pytest.raises(NoShippingError, match="ES"):
         shipping_cost(
