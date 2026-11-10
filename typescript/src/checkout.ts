@@ -64,6 +64,7 @@ export class Checkout {
       parts.catalog,
       country,
       paidCents,
+      today,
       parts.providers,
       parts.shop,
     );

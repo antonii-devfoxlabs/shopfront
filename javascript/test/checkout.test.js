@@ -151,6 +151,7 @@ test('two shops in one run', async () => {
       starterCatalog(),
       country,
       6_000,
+      new Date(2026, 5, 15),
       providersFor(shop),
       shop,
     );

@@ -50,7 +50,13 @@ class Checkout:
         quote = self.quote(cart, country, today=today, coupon=coupon)
         paid_cents = quote.subtotal_cents - quote.discount_cents
         shipping_cents = self.shipping_cost(
-            cart, self.catalog, country, paid_cents, self.providers, self.shop
+            cart,
+            self.catalog,
+            country,
+            paid_cents,
+            today,
+            self.providers,
+            self.shop,
         )
         total_cents = paid_cents + quote.tax_cents + shipping_cents
 

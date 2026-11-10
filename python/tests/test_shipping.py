@@ -1,4 +1,5 @@
 import copy
+from datetime import date
 
 import pytest
 
@@ -18,6 +19,9 @@ from shopfront.shipping import (
 )
 from shopfront.vendor.parcelnow import ParcelNowClient
 from shopfront.vendor.swiftship import SwiftShip
+
+A_WEDNESDAY = date(2026, 7, 15)
+A_FRIDAY = date(2026, 7, 17)
 
 
 def cart_of(sku: str, quantity: int) -> Cart:
@@ -47,6 +51,7 @@ def test_home_orders_over_the_threshold_ship_free():
             starter_catalog(),
             "DE",
             9_800,
+            A_WEDNESDAY,
             providers_for(GERMAN_SHOP),
             GERMAN_SHOP,
         )
@@ -63,6 +68,7 @@ def test_home_orders_under_the_threshold_pay_the_cheaper_provider():
             starter_catalog(),
             "DE",
             1_250,
+            A_WEDNESDAY,
             providers_for(GERMAN_SHOP),
             GERMAN_SHOP,
         )
@@ -78,6 +84,7 @@ def test_exactly_the_threshold_ships_free():
             starter_catalog(),
             "DE",
             5_000,
+            A_WEDNESDAY,
             providers_for(GERMAN_SHOP),
             GERMAN_SHOP,
         )
@@ -94,6 +101,7 @@ def test_heavy_home_parcels_still_go_by_parcelnow():
             starter_catalog(),
             "DE",
             4_000,
+            A_WEDNESDAY,
             providers_for(GERMAN_SHOP),
             GERMAN_SHOP,
         )
@@ -110,6 +118,7 @@ def test_exactly_five_kilos_abroad_is_not_freight():
             starter_catalog(),
             "NL",
             22_500,
+            A_WEDNESDAY,
             providers_for(GERMAN_SHOP),
             GERMAN_SHOP,
         )
@@ -123,6 +132,7 @@ def test_exactly_five_kilos_abroad_is_not_freight():
             starter_catalog(),
             "NL",
             21_600,
+            A_WEDNESDAY,
             providers_for(GERMAN_SHOP),
             GERMAN_SHOP,
         )
@@ -137,6 +147,7 @@ def test_an_empty_cart_pays_swiftships_minimum():
             starter_catalog(),
             "FR",
             0,
+            A_WEDNESDAY,
             providers_for(GERMAN_SHOP),
             GERMAN_SHOP,
         )
@@ -153,6 +164,7 @@ def test_a_light_parcel_abroad_goes_by_swiftship():
             starter_catalog(),
             "FR",
             2_500,
+            A_WEDNESDAY,
             providers_for(GERMAN_SHOP),
             GERMAN_SHOP,
         )
@@ -169,6 +181,7 @@ def test_a_parcel_to_poland_goes_by_boxroute():
             starter_catalog(),
             "PL",
             2_500,
+            A_WEDNESDAY,
             providers_for(GERMAN_SHOP),
             GERMAN_SHOP,
         )
@@ -185,6 +198,7 @@ def test_a_parcel_to_austria_goes_by_swiftship():
             starter_catalog(),
             "AT",
             2_500,
+            A_WEDNESDAY,
             providers_for(GERMAN_SHOP),
             GERMAN_SHOP,
         )
@@ -197,7 +211,13 @@ def test_the_threshold_comes_from_the_settings():
     cart = cart_of("MUG-01", 1)
     assert (
         shipping_cost(
-            cart, starter_catalog(), "DE", 1_250, providers_for(lower), lower
+            cart,
+            starter_catalog(),
+            "DE",
+            1_250,
+            A_WEDNESDAY,
+            providers_for(lower),
+            lower,
         )
         == 0
     )
@@ -211,6 +231,7 @@ def test_the_dutch_shop_ships_free_at_home_from_60_eur():
             starter_catalog(),
             "NL",
             6_000,
+            A_WEDNESDAY,
             providers_for(DUTCH_SHOP),
             DUTCH_SHOP,
         )
@@ -222,6 +243,7 @@ def test_the_dutch_shop_ships_free_at_home_from_60_eur():
             starter_catalog(),
             "NL",
             5_999,
+            A_WEDNESDAY,
             providers_for(DUTCH_SHOP),
             DUTCH_SHOP,
         )
@@ -234,6 +256,7 @@ def test_the_dutch_shop_ships_free_at_home_from_60_eur():
             starter_catalog(),
             "DE",
             9_800,
+            A_WEDNESDAY,
             providers_for(DUTCH_SHOP),
             DUTCH_SHOP,
         )
@@ -250,6 +273,7 @@ def test_abroad_pays_even_over_the_threshold():
             starter_catalog(),
             "FR",
             9_800,
+            A_WEDNESDAY,
             providers_for(GERMAN_SHOP),
             GERMAN_SHOP,
         )
@@ -265,10 +289,57 @@ def test_heavy_parcels_abroad_go_as_freight():
             starter_catalog(),
             "NL",
             24_500,
+            A_WEDNESDAY,
             providers_for(GERMAN_SHOP),
             GERMAN_SHOP,
         )
         == 3_500
+    )
+
+
+def test_on_fridays_home_orders_from_40_eur_ship_free():
+    cart = cart_of("MUG-01", 4)
+    assert (
+        shipping_cost(
+            cart,
+            starter_catalog(),
+            "DE",
+            4_000,
+            A_FRIDAY,
+            providers_for(GERMAN_SHOP),
+            GERMAN_SHOP,
+        )
+        == 0
+    )
+    # The same order on a Wednesday pays the cheapest provider.
+    assert (
+        shipping_cost(
+            cart,
+            starter_catalog(),
+            "DE",
+            4_000,
+            A_WEDNESDAY,
+            providers_for(GERMAN_SHOP),
+            GERMAN_SHOP,
+        )
+        == 610
+    )
+
+
+def test_switzerland_pays_a_flat_price():
+    cart = cart_of("MUG-01", 2)
+    # No provider ships to Switzerland; a courier takes it for 9.90.
+    assert (
+        shipping_cost(
+            cart,
+            starter_catalog(),
+            "CH",
+            2_500,
+            A_WEDNESDAY,
+            providers_for(GERMAN_SHOP),
+            GERMAN_SHOP,
+        )
+        == 990
     )
 
 
@@ -279,6 +350,7 @@ def test_nobody_ships_to_spain():
             starter_catalog(),
             "ES",
             1_250,
+            A_WEDNESDAY,
             providers_for(GERMAN_SHOP),
             GERMAN_SHOP,
         )
@@ -293,7 +365,13 @@ def test_the_cheapest_provider_wins():
     cart = cart_of("MUG-01", 1)
     assert (
         shipping_cost(
-            cart, starter_catalog(), "FR", 1_250, providers, GERMAN_SHOP
+            cart,
+            starter_catalog(),
+            "FR",
+            1_250,
+            A_WEDNESDAY,
+            providers,
+            GERMAN_SHOP,
         )
         == 450
     )
@@ -307,7 +385,13 @@ def test_a_provider_that_does_not_ship_there_is_skipped():
     cart = cart_of("MUG-01", 1)
     assert (
         shipping_cost(
-            cart, starter_catalog(), "FR", 1_250, providers, GERMAN_SHOP
+            cart,
+            starter_catalog(),
+            "FR",
+            1_250,
+            A_WEDNESDAY,
+            providers,
+            GERMAN_SHOP,
         )
         == 700
     )
@@ -322,6 +406,7 @@ def test_the_shipping_cost_logs_nothing_itself(
         starter_catalog(),
         "FR",
         2_000,
+        A_WEDNESDAY,
         providers_for(GERMAN_SHOP),
         GERMAN_SHOP,
     )

@@ -13,6 +13,8 @@ export class NoShippingError extends Error {
  * @returns {number}
  */
 
+const FRIDAY = 5; // What a Date's getDay() answers on a Friday: Sunday is 0.
+
 export function cartWeightGrams(cart, catalog) {
   let grams = 0;
   for (const [sku, quantity] of cart.lines) {
@@ -27,15 +29,23 @@ export function shippingCost(
   catalog,
   country,
   paidCents,
+  today,
   providers,
   shop,
 ) {
   const weightGrams = cartWeightGrams(cart, catalog);
   if (country === shop.homeCountry) {
     if (paidCents >= shop.freeShippingFromCents) return 0;
+    if (today.getDay() === FRIDAY && paidCents >= 4_000) {
+      // Free Friday: at home, orders from 40.00 EUR ship free.
+      return 0;
+    }
   } else if (weightGrams > 5_000) {
     // Heavy parcels abroad go as freight: one flat price.
     return 3_500;
+  } else if (country === 'CH') {
+    // No provider ships to Switzerland: a courier, one flat price.
+    return 990;
   }
   const costs = [];
   for (const provider of providers) {

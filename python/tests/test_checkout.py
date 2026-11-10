@@ -139,7 +139,13 @@ def test_two_shops_in_one_run():
         cart = Cart()
         cart.add("MUG-01", 5)
         return shipping_cost(
-            cart, starter_catalog(), country, 6_000, providers_for(shop), shop
+            cart,
+            starter_catalog(),
+            country,
+            6_000,
+            date(2026, 6, 15),
+            providers_for(shop),
+            shop,
         )
 
     async def both() -> list[int]:

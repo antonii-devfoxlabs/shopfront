@@ -17,6 +17,9 @@ import {
 import { ParcelNowClient } from '../src/vendor/parcelnow.js';
 import { SwiftShip } from '../src/vendor/swiftship.js';
 
+const A_WEDNESDAY = new Date(2026, 6, 15);
+const A_FRIDAY = new Date(2026, 6, 17);
+
 function cartOf(sku, quantity) {
   const cart = new Cart();
   cart.add(sku, quantity);
@@ -44,6 +47,7 @@ test('home orders over the threshold ship free', () => {
       starterCatalog(),
       'DE',
       9_800,
+      A_WEDNESDAY,
       providersFor(GERMAN_SHOP),
       GERMAN_SHOP,
     ),
@@ -60,6 +64,7 @@ test('home orders under the threshold pay the cheaper provider', () => {
       starterCatalog(),
       'DE',
       1_250,
+      A_WEDNESDAY,
       providersFor(GERMAN_SHOP),
       GERMAN_SHOP,
     ),
@@ -75,6 +80,7 @@ test('exactly the threshold ships free', () => {
       starterCatalog(),
       'DE',
       5_000,
+      A_WEDNESDAY,
       providersFor(GERMAN_SHOP),
       GERMAN_SHOP,
     ),
@@ -91,6 +97,7 @@ test('heavy home parcels still go by ParcelNow', () => {
       starterCatalog(),
       'DE',
       4_000,
+      A_WEDNESDAY,
       providersFor(GERMAN_SHOP),
       GERMAN_SHOP,
     ),
@@ -107,6 +114,7 @@ test('exactly five kilos abroad is not freight', () => {
       starterCatalog(),
       'NL',
       22_500,
+      A_WEDNESDAY,
       providersFor(GERMAN_SHOP),
       GERMAN_SHOP,
     ),
@@ -120,6 +128,7 @@ test('exactly five kilos abroad is not freight', () => {
       starterCatalog(),
       'NL',
       21_600,
+      A_WEDNESDAY,
       providersFor(GERMAN_SHOP),
       GERMAN_SHOP,
     ),
@@ -134,6 +143,7 @@ test("an empty cart pays SwiftShip's minimum", () => {
       starterCatalog(),
       'FR',
       0,
+      A_WEDNESDAY,
       providersFor(GERMAN_SHOP),
       GERMAN_SHOP,
     ),
@@ -150,6 +160,7 @@ test('a light parcel abroad goes by SwiftShip', () => {
       starterCatalog(),
       'FR',
       2_500,
+      A_WEDNESDAY,
       providersFor(GERMAN_SHOP),
       GERMAN_SHOP,
     ),
@@ -166,6 +177,7 @@ test('a parcel to Poland goes by BoxRoute', () => {
       starterCatalog(),
       'PL',
       2_500,
+      A_WEDNESDAY,
       providersFor(GERMAN_SHOP),
       GERMAN_SHOP,
     ),
@@ -182,6 +194,7 @@ test('a parcel to Austria goes by SwiftShip', () => {
       starterCatalog(),
       'AT',
       2_500,
+      A_WEDNESDAY,
       providersFor(GERMAN_SHOP),
       GERMAN_SHOP,
     ),
@@ -198,6 +211,7 @@ test('the threshold comes from the settings', () => {
       starterCatalog(),
       'DE',
       1_250,
+      A_WEDNESDAY,
       providersFor(lower),
       lower,
     ),
@@ -213,6 +227,7 @@ test('the Dutch shop ships free at home from 60 EUR', () => {
       starterCatalog(),
       'NL',
       6_000,
+      A_WEDNESDAY,
       providersFor(DUTCH_SHOP),
       DUTCH_SHOP,
     ),
@@ -224,6 +239,7 @@ test('the Dutch shop ships free at home from 60 EUR', () => {
       starterCatalog(),
       'NL',
       5_999,
+      A_WEDNESDAY,
       providersFor(DUTCH_SHOP),
       DUTCH_SHOP,
     ),
@@ -236,6 +252,7 @@ test('the Dutch shop ships free at home from 60 EUR', () => {
       starterCatalog(),
       'DE',
       9_800,
+      A_WEDNESDAY,
       providersFor(DUTCH_SHOP),
       DUTCH_SHOP,
     ),
@@ -252,6 +269,7 @@ test('abroad pays even over the threshold', () => {
       starterCatalog(),
       'FR',
       9_800,
+      A_WEDNESDAY,
       providersFor(GERMAN_SHOP),
       GERMAN_SHOP,
     ),
@@ -267,10 +285,57 @@ test('heavy parcels abroad go as freight', () => {
       starterCatalog(),
       'NL',
       24_500,
+      A_WEDNESDAY,
       providersFor(GERMAN_SHOP),
       GERMAN_SHOP,
     ),
     3_500,
+  );
+});
+
+test('on Fridays home orders from 40 EUR ship free', () => {
+  const cart = cartOf('MUG-01', 4);
+  assert.equal(
+    shippingCost(
+      cart,
+      starterCatalog(),
+      'DE',
+      4_000,
+      A_FRIDAY,
+      providersFor(GERMAN_SHOP),
+      GERMAN_SHOP,
+    ),
+    0,
+  );
+  // The same order on a Wednesday pays the cheapest provider.
+  assert.equal(
+    shippingCost(
+      cart,
+      starterCatalog(),
+      'DE',
+      4_000,
+      A_WEDNESDAY,
+      providersFor(GERMAN_SHOP),
+      GERMAN_SHOP,
+    ),
+    610,
+  );
+});
+
+test('Switzerland pays a flat price', () => {
+  const cart = cartOf('MUG-01', 2);
+  // No provider ships to Switzerland; a courier takes it for 9.90.
+  assert.equal(
+    shippingCost(
+      cart,
+      starterCatalog(),
+      'CH',
+      2_500,
+      A_WEDNESDAY,
+      providersFor(GERMAN_SHOP),
+      GERMAN_SHOP,
+    ),
+    990,
   );
 });
 
@@ -282,6 +347,7 @@ test('nobody ships to Spain', () => {
         starterCatalog(),
         'ES',
         1_250,
+        A_WEDNESDAY,
         providersFor(GERMAN_SHOP),
         GERMAN_SHOP,
       ),
@@ -294,7 +360,15 @@ test('the cheapest provider wins', () => {
   const providers = [() => 700, () => 450];
   const cart = cartOf('MUG-01', 1);
   assert.equal(
-    shippingCost(cart, starterCatalog(), 'FR', 1_250, providers, GERMAN_SHOP),
+    shippingCost(
+      cart,
+      starterCatalog(),
+      'FR',
+      1_250,
+      A_WEDNESDAY,
+      providers,
+      GERMAN_SHOP,
+    ),
     450,
   );
 });
@@ -306,7 +380,15 @@ test('a provider that does not ship there is skipped', () => {
   const providers = [nowhere, () => 700];
   const cart = cartOf('MUG-01', 1);
   assert.equal(
-    shippingCost(cart, starterCatalog(), 'FR', 1_250, providers, GERMAN_SHOP),
+    shippingCost(
+      cart,
+      starterCatalog(),
+      'FR',
+      1_250,
+      A_WEDNESDAY,
+      providers,
+      GERMAN_SHOP,
+    ),
     700,
   );
 });
@@ -322,6 +404,7 @@ test('the shipping cost logs nothing itself', () => {
       starterCatalog(),
       'FR',
       2_000,
+      A_WEDNESDAY,
       providersFor(GERMAN_SHOP),
       GERMAN_SHOP,
     );
