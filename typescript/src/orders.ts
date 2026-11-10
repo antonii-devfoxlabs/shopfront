@@ -228,6 +228,11 @@ export class OrderBook {
     if (order === undefined) throw new UnknownOrderError(orderId);
     return order;
   }
+
+  // Every order in the book, in the order they were placed.
+  orders(): Order[] {
+    return [...this.#orders.values()];
+  }
 }
 
 // For tests only: no orders, and numbers from SF-00001 again.

@@ -1,13 +1,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { starterCatalog } from '../src/catalog.ts';
-import { OrderBuilder, placeOrder } from '../src/orders.ts';
+import { OrderBuilder } from '../src/orders.ts';
 import { Card, GiftCard } from '../src/payments.ts';
-import { GiftReturn, Return, returnOrder } from '../src/returns.ts';
+import { GiftReturn, Return } from '../src/returns.ts';
 import { GERMAN_SHOP } from '../src/settings.ts';
-import { Analytics } from '../src/vendor/analytics.ts';
-import { Mailer } from '../src/vendor/mailer.ts';
 import { PaymentGateway } from '../src/vendor/paymentGateway.ts';
 
 // A new payment gateway of the German shop, for one test.
@@ -41,25 +38,6 @@ test('a return refunds the way the shopper paid', () => {
     amount: 3_168,
     detail: null,
   });
-  assert.equal(order.status, 'returned');
-});
-
-test('an order is returned by its number', () => {
-  const gateway = aGateway();
-  const order = aCardOrder();
-  placeOrder(
-    order,
-    starterCatalog(),
-    new Mailer(),
-    new Analytics(),
-    GERMAN_SHOP,
-  );
-  const refundId = returnOrder(
-    'SF-00007',
-    { cardToken: 'tok-4242' },
-    gateway,
-  );
-  assert.equal(gateway.refunds.at(-1)?.id, refundId);
   assert.equal(order.status, 'returned');
 });
 

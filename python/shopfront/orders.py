@@ -206,6 +206,10 @@ class OrderBook:
             raise UnknownOrderError(order_id)
         return order
 
+    def orders(self) -> list[Order]:
+        """Every order in the book, in the order they were placed."""
+        return list(self._orders.values())
+
 
 def reset() -> None:
     """For tests only: no orders, and numbers from SF-00001 again."""

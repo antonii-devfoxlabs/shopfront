@@ -53,6 +53,21 @@ function checkoutFor(shop, catalog, gateway, mailer) {
   });
 }
 
+// Ada's order from the demo: two mugs and a tea, to Germany.
+function buyAdasOrder(checkout) {
+  const cart = new Cart();
+  cart.add('MUG-01', 2);
+  cart.add('TEA-02');
+  return checkout.buy(cart, 'DE', {
+    email: 'ada@example.com',
+    name: 'Ada',
+    paidBy: 'card',
+    details: { cardToken: 'tok-4242' },
+    today: new Date(2026, 5, 15),
+    coupon: 'WELCOME10',
+  });
+}
+
 test('a whole order', () => {
   const shop = GERMAN_SHOP;
   const catalog = starterCatalog();
@@ -139,6 +154,42 @@ test('ordering again', () => {
   assert.equal(order.totalCents, 4_524);
   assert.equal(catalog.find('MUG-01').stock, 38);
   assert.equal(mailer.outbox.length, 1);
+});
+
+test('a refund gives the money back and tells the shopper', () => {
+  const gateway = aGateway();
+  const mailer = new Mailer();
+  const checkout = checkoutFor(
+    GERMAN_SHOP,
+    starterCatalog(),
+    gateway,
+    mailer,
+  );
+  const order = buyAdasOrder(checkout);
+
+  const refundId = checkout.refund(order.orderId, { cardToken: 'tok-4242' });
+
+  assert.equal(gateway.refunds.at(-1)?.id, refundId);
+  assert.equal(gateway.refunds.at(-1)?.amount, 4_121);
+  assert.equal(order.status, 'returned');
+  assert.equal(
+    mailer.outbox.at(-1)?.subject,
+    'Shopfront: refund for SF-00001',
+  );
+});
+
+test('the sales report counts only the orders kept', () => {
+  const checkout = checkoutFor(
+    GERMAN_SHOP,
+    starterCatalog(),
+    aGateway(),
+    new Mailer(),
+  );
+  buyAdasOrder(checkout);
+  const sentBack = buyAdasOrder(checkout);
+  checkout.refund(sentBack.orderId, { cardToken: 'tok-4242' });
+
+  assert.equal(checkout.salesReport(), 'Orders: 1, takings: 41.21 EUR');
 });
 
 test('two shops in one run', async () => {

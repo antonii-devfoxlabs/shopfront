@@ -18,9 +18,11 @@ from shopfront.vendor.analytics import Analytics
 from shopfront.vendor.mailer import Mailer
 
 
-def an_order(lines: dict[str, int] | None = None) -> Order:
+def an_order(
+    lines: dict[str, int] | None = None, order_id: str = "SF-00007"
+) -> Order:
     return (
-        OrderBuilder("SF-00007")
+        OrderBuilder(order_id)
         .email("ada@example.com")
         .name("Ada")
         .lines(lines or {"MUG-01": 2})
@@ -116,6 +118,15 @@ def test_a_placed_order_is_in_the_order_book():
     order = an_order()
     place_order(order, starter_catalog(), Mailer(), Analytics(), GERMAN_SHOP)
     assert OrderBook.instance().find("SF-00007") is order
+
+
+def test_the_book_lists_its_orders_in_the_order_placed():
+    first = an_order(order_id="SF-00001")
+    second = an_order(order_id="SF-00002")
+    catalog = starter_catalog()
+    for order in (first, second):
+        place_order(order, catalog, Mailer(), Analytics(), GERMAN_SHOP)
+    assert OrderBook.instance().orders() == [first, second]
 
 
 def test_an_unknown_order_number_is_refused():

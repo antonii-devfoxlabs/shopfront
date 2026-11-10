@@ -16,8 +16,11 @@ import { DUTCH_SHOP, GERMAN_SHOP } from '../src/settings.ts';
 import { Analytics } from '../src/vendor/analytics.ts';
 import { Mailer } from '../src/vendor/mailer.ts';
 
-function anOrder(lines: Iterable<[string, number]> = [['MUG-01', 2]]) {
-  return new OrderBuilder('SF-00007')
+function anOrder(
+  lines: Iterable<[string, number]> = [['MUG-01', 2]],
+  orderId = 'SF-00007',
+) {
+  return new OrderBuilder(orderId)
     .email('ada@example.com')
     .name('Ada')
     .lines(lines)
@@ -125,6 +128,16 @@ test('a placed order is in the order book', () => {
     GERMAN_SHOP,
   );
   assert.equal(OrderBook.instance().find('SF-00007'), order);
+});
+
+test('the book lists its orders in the order placed', () => {
+  const first = anOrder(undefined, 'SF-00001');
+  const second = anOrder(undefined, 'SF-00002');
+  const catalog = starterCatalog();
+  for (const order of [first, second]) {
+    placeOrder(order, catalog, new Mailer(), new Analytics(), GERMAN_SHOP);
+  }
+  assert.deepEqual(OrderBook.instance().orders(), [first, second]);
 });
 
 test('an unknown order number is refused', () => {

@@ -1,6 +1,6 @@
 // Orders sent back, and the money that goes back with them.
 
-import { OrderBook, type Order } from './orders.ts';
+import type { Order } from './orders.ts';
 import {
   payment,
   type Gateway,
@@ -47,14 +47,4 @@ export class GiftReturn extends Return {
   override destination(): PaymentMethod {
     return payment('gift_card', this.details, this.gateway);
   }
-}
-
-// Send back an order that the shopper names by its number.
-export function returnOrder(
-  orderId: string,
-  details: PaymentDetails,
-  gateway: Gateway,
-): string {
-  const order = OrderBook.instance().find(orderId);
-  return new Return(order, details, gateway).process();
 }
