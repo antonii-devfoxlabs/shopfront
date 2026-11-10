@@ -12,6 +12,7 @@ import { DUTCH_SHOP, GERMAN_SHOP, type Settings } from '../src/settings.ts';
 import {
   Cheapest,
   Flat,
+  FreeFriday,
   NoShippingError,
   type ShippingQuote,
   cartWeightGrams,
@@ -419,6 +420,20 @@ test('the cheapest rule says no when nobody ships there', () => {
     name: 'NoShippingError',
     message: 'ES',
   });
+});
+
+test('free Friday ships free on Fridays from its line', () => {
+  const offer = new FreeFriday(4_000, () => A_FRIDAY);
+  assert.equal(offer.shipsFree(4_000), true);
+  assert.equal(offer.shipsFree(3_999), false);
+});
+
+test('free Friday reads its clock every time', () => {
+  let today = A_WEDNESDAY;
+  const offer = new FreeFriday(4_000, () => today);
+  assert.equal(offer.shipsFree(4_000), false);
+  today = A_FRIDAY;
+  assert.equal(offer.shipsFree(4_000), true);
 });
 
 test('the cheapest provider wins', () => {

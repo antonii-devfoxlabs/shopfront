@@ -64,6 +64,27 @@ class Cheapest:
         return min(costs)
 
 
+class ShippingOffer(Protocol):
+    """An offer that lets an order at home ship free: the amount paid in,
+    yes or no out."""
+
+    def ships_free(self, paid_cents: int) -> bool: ...
+
+
+@dataclass(frozen=True)
+class FreeFriday:
+    """On Fridays, orders from from_cents ship free. today is the clock
+    the offer reads: main hands in date.today, a test a fixed day."""
+
+    from_cents: int
+    today: Callable[[], date]
+
+    def ships_free(self, paid_cents: int) -> bool:
+        return (
+            self.today().weekday() == FRIDAY and paid_cents >= self.from_cents
+        )
+
+
 def shipping_cost(
     cart: Cart,
     catalog: Catalog,

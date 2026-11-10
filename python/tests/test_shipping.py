@@ -14,6 +14,7 @@ from shopfront.settings import DUTCH_SHOP, GERMAN_SHOP, Settings
 from shopfront.shipping import (
     Cheapest,
     Flat,
+    FreeFriday,
     NoShippingError,
     ShippingQuote,
     cart_weight_grams,
@@ -416,6 +417,20 @@ def test_the_cheapest_rule_says_no_when_nobody_ships_there():
 
     with pytest.raises(NoShippingError, match="ES"):
         Cheapest([nowhere]).cost(350, "ES")
+
+
+def test_free_friday_ships_free_on_fridays_from_its_line():
+    offer = FreeFriday(4_000, today=lambda: A_FRIDAY)
+    assert offer.ships_free(4_000)
+    assert not offer.ships_free(3_999)
+
+
+def test_free_friday_reads_its_clock_every_time():
+    today = A_WEDNESDAY
+    offer = FreeFriday(4_000, today=lambda: today)
+    assert not offer.ships_free(4_000)
+    today = A_FRIDAY
+    assert offer.ships_free(4_000)
 
 
 def test_the_cheapest_provider_wins():

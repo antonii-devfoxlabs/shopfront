@@ -66,6 +66,27 @@ export class Cheapest {
   }
 }
 
+/**
+ * An offer that lets an order at home ship free: the amount paid in, yes
+ * or no out.
+ * @typedef {object} ShippingOffer
+ * @property {(paidCents: number) => boolean} shipsFree
+ */
+
+// On Fridays, orders from fromCents ship free. today is the clock the
+// offer reads: main hands in () => new Date(), a test a fixed day.
+export class FreeFriday {
+  /** @param {() => Date} today */
+  constructor(fromCents, today) {
+    this.fromCents = fromCents;
+    this.today = today;
+  }
+
+  shipsFree(paidCents) {
+    return this.today().getDay() === FRIDAY && paidCents >= this.fromCents;
+  }
+}
+
 /** @param {ShippingQuote[]} providers */
 export function shippingCost(
   cart,

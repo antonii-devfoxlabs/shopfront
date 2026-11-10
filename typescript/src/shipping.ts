@@ -67,6 +67,28 @@ export class Cheapest implements ShippingRule {
   }
 }
 
+// An offer that lets an order at home ship free: the amount paid in, yes
+// or no out.
+export interface ShippingOffer {
+  shipsFree(paidCents: number): boolean;
+}
+
+// On Fridays, orders from fromCents ship free. today is the clock the
+// offer reads: main hands in () => new Date(), a test a fixed day.
+export class FreeFriday implements ShippingOffer {
+  readonly fromCents: number;
+  readonly today: () => Date;
+
+  constructor(fromCents: number, today: () => Date) {
+    this.fromCents = fromCents;
+    this.today = today;
+  }
+
+  shipsFree(paidCents: number): boolean {
+    return this.today().getDay() === FRIDAY && paidCents >= this.fromCents;
+  }
+}
+
 export function shippingCost(
   cart: Cart,
   catalog: Catalog,
