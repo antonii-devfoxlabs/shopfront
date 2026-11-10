@@ -5,15 +5,10 @@ import asyncio
 from datetime import date
 
 from shopfront.cart import Cart
-from shopfront.catalog import starter_catalog
-from shopfront.checkout import buy_again
-from shopfront.orders import (
-    OrderBuilder,
-    next_order_id,
-    packing_slip,
-    place_order,
-)
-from shopfront.payments import pay
+from shopfront.catalog import Catalog, starter_catalog
+from shopfront.checkout import Checkout, buy_again
+from shopfront.orders import OrderBuilder, next_order_id, packing_slip
+from shopfront.payments import Gateway
 from shopfront.pricing import PriceCalculator
 from shopfront.providers import (
     boxroute_quote,
@@ -38,42 +33,40 @@ def providers_for(shop: Settings) -> list[ShippingQuote]:
     ]
 
 
+def checkout_for(
+    shop: Settings, catalog: Catalog, gateway: Gateway, mailer: Mailer
+) -> Checkout:
+    """A checkout with the real parts, and the test's own to look into."""
+    return Checkout(
+        quote=PriceCalculator(catalog, TaxService(), shop).quote,
+        shipping_cost=shipping_cost,
+        providers=providers_for(shop),
+        catalog=catalog,
+        gateway=gateway,
+        mailer=mailer,
+        analytics=Analytics(),
+        shop=shop,
+    )
+
+
 def test_a_whole_order(gateway):
     shop = GERMAN_SHOP
     catalog = starter_catalog()
+    mailer = Mailer()
     cart = Cart()
     cart.add("MUG-01", 2)
     cart.add("TEA-02")
 
-    calculator = PriceCalculator(catalog, TaxService(), shop)
-    quote = calculator.quote(
-        cart, "DE", today=date(2026, 6, 15), coupon="WELCOME10"
+    order = checkout_for(shop, catalog, gateway, mailer).buy(
+        cart,
+        "DE",
+        email="ada@example.com",
+        name="Ada",
+        paid_by="card",
+        details={"card_token": "tok-4242"},
+        today=date(2026, 6, 15),
+        coupon="WELCOME10",
     )
-    paid_cents = quote.subtotal_cents - quote.discount_cents
-    shipping_cents = shipping_cost(
-        cart, catalog, "DE", paid_cents, providers_for(shop), shop
-    )
-    total_cents = paid_cents + quote.tax_cents + shipping_cents
-
-    transaction_id = pay(
-        "card", total_cents, {"card_token": "tok-4242"}, gateway
-    )
-    order = (
-        OrderBuilder(next_order_id())
-        .email("ada@example.com")
-        .name("Ada")
-        .lines(cart.lines)
-        .subtotal(quote.subtotal_cents)
-        .discount(quote.discount_cents)
-        .tax(quote.tax_cents)
-        .shipping(shipping_cents)
-        .country("DE")
-        .paid_by("card")
-        .transaction(transaction_id)
-        .build()
-    )
-    mailer = Mailer()
-    place_order(order, catalog, mailer, Analytics(), shop)
 
     assert order.total_cents == 4_121
     assert catalog.find("MUG-01").stock == 38

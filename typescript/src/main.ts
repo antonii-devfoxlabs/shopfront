@@ -2,14 +2,9 @@
 
 import { Cart } from './cart.ts';
 import { starterCatalog } from './catalog.ts';
+import { Checkout } from './checkout.ts';
 import { TimedGateway } from './gateways.ts';
-import {
-  OrderBuilder,
-  formatMoney,
-  nextOrderId,
-  placeOrder,
-} from './orders.ts';
-import { pay } from './payments.ts';
+import { formatMoney } from './orders.ts';
 import { PriceCalculator, type QuoteOptions } from './pricing.ts';
 import {
   boxRouteQuote,
@@ -51,51 +46,34 @@ cart.add('TEA-02');
 // of the tax service, and how long the service took.
 const taxes = new CachedRates(new TimedRates(new TaxService(), console.log));
 const calculator = new PriceCalculator(catalog, taxes, shop);
-// The timer is outside the calculator, so every quote is timed:
-// what a shopper waits for a price, cached rate or not.
-const timedQuote = timed(
-  'price quote',
-  (cart: Cart, country: string, options: QuoteOptions) =>
-    calculator.quote(cart, country, options),
-  console.log,
-);
-const quote = timedQuote(cart, 'DE', {
+const mailer = new Mailer();
+// Every step of an order, in order, behind one call. main still
+// decides what is timed, and hands the checkout the timed parts.
+const checkout = new Checkout({
+  // The timer is outside the calculator, so every quote is timed:
+  // what a shopper waits for a price, cached rate or not.
+  quote: timed(
+    'price quote',
+    (cart: Cart, country: string, options: QuoteOptions) =>
+      calculator.quote(cart, country, options),
+    console.log,
+  ),
+  shippingCost: timed('shipping cost', shippingCost, console.log),
+  providers,
+  catalog,
+  gateway,
+  mailer,
+  analytics: new Analytics(),
+  shop,
+});
+const order = checkout.buy(cart, 'DE', {
+  email: 'ada@example.com',
+  name: 'Ada',
+  paidBy: 'card',
+  details: { cardToken: 'tok-4242' },
   today: new Date(),
   coupon: 'WELCOME10',
 });
-const paidCents = quote.subtotalCents - quote.discountCents;
-const timedShippingCost = timed('shipping cost', shippingCost, console.log);
-const shippingCents = timedShippingCost(
-  cart,
-  catalog,
-  'DE',
-  paidCents,
-  providers,
-  shop,
-);
-const totalCents = paidCents + quote.taxCents + shippingCents;
-
-const orderId = nextOrderId();
-const transactionId = pay(
-  'card',
-  totalCents,
-  { cardToken: 'tok-4242' },
-  gateway,
-);
-const order = new OrderBuilder(orderId)
-  .email('ada@example.com')
-  .name('Ada')
-  .lines(cart.lines)
-  .subtotal(quote.subtotalCents)
-  .discount(quote.discountCents)
-  .tax(quote.taxCents)
-  .shipping(shippingCents)
-  .country('DE')
-  .paidBy('card')
-  .transaction(transactionId)
-  .build();
-const mailer = new Mailer();
-placeOrder(order, catalog, mailer, new Analytics(), shop);
 
 console.log(`Order ${order.orderId} placed`);
 console.log(`  subtotal  ${formatMoney(order.subtotalCents, shop)}`);

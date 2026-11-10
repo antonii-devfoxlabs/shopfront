@@ -6,14 +6,8 @@ import { setTimeout as sleep } from 'node:timers/promises';
 
 import { Cart } from '../src/cart.js';
 import { starterCatalog } from '../src/catalog.js';
-import { buyAgain } from '../src/checkout.js';
-import {
-  OrderBuilder,
-  nextOrderId,
-  packingSlip,
-  placeOrder,
-} from '../src/orders.js';
-import { pay } from '../src/payments.js';
+import { Checkout, buyAgain } from '../src/checkout.js';
+import { OrderBuilder, nextOrderId, packingSlip } from '../src/orders.js';
 import { PriceCalculator } from '../src/pricing.js';
 import {
   boxRouteQuote,
@@ -43,50 +37,42 @@ function aGateway() {
   return new PaymentGateway({ merchant: GERMAN_SHOP.merchantId });
 }
 
+// A checkout with the real parts, and the test's own to look into.
+function checkoutFor(shop, catalog, gateway, mailer) {
+  const calculator = new PriceCalculator(catalog, new TaxService(), shop);
+  return new Checkout({
+    quote: (cart, country, options) =>
+      calculator.quote(cart, country, options),
+    shippingCost,
+    providers: providersFor(shop),
+    catalog,
+    gateway,
+    mailer,
+    analytics: new Analytics(),
+    shop,
+  });
+}
+
 test('a whole order', () => {
   const shop = GERMAN_SHOP;
-  const gateway = aGateway();
   const catalog = starterCatalog();
+  const mailer = new Mailer();
   const cart = new Cart();
   cart.add('MUG-01', 2);
   cart.add('TEA-02');
 
-  const calculator = new PriceCalculator(catalog, new TaxService(), shop);
-  const quote = calculator.quote(cart, 'DE', {
-    today: new Date(2026, 5, 15),
-    coupon: 'WELCOME10',
-  });
-  const paidCents = quote.subtotalCents - quote.discountCents;
-  const shippingCents = shippingCost(
+  const order = checkoutFor(shop, catalog, aGateway(), mailer).buy(
     cart,
-    catalog,
     'DE',
-    paidCents,
-    providersFor(shop),
-    shop,
+    {
+      email: 'ada@example.com',
+      name: 'Ada',
+      paidBy: 'card',
+      details: { cardToken: 'tok-4242' },
+      today: new Date(2026, 5, 15),
+      coupon: 'WELCOME10',
+    },
   );
-  const totalCents = paidCents + quote.taxCents + shippingCents;
-
-  const transactionId = pay(
-    'card',
-    totalCents,
-    { cardToken: 'tok-4242' },
-    gateway,
-  );
-  const order = new OrderBuilder(nextOrderId())
-    .email('ada@example.com')
-    .name('Ada')
-    .lines(cart.lines)
-    .subtotal(quote.subtotalCents)
-    .discount(quote.discountCents)
-    .tax(quote.taxCents)
-    .shipping(shippingCents)
-    .country('DE')
-    .paidBy('card')
-    .transaction(transactionId)
-    .build();
-  const mailer = new Mailer();
-  placeOrder(order, catalog, mailer, new Analytics(), shop);
 
   assert.equal(order.totalCents, 4_121);
   assert.equal(catalog.find('MUG-01').stock, 38);

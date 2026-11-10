@@ -4,14 +4,9 @@ from datetime import date
 
 from shopfront.cart import Cart
 from shopfront.catalog import starter_catalog
+from shopfront.checkout import Checkout
 from shopfront.gateways import TimedGateway
-from shopfront.orders import (
-    OrderBuilder,
-    format_money,
-    next_order_id,
-    place_order,
-)
-from shopfront.payments import pay
+from shopfront.orders import format_money
 from shopfront.pricing import PriceCalculator
 from shopfront.providers import (
     boxroute_quote,
@@ -51,37 +46,31 @@ def main() -> None:
     # of the tax service, and how long the service took.
     taxes = CachedRates(TimedRates(TaxService(), print))
     calculator = PriceCalculator(catalog, taxes, shop)
-    # The timer is outside the calculator, so every quote is timed:
-    # what a shopper waits for a price, cached rate or not.
-    timed_quote = timed("price quote", calculator.quote, print)
-    quote = timed_quote(cart, "DE", today=date.today(), coupon="WELCOME10")
-    paid_cents = quote.subtotal_cents - quote.discount_cents
-    timed_shipping_cost = timed("shipping cost", shipping_cost, print)
-    shipping_cents = timed_shipping_cost(
-        cart, catalog, "DE", paid_cents, providers, shop
-    )
-    total_cents = paid_cents + quote.tax_cents + shipping_cents
-
-    order_id = next_order_id()
-    transaction_id = pay(
-        "card", total_cents, {"card_token": "tok-4242"}, gateway
-    )
-    order = (
-        OrderBuilder(order_id)
-        .email("ada@example.com")
-        .name("Ada")
-        .lines(cart.lines)
-        .subtotal(quote.subtotal_cents)
-        .discount(quote.discount_cents)
-        .tax(quote.tax_cents)
-        .shipping(shipping_cents)
-        .country("DE")
-        .paid_by("card")
-        .transaction(transaction_id)
-        .build()
-    )
     mailer = Mailer()
-    place_order(order, catalog, mailer, Analytics(), shop)
+    # Every step of an order, in order, behind one call. main still
+    # decides what is timed, and hands the checkout the timed parts.
+    checkout = Checkout(
+        # The timer is outside the calculator, so every quote is timed:
+        # what a shopper waits for a price, cached rate or not.
+        quote=timed("price quote", calculator.quote, print),
+        shipping_cost=timed("shipping cost", shipping_cost, print),
+        providers=providers,
+        catalog=catalog,
+        gateway=gateway,
+        mailer=mailer,
+        analytics=Analytics(),
+        shop=shop,
+    )
+    order = checkout.buy(
+        cart,
+        "DE",
+        email="ada@example.com",
+        name="Ada",
+        paid_by="card",
+        details={"card_token": "tok-4242"},
+        today=date.today(),
+        coupon="WELCOME10",
+    )
 
     print(f"Order {order.order_id} placed")
     print(f"  subtotal  {format_money(order.subtotal_cents, shop)}")
