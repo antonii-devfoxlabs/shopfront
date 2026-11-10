@@ -1,7 +1,7 @@
 // One order through the whole store: `npm start`.
 
 import { Cart } from './cart.js';
-import { loadCatalog } from './catalogFile.js';
+import { CatalogFileError, loadCatalog } from './catalogFile.js';
 import { Checkout } from './checkout.js';
 import { TimedGateway } from './gateways.js';
 import { formatMoney } from './orders.js';
@@ -37,8 +37,16 @@ const providers = [
   timed('boxroute quote', boxRouteQuote, console.log),
 ];
 
-// The owner edits catalog.json; the shop reads it when it starts.
-const catalog = loadCatalog('catalog.json');
+// The owner edits catalog.json; the shop reads it when it starts, and
+// will not start on a file it cannot read.
+let catalog;
+try {
+  catalog = loadCatalog('catalog.json');
+} catch (error) {
+  if (!(error instanceof CatalogFileError)) throw error;
+  console.error(`Shopfront cannot start: ${error.message}`);
+  process.exit(1);
+}
 const cart = new Cart();
 cart.add('MUG-01', 2);
 cart.add('TEA-02');

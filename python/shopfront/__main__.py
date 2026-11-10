@@ -1,10 +1,11 @@
 """One order through the whole store: `python -m shopfront`."""
 
+import sys
 from datetime import date
 from pathlib import Path
 
 from shopfront.cart import Cart
-from shopfront.catalog_file import load_catalog
+from shopfront.catalog_file import CatalogFileError, load_catalog
 from shopfront.checkout import Checkout
 from shopfront.gateways import TimedGateway
 from shopfront.orders import format_money
@@ -38,8 +39,12 @@ def main() -> None:
         timed("swiftship quote", swiftship_quote(SwiftShip()), print),
         timed("boxroute quote", boxroute_quote, print),
     ]
-    # The owner edits catalog.json; the shop reads it when it starts.
-    catalog = load_catalog(Path("catalog.json"))
+    # The owner edits catalog.json; the shop reads it when it starts,
+    # and will not start on a file it cannot read.
+    try:
+        catalog = load_catalog(Path("catalog.json"))
+    except CatalogFileError as error:
+        sys.exit(f"Shopfront cannot start: {error}")
     cart = Cart()
     cart.add("MUG-01", 2)
     cart.add("TEA-02")
