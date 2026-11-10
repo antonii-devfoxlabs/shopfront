@@ -40,11 +40,11 @@ export function loadCatalog(path: string): Catalog {
     }
     throw error;
   }
-  return catalog(rows, path);
+  return catalogFrom(rows, path);
 }
 
 // The rows, wherever they were read from, checked into a Catalog.
-function catalog(rows: unknown, where: string): Catalog {
+function catalogFrom(rows: unknown, where: string): Catalog {
   if (!Array.isArray(rows)) {
     throw new CatalogError(`${where}: not a list of products`);
   }

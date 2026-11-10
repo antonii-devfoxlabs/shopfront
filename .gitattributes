@@ -1,0 +1,3 @@
+# The catalog files are read by JSON parsers whose messages count
+# characters: keep their line endings LF on every system.
+*.json text eol=lf
