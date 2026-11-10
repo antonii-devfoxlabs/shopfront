@@ -86,19 +86,10 @@ export function shippingCost(
     rule = new Flat(0);
   } else if (
     atHome &&
-    shop.homeCountry === 'NL' &&
     today.getDay() === FRIDAY &&
-    paidCents >= 5_000
+    paidCents >= shop.freeFridayFromCents
   ) {
-    // Free Friday in the Dutch shop: orders from 50.00 EUR ship free.
-    rule = new Flat(0);
-  } else if (
-    atHome &&
-    shop.homeCountry === 'DE' &&
-    today.getDay() === FRIDAY &&
-    paidCents >= 4_000
-  ) {
-    // Free Friday in the German shop: orders from 40.00 EUR ship free.
+    // Free Friday: at home, orders from the shop's Friday line.
     rule = new Flat(0);
   } else if (country === 'CH') {
     // No provider ships to Switzerland: a courier, one flat price,

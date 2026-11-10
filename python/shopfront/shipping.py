@@ -82,19 +82,10 @@ def shipping_cost(
         rule = Flat(0)
     elif (
         at_home
-        and shop.home_country == "NL"
         and today.weekday() == FRIDAY
-        and paid_cents >= 5_000
+        and paid_cents >= shop.free_friday_from_cents
     ):
-        # Free Friday in the Dutch shop: orders from 50.00 EUR ship free.
-        rule = Flat(0)
-    elif (
-        at_home
-        and shop.home_country == "DE"
-        and today.weekday() == FRIDAY
-        and paid_cents >= 4_000
-    ):
-        # Free Friday in the German shop: orders from 40.00 EUR ship free.
+        # Free Friday: at home, orders from the shop's Friday line.
         rule = Flat(0)
     elif country == "CH":
         # No provider ships to Switzerland: a courier, one flat price,

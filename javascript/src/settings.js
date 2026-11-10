@@ -9,6 +9,8 @@
  * @property {string} homeCountry Where the shop ships from: orders
  *   inside this country can ship for free.
  * @property {number} freeShippingFromCents
+ * @property {number} freeFridayFromCents On Free Friday, orders at home
+ *   ship free from this line.
  * @property {string} parcelNowAccount The accounts the shop uses with
  *   its providers.
  * @property {string} merchantId
@@ -21,6 +23,7 @@ export const GERMAN_SHOP = Object.freeze({
   currency: 'EUR',
   homeCountry: 'DE',
   freeShippingFromCents: 5_000,
+  freeFridayFromCents: 4_000,
   parcelNowAccount: 'shopfront',
   merchantId: 'shopfront-store',
 });
@@ -32,6 +35,7 @@ export const DUTCH_SHOP = Object.freeze({
   currency: 'EUR',
   homeCountry: 'NL',
   freeShippingFromCents: 6_000,
+  freeFridayFromCents: 5_000,
   parcelNowAccount: 'shopfront-nl',
   merchantId: 'shopfront-nl',
 });

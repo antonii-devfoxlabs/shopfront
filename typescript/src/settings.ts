@@ -9,6 +9,8 @@ export type Settings = {
   // for free.
   readonly homeCountry: string;
   readonly freeShippingFromCents: number;
+  // On Free Friday, orders at home ship free from this line.
+  readonly freeFridayFromCents: number;
   // The accounts the shop uses with its providers.
   readonly parcelNowAccount: string;
   readonly merchantId: string;
@@ -20,6 +22,7 @@ export const GERMAN_SHOP: Settings = Object.freeze({
   currency: 'EUR',
   homeCountry: 'DE',
   freeShippingFromCents: 5_000,
+  freeFridayFromCents: 4_000,
   parcelNowAccount: 'shopfront',
   merchantId: 'shopfront-store',
 });
@@ -30,6 +33,7 @@ export const DUTCH_SHOP: Settings = Object.freeze({
   currency: 'EUR',
   homeCountry: 'NL',
   freeShippingFromCents: 6_000,
+  freeFridayFromCents: 5_000,
   parcelNowAccount: 'shopfront-nl',
   merchantId: 'shopfront-nl',
 });
