@@ -42,3 +42,13 @@ def test_broken_json_names_the_file_and_the_line(tmp_path):
 def test_a_missing_file_is_said_in_the_stores_words(tmp_path):
     with pytest.raises(CatalogError, match=r"catalog\.json: no such file"):
         load_catalog(tmp_path / "catalog.json")
+
+
+def test_true_or_false_is_not_a_whole_number(tmp_path):
+    path = tmp_path / "catalog.json"
+    path.write_text(json.dumps([{**KETTLE, "stock": True}]))
+    with pytest.raises(
+        CatalogError,
+        match=r"catalog\.json, product 1: stock must be a whole number",
+    ):
+        load_catalog(path)

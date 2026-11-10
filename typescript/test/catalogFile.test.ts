@@ -50,3 +50,12 @@ test("a missing file is said in the store's words", () => {
     message: /catalog\.json: no such file$/,
   });
 });
+
+test('true or false is not a whole number', () => {
+  const path = freshPath();
+  writeFileSync(path, JSON.stringify([{ ...KETTLE, stock: true }]));
+  assert.throws(() => loadCatalog(path), {
+    name: 'CatalogError',
+    message: /catalog\.json, product 1: stock must be a whole number$/,
+  });
+});

@@ -23,10 +23,10 @@ def load_catalog(path: Path) -> Catalog:
         raise CatalogError(
             f"{path}, line {error.lineno}: {error.msg}"
         ) from error
-    return _catalog(rows, str(path))
+    return _catalog_from(rows, str(path))
 
 
-def _catalog(rows: object, where: str) -> Catalog:
+def _catalog_from(rows: object, where: str) -> Catalog:
     """The rows, wherever they were read from, checked into a Catalog."""
     if not isinstance(rows, list):
         raise CatalogError(f"{where}: not a list of products")
@@ -60,6 +60,7 @@ def _text_field(row: dict, field: str, where: str) -> str:
 
 def _whole_number_field(row: dict, field: str, where: str) -> int:
     value = row.get(field)
-    if not isinstance(value, int):
+    # JSON's true and false arrive as True and False, which are ints too.
+    if isinstance(value, bool) or not isinstance(value, int):
         raise CatalogError(f"{where}: {field} must be a whole number")
     return value
