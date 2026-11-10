@@ -5,6 +5,7 @@ calls the function it wraps, so neither that function nor its callers
 change. It names nothing of Shopfront's, so it fits any function.
 """
 
+import functools
 import time
 from collections.abc import Callable
 
@@ -14,6 +15,7 @@ def timed[**P, R](
 ) -> Callable[P, R]:
     """Gives back a function that calls `call`, timed and logged."""
 
+    @functools.wraps(call)
     def timed_call(*args: P.args, **kwargs: P.kwargs) -> R:
         started = time.perf_counter()
         answer = call(*args, **kwargs)
@@ -22,3 +24,14 @@ def timed[**P, R](
         return answer
 
     return timed_call
+
+
+def timed_as[**P, R](
+    name: str, log: Callable[[str], None]
+) -> Callable[[Callable[P, R]], Callable[P, R]]:
+    """Gives back a decorator for the `@` line: `@timed_as(name, log)`."""
+
+    def decorator(call: Callable[P, R]) -> Callable[P, R]:
+        return timed(name, call, log)
+
+    return decorator

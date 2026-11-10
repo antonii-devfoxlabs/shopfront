@@ -23,34 +23,32 @@ export function cartWeightGrams(cart, catalog) {
   return grams;
 }
 
-/** @param {ShippingQuote[]} providers */
-function costOfShipping(cart, catalog, country, paidCents, providers, shop) {
-  const weightGrams = cartWeightGrams(cart, catalog);
-  if (country === shop.homeCountry) {
-    if (paidCents >= shop.freeShippingFromCents) return 0;
-  } else if (weightGrams > 5_000) {
-    // Heavy parcels abroad go as freight: one flat price.
-    return 3_500;
-  }
-  const costs = [];
-  for (const provider of providers) {
-    try {
-      costs.push(provider(weightGrams, country));
-    } catch (error) {
-      if (error instanceof NoShippingError) {
-        // This provider does not ship there: ask the others.
-        continue;
-      }
-      throw error;
-    }
-  }
-  if (costs.length === 0) throw new NoShippingError(country);
-  return Math.min(...costs);
-}
-
 // Every caller gets the timed shipping cost, the tests included.
 export const shippingCost = timed(
   'shipping cost',
-  costOfShipping,
+  /** @param {ShippingQuote[]} providers */
+  function shippingCost(cart, catalog, country, paidCents, providers, shop) {
+    const weightGrams = cartWeightGrams(cart, catalog);
+    if (country === shop.homeCountry) {
+      if (paidCents >= shop.freeShippingFromCents) return 0;
+    } else if (weightGrams > 5_000) {
+      // Heavy parcels abroad go as freight: one flat price.
+      return 3_500;
+    }
+    const costs = [];
+    for (const provider of providers) {
+      try {
+        costs.push(provider(weightGrams, country));
+      } catch (error) {
+        if (error instanceof NoShippingError) {
+          // This provider does not ship there: ask the others.
+          continue;
+        }
+        throw error;
+      }
+    }
+    if (costs.length === 0) throw new NoShippingError(country);
+    return Math.min(...costs);
+  },
   console.log,
 );
