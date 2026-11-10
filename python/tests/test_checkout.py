@@ -6,12 +6,12 @@ from datetime import date
 
 from shopfront.cart import Cart
 from shopfront.catalog import starter_catalog
+from shopfront.checkout import buy_again
 from shopfront.orders import (
     OrderBuilder,
     next_order_id,
     packing_slip,
     place_order,
-    reorder,
 )
 from shopfront.payments import pay
 from shopfront.pricing import PriceCalculator
@@ -98,30 +98,19 @@ def test_ordering_again(gateway):
         .build()
     )
     assert packing_slip(previous)[-1] == "1 x TEA-SAMPLE"
-    builder = reorder(previous, next_order_id())
-    cart = Cart()
-    for sku, quantity in previous.lines.items():
-        cart.add(sku, quantity)
-    country = previous.shipping_country
-
-    calculator = PriceCalculator(catalog, TaxService(), shop)
-    quote = calculator.quote(cart, country, today=date(2026, 7, 15))
-    builder.subtotal(quote.subtotal_cents)
-    builder.discount(quote.discount_cents)
-    builder.tax(quote.tax_cents)
-
-    paid_cents = quote.subtotal_cents - quote.discount_cents
-    shipping_cents = shipping_cost(
-        cart, catalog, country, paid_cents, providers_for(shop), shop
+    mailer = Mailer()
+    order = buy_again(
+        previous,
+        {"card_token": "tok-4242"},
+        date(2026, 7, 15),
+        PriceCalculator(catalog, TaxService(), shop),
+        providers_for(shop),
+        catalog,
+        gateway,
+        mailer,
+        Analytics(),
+        shop,
     )
-    builder.shipping(shipping_cents)
-
-    total_cents = paid_cents + quote.tax_cents + shipping_cents
-    transaction_id = pay(
-        "card", total_cents, {"card_token": "tok-4242"}, gateway
-    )
-    builder.paid_by("card").transaction(transaction_id)
-    order = builder.build()
 
     assert order.order_id != previous.order_id
     assert order.customer_name == "Ada"
@@ -129,6 +118,8 @@ def test_ordering_again(gateway):
     assert order.shipping_country == "DE"
     assert order.tax_cents == 644
     assert order.total_cents == 4_524
+    assert catalog.find("MUG-01").stock == 38
+    assert len(mailer.outbox) == 1
 
 
 def test_two_shops_in_one_run():

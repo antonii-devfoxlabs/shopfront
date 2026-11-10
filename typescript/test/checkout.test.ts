@@ -6,12 +6,12 @@ import { setTimeout as sleep } from 'node:timers/promises';
 
 import { Cart } from '../src/cart.ts';
 import { starterCatalog } from '../src/catalog.ts';
+import { buyAgain } from '../src/checkout.ts';
 import {
   OrderBuilder,
   nextOrderId,
   packingSlip,
   placeOrder,
-  reorder,
 } from '../src/orders.ts';
 import { pay } from '../src/payments.ts';
 import { PriceCalculator } from '../src/pricing.ts';
@@ -113,39 +113,19 @@ test('ordering again', () => {
     .transaction('txn-0001')
     .build();
   assert.equal(packingSlip(previous).at(-1), '1 x TEA-SAMPLE');
-  const builder = reorder(previous, nextOrderId());
-  const cart = new Cart();
-  for (const [sku, quantity] of previous.lines) cart.add(sku, quantity);
-  const country = previous.shippingCountry;
-
-  const calculator = new PriceCalculator(catalog, new TaxService(), shop);
-  const quote = calculator.quote(cart, country, {
-    today: new Date(2026, 6, 15),
-  });
-  builder.subtotal(quote.subtotalCents);
-  builder.discount(quote.discountCents);
-  builder.tax(quote.taxCents);
-
-  const paidCents = quote.subtotalCents - quote.discountCents;
-  const shippingCents = shippingCost(
-    cart,
-    catalog,
-    country,
-    paidCents,
+  const mailer = new Mailer();
+  const order = buyAgain(
+    previous,
+    { cardToken: 'tok-4242' },
+    new Date(2026, 6, 15),
+    new PriceCalculator(catalog, new TaxService(), shop),
     providersFor(shop),
+    catalog,
+    gateway,
+    mailer,
+    new Analytics(),
     shop,
   );
-  builder.shipping(shippingCents);
-
-  const totalCents = paidCents + quote.taxCents + shippingCents;
-  const transactionId = pay(
-    'card',
-    totalCents,
-    { cardToken: 'tok-4242' },
-    gateway,
-  );
-  builder.paidBy('card').transaction(transactionId);
-  const order = builder.build();
 
   assert.notEqual(order.orderId, previous.orderId);
   assert.equal(order.customerName, 'Ada');
@@ -153,6 +133,8 @@ test('ordering again', () => {
   assert.equal(order.shippingCountry, 'DE');
   assert.equal(order.taxCents, 644);
   assert.equal(order.totalCents, 4_524);
+  assert.equal(catalog.find('MUG-01').stock, 38);
+  assert.equal(mailer.outbox.length, 1);
 });
 
 test('two shops in one run', async () => {
