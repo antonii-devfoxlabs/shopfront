@@ -311,3 +311,18 @@ def test_a_provider_that_does_not_ship_there_is_skipped():
         )
         == 700
     )
+
+
+def test_the_shipping_cost_logs_nothing_itself(
+    capsys: pytest.CaptureFixture[str],
+):
+    # main decides what is timed and where its log goes.
+    shipping_cost(
+        cart_of("MUG-01", 2),
+        starter_catalog(),
+        "FR",
+        2_000,
+        providers_for(GERMAN_SHOP),
+        GERMAN_SHOP,
+    )
+    assert capsys.readouterr().out == ""

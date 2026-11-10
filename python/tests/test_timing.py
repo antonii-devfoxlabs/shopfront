@@ -1,3 +1,4 @@
+import inspect
 import re
 
 import pytest
@@ -52,3 +53,10 @@ def test_any_function_can_be_timed():
     money = timed("format money", format_money, lines.append)
     assert money(4_121, shop=GERMAN_SHOP) == "41.21 EUR"
     assert re.fullmatch(r"format money in \d+ ms", lines[0])
+
+
+def test_a_timed_function_keeps_the_wrapped_ones_name():
+    quote = timed("boxroute quote", boxroute_quote, lambda line: None)
+    assert quote.__name__ == "boxroute_quote"
+    assert quote.__doc__ == boxroute_quote.__doc__
+    assert inspect.unwrap(quote) is boxroute_quote

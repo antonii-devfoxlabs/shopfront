@@ -5,7 +5,6 @@ from collections.abc import Callable
 from shopfront.cart import Cart
 from shopfront.catalog import Catalog
 from shopfront.settings import Settings
-from shopfront.timing import timed_as
 
 
 class NoShippingError(Exception):
@@ -24,8 +23,6 @@ def cart_weight_grams(cart: Cart, catalog: Catalog) -> int:
     )
 
 
-# Every caller gets the timed shipping cost, the tests included.
-@timed_as("shipping cost", print)
 def shipping_cost(
     cart: Cart,
     catalog: Catalog,

@@ -24,14 +24,3 @@ def timed[**P, R](
         return answer
 
     return timed_call
-
-
-def timed_as[**P, R](
-    name: str, log: Callable[[str], None]
-) -> Callable[[Callable[P, R]], Callable[P, R]]:
-    """Gives back a decorator for the `@` line: `@timed_as(name, log)`."""
-
-    def decorator(call: Callable[P, R]) -> Callable[P, R]:
-        return timed(name, call, log)
-
-    return decorator

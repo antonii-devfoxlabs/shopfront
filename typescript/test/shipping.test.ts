@@ -311,3 +311,23 @@ test('a provider that does not ship there is skipped', () => {
     700,
   );
 });
+
+test('the shipping cost logs nothing itself', () => {
+  // main decides what is timed and where its log goes.
+  const printed: unknown[] = [];
+  const original = console.log;
+  console.log = (...line) => printed.push(line);
+  try {
+    shippingCost(
+      cartOf('MUG-01', 2),
+      starterCatalog(),
+      'FR',
+      2_000,
+      providersFor(GERMAN_SHOP),
+      GERMAN_SHOP,
+    );
+  } finally {
+    console.log = original;
+  }
+  assert.deepEqual(printed, []);
+});
