@@ -77,6 +77,29 @@ export function freeOn(day: Date, today: () => Date): ShippingOffer {
   return (paidCents) => today().toDateString() === day.toDateString();
 }
 
+// A row of OFFERS: a function of the shop's settings and the clock that
+// makes the offer its name stands for.
+type OfferRow = (shop: Settings, today: () => Date) => ShippingOffer;
+
+// Every offer a shop can name, with the row that makes it. A row takes
+// from the shop and the calendar what the maker needs besides the clock.
+const OFFERS = new Map<string, OfferRow>([
+  [
+    'free-friday',
+    (shop, today) => freeFriday(shop.freeFridayFromCents, today),
+  ],
+  ['black-friday', (shop, today) => freeOn(BLACK_FRIDAY, today)],
+]);
+
+// Make the offer the shop's settings name, on the clock given.
+export function offerFor(shop: Settings, today: () => Date): ShippingOffer {
+  const make = OFFERS.get(shop.offerName);
+  if (make === undefined) {
+    throw new UnknownOfferError(shop.offerName);
+  }
+  return make(shop, today);
+}
+
 // What main hands the shipping once.
 export type ShippingParts = {
   offer: ShippingOffer;

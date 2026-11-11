@@ -16,11 +16,13 @@ from shopfront.shipping import (
     Shipping,
     ShippingOffer,
     ShippingQuote,
+    UnknownOfferError,
     cart_weight_grams,
     cheapest,
     flat,
     free_friday,
     free_on,
+    offer_for,
 )
 from shopfront.vendor.parcelnow import ParcelNowClient
 from shopfront.vendor.swiftship import SwiftShip
@@ -322,6 +324,30 @@ def test_black_friday_ships_every_order_free_on_its_day():
 def test_black_friday_says_no_on_any_other_day():
     offer = free_on(BLACK_FRIDAY, today=lambda: A_FRIDAY)
     assert not offer(9_000)
+
+
+def test_every_shop_names_an_offer_the_registry_knows():
+    for shop in (GERMAN_SHOP, DUTCH_SHOP):
+        offer_for(shop, today=lambda: A_FRIDAY)
+
+
+def test_free_friday_by_name_reads_the_shops_own_line():
+    shop = copy.replace(DUTCH_SHOP, offer_name="free-friday")
+    offer = offer_for(shop, today=lambda: A_FRIDAY)
+    assert offer(5_000)
+    assert not offer(4_500)
+
+
+def test_black_friday_by_name_ships_free_on_its_day():
+    shop = copy.replace(GERMAN_SHOP, offer_name="black-friday")
+    assert offer_for(shop, today=lambda: BLACK_FRIDAY)(100)
+    assert not offer_for(shop, today=lambda: A_FRIDAY)(9_000)
+
+
+def test_an_unknown_offer_name_stops_the_shop():
+    shop = copy.replace(GERMAN_SHOP, offer_name="half-price")
+    with pytest.raises(UnknownOfferError, match="half-price"):
+        offer_for(shop, today=lambda: A_FRIDAY)
 
 
 def test_the_cheapest_provider_wins():

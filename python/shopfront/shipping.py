@@ -91,6 +91,28 @@ def free_on(day: date, today: Callable[[], date]) -> ShippingOffer:
     return ships_free
 
 
+# A row of OFFERS: a function of the shop's settings and the clock that
+# makes the offer its name stands for.
+OfferRow = Callable[[Settings, Callable[[], date]], ShippingOffer]
+
+# Every offer a shop can name, with the row that makes it. A row takes
+# from the shop and the calendar what the maker needs besides the clock.
+OFFERS: dict[str, OfferRow] = {
+    "free-friday": lambda shop, today: free_friday(
+        shop.free_friday_from_cents, today
+    ),
+    "black-friday": lambda shop, today: free_on(BLACK_FRIDAY, today),
+}
+
+
+def offer_for(shop: Settings, today: Callable[[], date]) -> ShippingOffer:
+    """Make the offer the shop's settings name, on the clock given."""
+    make = OFFERS.get(shop.offer_name)
+    if make is None:
+        raise UnknownOfferError(shop.offer_name)
+    return make(shop, today)
+
+
 @dataclass(frozen=True, kw_only=True)
 class Shipping:
     """What one shop charges to ship an order. main hands it the shop,

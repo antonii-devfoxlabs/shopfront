@@ -14,11 +14,13 @@ import {
   Shipping,
   type ShippingOffer,
   type ShippingQuote,
+  UnknownOfferError,
   cartWeightGrams,
   cheapest,
   flat,
   freeFriday,
   freeOn,
+  offerFor,
 } from '../src/shipping.ts';
 import { ParcelNowClient } from '../src/vendor/parcelnow.ts';
 import { SwiftShip } from '../src/vendor/swiftship.ts';
@@ -380,6 +382,30 @@ test('Black Friday ships every order free on its day', () => {
 test('Black Friday says no on any other day', () => {
   const offer = freeOn(BLACK_FRIDAY, () => A_FRIDAY);
   assert.equal(offer(9_000), false);
+});
+
+test('every shop names an offer the registry knows', () => {
+  for (const shop of [GERMAN_SHOP, DUTCH_SHOP]) {
+    offerFor(shop, () => A_FRIDAY);
+  }
+});
+
+test("free Friday by name reads the shop's own line", () => {
+  const shop = { ...DUTCH_SHOP, offerName: 'free-friday' };
+  const offer = offerFor(shop, () => A_FRIDAY);
+  assert.equal(offer(5_000), true);
+  assert.equal(offer(4_500), false);
+});
+
+test('Black Friday by name ships free on its day', () => {
+  const shop = { ...GERMAN_SHOP, offerName: 'black-friday' };
+  assert.equal(offerFor(shop, () => BLACK_FRIDAY)(100), true);
+  assert.equal(offerFor(shop, () => A_FRIDAY)(9_000), false);
+});
+
+test('an unknown offer name stops the shop', () => {
+  const shop = { ...GERMAN_SHOP, offerName: 'half-price' };
+  assert.throws(() => offerFor(shop, () => A_FRIDAY), UnknownOfferError);
 });
 
 test('the cheapest provider wins', () => {

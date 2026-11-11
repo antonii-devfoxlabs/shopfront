@@ -102,6 +102,42 @@ export function freeOn(day, today) {
   return (paidCents) => today().toDateString() === day.toDateString();
 }
 
+/**
+ * A row of OFFERS: a function of the shop's settings and the clock that
+ * makes the offer its name stands for.
+ * @callback OfferRow
+ * @param {import('./settings.js').Settings} shop
+ * @param {() => Date} today
+ * @returns {ShippingOffer}
+ */
+
+/**
+ * Every offer a shop can name, with the row that makes it. A row takes
+ * from the shop and the calendar what the maker needs besides the clock.
+ * @type {Map<string, OfferRow>}
+ */
+const OFFERS = new Map([
+  [
+    'free-friday',
+    (shop, today) => freeFriday(shop.freeFridayFromCents, today),
+  ],
+  ['black-friday', (shop, today) => freeOn(BLACK_FRIDAY, today)],
+]);
+
+/**
+ * Make the offer the shop's settings name, on the clock given.
+ * @param {import('./settings.js').Settings} shop
+ * @param {() => Date} today
+ * @returns {ShippingOffer}
+ */
+export function offerFor(shop, today) {
+  const make = OFFERS.get(shop.offerName);
+  if (make === undefined) {
+    throw new UnknownOfferError(shop.offerName);
+  }
+  return make(shop, today);
+}
+
 // What one shop charges to ship an order. main hands it the shop, the
 // providers and the offer the shop runs; it never picks an offer itself.
 export class Shipping {
