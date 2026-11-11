@@ -2,7 +2,12 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { starterCatalog } from '../src/catalog.js';
-import { emailShopper, textWarehouse, trackOrder } from '../src/listeners.js';
+import {
+  emailShopper,
+  expectReturn,
+  textWarehouse,
+  trackOrder,
+} from '../src/listeners.js';
 import { OrderBuilder, OrderEvents, placeOrder } from '../src/orders.js';
 import { DUTCH_SHOP, GERMAN_SHOP } from '../src/settings.js';
 import { Analytics } from '../src/vendor/analytics.js';
@@ -58,18 +63,26 @@ test('the warehouse listener texts what to pack', () => {
   ]);
 });
 
+test('the return listener texts what comes back', () => {
+  const sms = new Sms();
+  expectReturn(sms, GERMAN_SHOP)(anOrder());
+  assert.deepEqual(sms.outbox, [
+    { to: '+44 7700 900100', text: 'Expect SF-00007 back: 2 x MUG-01' },
+  ]);
+});
+
 test('a closed warehouse gets no text until it opens again', () => {
   const sms = new Sms();
   const catalog = starterCatalog();
   const warehouse = textWarehouse(sms, GERMAN_SHOP);
   const events = new OrderEvents();
-  events.subscribe(warehouse);
+  events.subscribe('placed', warehouse);
   // The staff page may press Close, or Open, twice: no harm either way.
-  events.unsubscribe(warehouse);
-  events.unsubscribe(warehouse);
+  events.unsubscribe('placed', warehouse);
+  events.unsubscribe('placed', warehouse);
   placeOrder(anOrder('SF-00001'), catalog, events);
-  events.subscribe(warehouse);
-  events.subscribe(warehouse);
+  events.subscribe('placed', warehouse);
+  events.subscribe('placed', warehouse);
   placeOrder(anOrder('SF-00002'), catalog, events);
   assert.deepEqual(
     sms.outbox.map((text) => text.text),

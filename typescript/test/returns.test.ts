@@ -48,7 +48,12 @@ test('a refund gives the money back and tells the shopper', () => {
   const order = aCardOrder();
   placeOrder(order, starterCatalog(), new OrderEvents());
   const mailer = new Mailer();
-  const refunds = new Refunds({ gateway, mailer, shop: GERMAN_SHOP });
+  const refunds = new Refunds({
+    gateway,
+    mailer,
+    shop: GERMAN_SHOP,
+    events: new OrderEvents(),
+  });
 
   const refundId = refunds.refund('SF-00007', { cardToken: 'tok-4242' });
 
@@ -111,3 +116,22 @@ for (const [ReturnClass, details] of EVERY_RETURN) {
     assert.equal(gateway.refunds.length, refundsBefore);
   });
 }
+
+test('a refund is announced once the money is back', () => {
+  const gateway = aGateway();
+  const order = aCardOrder();
+  const events = new OrderEvents();
+  placeOrder(order, starterCatalog(), events);
+  const told: string[] = [];
+  events.subscribe('refunded', (refunded) => told.push(refunded.status));
+  const refunds = new Refunds({
+    gateway,
+    mailer: new Mailer(),
+    shop: GERMAN_SHOP,
+    events,
+  });
+
+  refunds.refund('SF-00007', { cardToken: 'tok-4242' });
+
+  assert.deepEqual(told, ['returned']);
+});

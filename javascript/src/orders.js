@@ -237,37 +237,41 @@ export function reset() {
  */
 
 /**
- * Who hears of a placed order: a list the subject keeps for as long as
- * the shop runs. Listeners join and leave it while the shop runs.
+ * Who hears of what happens to an order, by the news's name: 'placed' or
+ * 'refunded'. Listeners join and leave while the shop runs.
  */
 export class OrderEvents {
-  /** @type {Set<OrderListener>} */
-  #listeners = new Set();
+  /** @type {Map<string, Set<OrderListener>>} */
+  #listeners = new Map();
 
   /**
-   * Tell this listener of every order from now on, once each.
+   * Tell this listener of every such news from now on, once each.
+   * @param {string} name
    * @param {OrderListener} listener
    */
-  subscribe(listener) {
-    this.#listeners.add(listener);
+  subscribe(name, listener) {
+    if (!this.#listeners.has(name)) this.#listeners.set(name, new Set());
+    this.#listeners.get(name)?.add(listener);
   }
 
   /**
    * Tell this listener nothing more; one not on the list is fine.
+   * @param {string} name
    * @param {OrderListener} listener
    */
-  unsubscribe(listener) {
-    this.#listeners.delete(listener);
+  unsubscribe(name, listener) {
+    this.#listeners.get(name)?.delete(listener);
   }
 
   /**
-   * Tell every listener of the order, in the order they joined.
+   * Tell every listener of this news, in the order they joined.
+   * @param {string} name
    * @param {Order} order
    */
-  notify(order) {
+  notify(name, order) {
     // A copy: a listener that joins or leaves while they are told
     // changes the list for the next order, not for this one.
-    for (const listener of [...this.#listeners]) {
+    for (const listener of [...(this.#listeners.get(name) ?? [])]) {
       listener(order);
     }
   }
@@ -283,7 +287,7 @@ export function placeOrder(order, catalog, events) {
   catalog.takeAllFromStock(order.lines);
   OrderBook.instance().add(order);
   // The order is placed: now tell everyone subscribed at this moment.
-  events.notify(order);
+  events.notify('placed', order);
 }
 
 // The owner's Monday line: the orders kept, and what they took.

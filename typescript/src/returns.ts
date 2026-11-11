@@ -1,6 +1,11 @@
 // Orders sent back, and the money that goes back with them.
 
-import { type Order, OrderBook, formatMoney } from './orders.ts';
+import {
+  type Order,
+  OrderBook,
+  type OrderEvents,
+  formatMoney,
+} from './orders.ts';
 import {
   payment,
   type Gateway,
@@ -56,6 +61,8 @@ export type RefundParts = {
   gateway: Gateway;
   mailer: Mailer;
   shop: Settings;
+  // Who hears of a refund: main subscribes them.
+  events: OrderEvents;
 };
 
 // One call that gives an order's money back, and tells the shopper.
@@ -67,9 +74,9 @@ export class Refunds {
     this.#parts = parts;
   }
 
-  // Give an order's money back, and tell the shopper.
+  // Give an order's money back, tell the shopper, then announce it.
   refund(orderId: string, details: PaymentDetails): string {
-    const { gateway, mailer, shop } = this.#parts;
+    const { gateway, mailer, shop, events } = this.#parts;
     const order = OrderBook.instance().find(orderId);
     const refundId = new Return(order, details, gateway).process();
     mailer.send({
@@ -80,6 +87,7 @@ export class Refunds {
         `Hi ${order.customerName}, we have refunded ` +
         `${formatMoney(order.totalCents, shop)}.`,
     });
+    events.notify('refunded', order);
     return refundId;
   }
 }

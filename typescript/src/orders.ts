@@ -243,26 +243,27 @@ export function reset(): void {
 // function that is told the order and answers nothing.
 export type OrderListener = (order: Order) => void;
 
-// Who hears of a placed order: a list the subject keeps for as long as
-// the shop runs. Listeners join and leave it while the shop runs.
+// Who hears of what happens to an order, by the news's name: 'placed' or
+// 'refunded'. Listeners join and leave while the shop runs.
 export class OrderEvents {
-  readonly #listeners = new Set<OrderListener>();
+  readonly #listeners = new Map<string, Set<OrderListener>>();
 
-  // Tell this listener of every order from now on, once each.
-  subscribe(listener: OrderListener): void {
-    this.#listeners.add(listener);
+  // Tell this listener of every such news from now on, once each.
+  subscribe(name: string, listener: OrderListener): void {
+    if (!this.#listeners.has(name)) this.#listeners.set(name, new Set());
+    this.#listeners.get(name)?.add(listener);
   }
 
   // Tell this listener nothing more; one not on the list is fine.
-  unsubscribe(listener: OrderListener): void {
-    this.#listeners.delete(listener);
+  unsubscribe(name: string, listener: OrderListener): void {
+    this.#listeners.get(name)?.delete(listener);
   }
 
-  // Tell every listener of the order, in the order they joined.
-  notify(order: Order): void {
+  // Tell every listener of this news, in the order they joined.
+  notify(name: string, order: Order): void {
     // A copy: a listener that joins or leaves while they are told
     // changes the list for the next order, not for this one.
-    for (const listener of [...this.#listeners]) {
+    for (const listener of [...(this.#listeners.get(name) ?? [])]) {
       listener(order);
     }
   }
@@ -277,7 +278,7 @@ export function placeOrder(
   catalog.takeAllFromStock(order.lines);
   OrderBook.instance().add(order);
   // The order is placed: now tell everyone subscribed at this moment.
-  events.notify(order);
+  events.notify('placed', order);
 }
 
 // The owner's Monday line: the orders kept, and what they took.

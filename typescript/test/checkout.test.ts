@@ -72,9 +72,9 @@ function checkoutFor(
   const calculator = new PriceCalculator(catalog, new TaxService(), shop);
   const shipping = shippingFor(shop);
   const events = new OrderEvents();
-  events.subscribe(emailShopper(mailer, shop));
-  events.subscribe(trackOrder(new Analytics()));
-  events.subscribe(textWarehouse(new Sms(), shop));
+  events.subscribe('placed', emailShopper(mailer, shop));
+  events.subscribe('placed', trackOrder(new Analytics()));
+  events.subscribe('placed', textWarehouse(new Sms(), shop));
   return new Checkout({
     quote: (cart: Cart, country: string, options: QuoteOptions) =>
       calculator.quote(cart, country, options),

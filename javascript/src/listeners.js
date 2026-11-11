@@ -1,5 +1,5 @@
-// What the rest of the store does once an order is placed: each maker
-// gives back a listener, a function that is told the order.
+// What the rest of the store does once an order is placed or refunded:
+// each maker gives back a listener, a function that is told the order.
 
 import { formatMoney, packingSlip } from './orders.js';
 
@@ -50,6 +50,21 @@ export function textWarehouse(sms, shop) {
     sms.send({
       to: shop.warehousePhone,
       text: `Pack ${order.orderId}: ${packingSlip(order).join(', ')}`,
+    });
+  };
+}
+
+/**
+ * Text the shop's warehouse what is coming back.
+ * @param {import('./vendor/sms.js').Sms} sms
+ * @param {import('./settings.js').Settings} shop
+ * @returns {OrderListener}
+ */
+export function expectReturn(sms, shop) {
+  return (order) => {
+    sms.send({
+      to: shop.warehousePhone,
+      text: `Expect ${order.orderId} back: ${packingSlip(order).join(', ')}`,
     });
   };
 }

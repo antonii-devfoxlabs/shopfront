@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from shopfront.orders import Order, OrderBook, format_money
+from shopfront.orders import Order, OrderBook, OrderEvents, format_money
 from shopfront.payments import Gateway, PaymentMethod, payment
 from shopfront.settings import Settings
 from shopfront.vendor.mailer import Mailer
@@ -52,9 +52,11 @@ class Refunds:
     gateway: Gateway
     mailer: Mailer
     shop: Settings
+    # Who hears of a refund: main subscribes them.
+    events: OrderEvents
 
     def refund(self, order_id: str, details: dict) -> str:
-        """Give an order's money back, and tell the shopper."""
+        """Give an order's money back, tell the shopper, then announce it."""
         order = OrderBook.instance().find(order_id)
         refund_id = Return(order, details, self.gateway).process()
         self.mailer.send(
@@ -66,4 +68,5 @@ class Refunds:
                 f"{format_money(order.total_cents, self.shop)}."
             ),
         )
+        self.events.notify("refunded", order)
         return refund_id

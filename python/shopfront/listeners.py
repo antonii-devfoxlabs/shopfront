@@ -1,5 +1,5 @@
-"""What the rest of the store does once an order is placed: each maker
-gives back a listener, a function that is told the order."""
+"""What the rest of the store does once an order is placed or refunded:
+each maker gives back a listener, a function that is told the order."""
 
 from shopfront.orders import Order, OrderListener, format_money, packing_slip
 from shopfront.settings import Settings
@@ -45,6 +45,19 @@ def text_warehouse(sms: Sms, shop: Settings) -> OrderListener:
         sms.send(
             to=shop.warehouse_phone,
             text=f"Pack {order.order_id}: {', '.join(packing_slip(order))}",
+        )
+
+    return send_text
+
+
+def expect_return(sms: Sms, shop: Settings) -> OrderListener:
+    """Text the shop's warehouse what is coming back."""
+
+    def send_text(order: Order) -> None:
+        sms.send(
+            to=shop.warehouse_phone,
+            text=f"Expect {order.order_id} back: "
+            + ", ".join(packing_slip(order)),
         )
 
     return send_text

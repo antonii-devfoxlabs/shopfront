@@ -61,9 +61,9 @@ def checkout_for(
 ) -> Checkout:
     """A checkout with the real parts, and the test's own to look into."""
     events = OrderEvents()
-    events.subscribe(email_shopper(mailer, shop))
-    events.subscribe(track_order(Analytics()))
-    events.subscribe(text_warehouse(Sms(), shop))
+    events.subscribe("placed", email_shopper(mailer, shop))
+    events.subscribe("placed", track_order(Analytics()))
+    events.subscribe("placed", text_warehouse(Sms(), shop))
     return Checkout(
         quote=PriceCalculator(catalog, TaxService(), shop).quote,
         shipping_cost=shipping_for(shop).cost,

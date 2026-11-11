@@ -45,14 +45,15 @@ export class GiftReturn extends Return {
 export class Refunds {
   #parts;
 
-  // The parts, by name: gateway, mailer and shop.
+  // The parts, by name: gateway, mailer, shop, and events: who hears of a
+  // refund. main subscribes them.
   constructor(parts) {
     this.#parts = parts;
   }
 
-  // Give an order's money back, and tell the shopper.
+  // Give an order's money back, tell the shopper, then announce it.
   refund(orderId, details) {
-    const { gateway, mailer, shop } = this.#parts;
+    const { gateway, mailer, shop, events } = this.#parts;
     const order = OrderBook.instance().find(orderId);
     const refundId = new Return(order, details, gateway).process();
     mailer.send({
@@ -63,6 +64,7 @@ export class Refunds {
         `Hi ${order.customerName}, we have refunded ` +
         `${formatMoney(order.totalCents, shop)}.`,
     });
+    events.notify('refunded', order);
     return refundId;
   }
 }

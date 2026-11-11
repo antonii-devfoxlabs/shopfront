@@ -41,7 +41,9 @@ def test_a_refund_gives_the_money_back_and_tells_the_shopper(gateway):
     order = a_card_order()
     place_order(order, starter_catalog(), OrderEvents())
     mailer = Mailer()
-    refunds = Refunds(gateway=gateway, mailer=mailer, shop=GERMAN_SHOP)
+    refunds = Refunds(
+        gateway=gateway, mailer=mailer, shop=GERMAN_SHOP, events=OrderEvents()
+    )
 
     refund_id = refunds.refund("SF-00007", {"card_token": "tok-4242"})
 
@@ -101,3 +103,20 @@ def test_an_order_is_returned_once(return_class, details, gateway):
     with pytest.raises(ReturnRefusedError, match="SF-00007 is returned"):
         return_class(order, details, gateway).process()
     assert len(gateway.refunds) == refunds_before
+
+
+def test_a_refund_is_announced_once_the_money_is_back(gateway):
+    order = a_card_order()
+    events = OrderEvents()
+    place_order(order, starter_catalog(), events)
+    told: list[str] = []
+    events.subscribe(
+        "refunded", lambda refunded: told.append(refunded.status)
+    )
+    refunds = Refunds(
+        gateway=gateway, mailer=Mailer(), shop=GERMAN_SHOP, events=events
+    )
+
+    refunds.refund("SF-00007", {"card_token": "tok-4242"})
+
+    assert told == ["returned"]

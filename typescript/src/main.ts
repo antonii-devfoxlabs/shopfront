@@ -5,7 +5,12 @@ import type { Catalog } from './catalog.ts';
 import { CatalogError, loadCatalog } from './catalogFile.ts';
 import { Checkout } from './checkout.ts';
 import { TimedGateway } from './gateways.ts';
-import { emailShopper, textWarehouse, trackOrder } from './listeners.ts';
+import {
+  emailShopper,
+  expectReturn,
+  textWarehouse,
+  trackOrder,
+} from './listeners.ts';
 import { OrderEvents, formatMoney } from './orders.ts';
 import { PriceCalculator, type QuoteOptions } from './pricing.ts';
 import {
@@ -69,12 +74,14 @@ const sms = new Sms();
 // Kept by name: the staff page unsubscribes it while the warehouse is
 // closed (24 to 26 December), and subscribes it again after.
 const warehouse = textWarehouse(sms, shop);
-// Everyone who hears of a placed order, told in the order they subscribe.
-// One more is one more line here.
+// Everyone who hears of a placed or refunded order, by the news's name,
+// told in the order they subscribe. One more is one more line here.
 const events = new OrderEvents();
-events.subscribe(emailShopper(mailer, shop));
-events.subscribe(trackOrder(new Analytics()));
-events.subscribe(warehouse);
+events.subscribe('placed', emailShopper(mailer, shop));
+events.subscribe('placed', trackOrder(new Analytics()));
+events.subscribe('placed', warehouse);
+// Refunds, made for the return page, tell the same events.
+events.subscribe('refunded', expectReturn(sms, shop));
 // Every step of an order, in order, behind one call. main still
 // decides what is timed, and hands the checkout the timed parts.
 const checkout = new Checkout({

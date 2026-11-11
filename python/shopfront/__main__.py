@@ -8,7 +8,12 @@ from shopfront.cart import Cart
 from shopfront.catalog_file import CatalogError, load_catalog
 from shopfront.checkout import Checkout
 from shopfront.gateways import TimedGateway
-from shopfront.listeners import email_shopper, text_warehouse, track_order
+from shopfront.listeners import (
+    email_shopper,
+    expect_return,
+    text_warehouse,
+    track_order,
+)
 from shopfront.orders import OrderEvents, format_money
 from shopfront.pricing import PriceCalculator
 from shopfront.providers import (
@@ -66,12 +71,14 @@ def main() -> None:
     # Kept by name: the staff page unsubscribes it while the warehouse
     # is closed (24 to 26 December), and subscribes it again after.
     warehouse = text_warehouse(sms, shop)
-    # Everyone who hears of a placed order, told in the order they
-    # subscribe. One more is one more line here.
+    # Everyone who hears of a placed or refunded order, by the news's
+    # name, told in the order they subscribe. One more is one more line.
     events = OrderEvents()
-    events.subscribe(email_shopper(mailer, shop))
-    events.subscribe(track_order(Analytics()))
-    events.subscribe(warehouse)
+    events.subscribe("placed", email_shopper(mailer, shop))
+    events.subscribe("placed", track_order(Analytics()))
+    events.subscribe("placed", warehouse)
+    # Refunds, made for the return page, tell the same events.
+    events.subscribe("refunded", expect_return(sms, shop))
     # Every step of an order, in order, behind one call. main still
     # decides what is timed, and hands the checkout the timed parts.
     checkout = Checkout(
