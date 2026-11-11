@@ -12,13 +12,13 @@ from shopfront.providers import (
 )
 from shopfront.settings import DUTCH_SHOP, GERMAN_SHOP, Settings
 from shopfront.shipping import (
-    Cheapest,
-    Flat,
     NoShippingError,
     Shipping,
     ShippingOffer,
     ShippingQuote,
     cart_weight_grams,
+    cheapest,
+    flat,
     free_friday,
     free_on,
 )
@@ -287,9 +287,9 @@ def test_nobody_ships_to_spain():
 
 
 def test_a_flat_rule_charges_every_parcel_the_same():
-    swiss = Flat(990)
-    assert swiss.cost(350, "CH") == 990
-    assert swiss.cost(6_600, "CH") == 990
+    swiss = flat(990)
+    assert swiss(350, "CH") == 990
+    assert swiss(6_600, "CH") == 990
 
 
 def test_the_cheapest_rule_says_no_when_nobody_ships_there():
@@ -297,7 +297,7 @@ def test_the_cheapest_rule_says_no_when_nobody_ships_there():
         raise NoShippingError(country)
 
     with pytest.raises(NoShippingError, match="ES"):
-        Cheapest([nowhere]).cost(350, "ES")
+        cheapest([nowhere])(350, "ES")
 
 
 def test_free_friday_ships_free_on_fridays_from_its_line():
@@ -326,19 +326,15 @@ def test_black_friday_says_no_on_any_other_day():
 
 def test_the_cheapest_provider_wins():
     # Two stand-in providers, each with one price for every parcel.
-    cheapest = Cheapest(
-        [lambda grams, country: 700, lambda grams, country: 450]
-    )
-    assert cheapest.cost(350, "FR") == 450
+    rule = cheapest([lambda grams, country: 700, lambda grams, country: 450])
+    assert rule(350, "FR") == 450
 
 
 def test_a_provider_that_does_not_ship_there_is_skipped():
     def nowhere(grams: int, country: str) -> int:
         raise NoShippingError(country)
 
-    assert (
-        Cheapest([nowhere, lambda grams, country: 700]).cost(350, "FR") == 700
-    )
+    assert cheapest([nowhere, lambda grams, country: 700])(350, "FR") == 700
 
 
 def test_the_shipping_cost_logs_nothing_itself(

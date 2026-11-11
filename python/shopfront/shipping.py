@@ -3,7 +3,6 @@
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date
-from typing import Protocol
 
 from shopfront.cart import Cart
 from shopfront.catalog import Catalog
@@ -28,32 +27,27 @@ def cart_weight_grams(cart: Cart, catalog: Catalog) -> int:
     )
 
 
-class ShippingRule(Protocol):
-    """One way the store prices a parcel: its grams and its country in,
-    whole cents out."""
-
-    def cost(self, grams: int, country: str) -> int: ...
-
-
-@dataclass(frozen=True)
-class Flat:
-    """One price for every parcel, whatever it weighs; Flat(0) is free."""
-
-    cents: int
-
-    def cost(self, grams: int, country: str) -> int:
-        return self.cents
+# One way the store prices a parcel fills this slot: a function of its
+# grams and its country that answers whole cents, the same question a
+# provider answers, so cheapest can hand both straight on.
+ShippingRule = Callable[[int, str], int]
 
 
-@dataclass(frozen=True)
-class Cheapest:
+def flat(cents: int) -> ShippingRule:
+    """One price for every parcel, whatever it weighs; flat(0) is free."""
+
+    def cost(grams: int, country: str) -> int:
+        return cents
+
+    return cost
+
+
+def cheapest(providers: list[ShippingQuote]) -> ShippingRule:
     """Ask every shipping provider, and take the cheapest answer."""
 
-    providers: list[ShippingQuote]
-
-    def cost(self, grams: int, country: str) -> int:
+    def cost(grams: int, country: str) -> int:
         costs = []
-        for provider in self.providers:
+        for provider in providers:
             try:
                 costs.append(provider(grams, country))
             except NoShippingError:
@@ -62,6 +56,8 @@ class Cheapest:
         if not costs:
             raise NoShippingError(country)
         return min(costs)
+
+    return cost
 
 
 # Every offer fills this slot: a function of the amount paid that says
@@ -108,17 +104,17 @@ class Shipping:
         # wins, so a rule's place in the list is part of the rule.
         rule: ShippingRule
         if at_home and paid_cents >= self.shop.free_shipping_from_cents:
-            rule = Flat(0)
+            rule = flat(0)
         elif at_home and self.offer(paid_cents):
             # The shop's offer, whichever one main handed in.
-            rule = Flat(0)
+            rule = flat(0)
         elif country == "CH":
             # No provider ships to Switzerland: a courier, one flat price,
             # heavy parcels too, so this comes before the freight rule.
-            rule = Flat(990)
+            rule = flat(990)
         elif not at_home and weight_grams > 5_000:
             # Heavy parcels abroad go as freight: one flat price.
-            rule = Flat(3_500)
+            rule = flat(3_500)
         else:
-            rule = Cheapest(self.providers)
-        return rule.cost(weight_grams, country)
+            rule = cheapest(self.providers)
+        return rule(weight_grams, country)

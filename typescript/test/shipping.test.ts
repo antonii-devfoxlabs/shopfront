@@ -10,13 +10,13 @@ import {
 } from '../src/providers.ts';
 import { DUTCH_SHOP, GERMAN_SHOP, type Settings } from '../src/settings.ts';
 import {
-  Cheapest,
-  Flat,
   NoShippingError,
   Shipping,
   type ShippingOffer,
   type ShippingQuote,
   cartWeightGrams,
+  cheapest,
+  flat,
   freeFriday,
   freeOn,
 } from '../src/shipping.ts';
@@ -342,9 +342,9 @@ test('nobody ships to Spain', () => {
 });
 
 test('a flat rule charges every parcel the same', () => {
-  const swiss = new Flat(990);
-  assert.equal(swiss.cost(350, 'CH'), 990);
-  assert.equal(swiss.cost(6_600, 'CH'), 990);
+  const swiss = flat(990);
+  assert.equal(swiss(350, 'CH'), 990);
+  assert.equal(swiss(6_600, 'CH'), 990);
 });
 
 test('the cheapest rule says no when nobody ships there', () => {
@@ -352,7 +352,7 @@ test('the cheapest rule says no when nobody ships there', () => {
     throw new NoShippingError(country);
   }
 
-  assert.throws(() => new Cheapest([nowhere]).cost(350, 'ES'), {
+  assert.throws(() => cheapest([nowhere])(350, 'ES'), {
     name: 'NoShippingError',
     message: 'ES',
   });
@@ -384,15 +384,15 @@ test('Black Friday says no on any other day', () => {
 
 test('the cheapest provider wins', () => {
   // Two stand-in providers, each with one price for every parcel.
-  const cheapest = new Cheapest([() => 700, () => 450]);
-  assert.equal(cheapest.cost(350, 'FR'), 450);
+  const rule = cheapest([() => 700, () => 450]);
+  assert.equal(rule(350, 'FR'), 450);
 });
 
 test('a provider that does not ship there is skipped', () => {
   function nowhere(grams: number, country: string): number {
     throw new NoShippingError(country);
   }
-  assert.equal(new Cheapest([nowhere, () => 700]).cost(350, 'FR'), 700);
+  assert.equal(cheapest([nowhere, () => 700])(350, 'FR'), 700);
 });
 
 test('the shipping cost logs nothing itself', () => {
