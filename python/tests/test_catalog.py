@@ -36,9 +36,24 @@ def test_lists_every_product():
     assert len(starter_catalog().all_products()) == 5
 
 
+def test_a_page_holds_the_products_in_catalog_order():
+    catalog = starter_catalog()
+    assert [product.sku for product in catalog.page(1, 2)] == [
+        "MUG-01",
+        "TEA-02",
+    ]
+    assert [product.sku for product in catalog.page(3, 2)] == ["FLT-05"]
+    assert catalog.page(4, 2) == []
+
+
 def test_search_finds_names_whatever_the_case():
-    found = starter_catalog().search("CUP")
+    found = starter_catalog().search("CUP", limit=20)
     assert [product.sku for product in found] == ["CUP-04"]
+
+
+def test_search_shows_no_more_than_its_limit():
+    found = starter_catalog().search("E", limit=2)
+    assert [product.sku for product in found] == ["MUG-01", "TEA-02"]
 
 
 def test_taking_several_lines_takes_none_if_one_is_short():

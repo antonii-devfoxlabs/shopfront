@@ -33,11 +33,32 @@ test('lists every product', () => {
   assert.equal(starterCatalog().allProducts().length, 5);
 });
 
+test('a page holds the products in catalog order', () => {
+  const catalog = starterCatalog();
+  assert.deepEqual(
+    catalog.page(1, 2).map((product) => product.sku),
+    ['MUG-01', 'TEA-02'],
+  );
+  assert.deepEqual(
+    catalog.page(3, 2).map((product) => product.sku),
+    ['FLT-05'],
+  );
+  assert.deepEqual(catalog.page(4, 2), []);
+});
+
 test('search finds names whatever the case', () => {
-  const found = starterCatalog().search('CUP');
+  const found = starterCatalog().search('CUP', 20);
   assert.deepEqual(
     found.map((product) => product.sku),
     ['CUP-04'],
+  );
+});
+
+test('search shows no more than its limit', () => {
+  const found = starterCatalog().search('E', 2);
+  assert.deepEqual(
+    found.map((product) => product.sku),
+    ['MUG-01', 'TEA-02'],
   );
 });
 

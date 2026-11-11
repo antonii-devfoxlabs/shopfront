@@ -29,6 +29,12 @@ export class Catalog {
     return [...this.#products.values()];
   }
 
+  // The products on page `number`, counted from 1.
+  page(number: number, size: number): Product[] {
+    const start = (number - 1) * size;
+    return this.allProducts().slice(start, start + size);
+  }
+
   find(sku: string): Product {
     const product = this.#products.get(sku);
     if (product === undefined) throw new UnknownProductError(sku);
@@ -65,11 +71,13 @@ export class Catalog {
     }
   }
 
-  search(text: string): Product[] {
+  // The first `limit` products whose names hold `text`, any case.
+  search(text: string, limit: number): Product[] {
     const wanted = text.toLowerCase();
-    return this.allProducts().filter((product) =>
+    const found = this.allProducts().filter((product) =>
       product.name.toLowerCase().includes(wanted),
     );
+    return found.slice(0, limit);
   }
 }
 

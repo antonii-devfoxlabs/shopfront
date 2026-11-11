@@ -28,6 +28,11 @@ class Catalog:
     def all_products(self) -> list[Product]:
         return list(self._products.values())
 
+    def page(self, number: int, size: int) -> list[Product]:
+        """The products on page `number`, counted from 1."""
+        start = (number - 1) * size
+        return self.all_products()[start : start + size]
+
     def find(self, sku: str) -> Product:
         try:
             return self._products[sku]
@@ -57,13 +62,15 @@ class Catalog:
         for sku, quantity in lines.items():
             self.take_from_stock(sku, quantity)
 
-    def search(self, text: str) -> list[Product]:
+    def search(self, text: str, limit: int) -> list[Product]:
+        """The first `limit` products whose names hold `text`, any case."""
         wanted = text.lower()
-        return [
+        found = [
             product
             for product in self.all_products()
             if wanted in product.name.lower()
         ]
+        return found[:limit]
 
 
 def starter_catalog() -> Catalog:
