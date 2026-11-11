@@ -6,9 +6,6 @@ from typing import ClassVar
 
 from shopfront.catalog import Catalog
 from shopfront.settings import Settings
-from shopfront.vendor.analytics import Analytics
-from shopfront.vendor.mailer import Mailer
-from shopfront.vendor.sms import Sms
 
 _last_order_number = 0
 
@@ -225,33 +222,14 @@ OrderListener = Callable[[Order], None]
 
 
 def place_order(
-    order: Order,
-    catalog: Catalog,
-    mailer: Mailer,
-    analytics: Analytics,
-    sms: Sms,
-    shop: Settings,
+    order: Order, catalog: Catalog, listeners: list[OrderListener]
 ) -> None:
+    """Take the stock and keep the order, then tell every listener."""
     catalog.take_all_from_stock(order.lines)
     OrderBook.instance().add(order)
-    mailer.send(
-        sender=shop.store_email,
-        to=order.customer_email,
-        subject=f"{shop.store_name}: order {order.order_id}",
-        body=(
-            f"Hi {order.customer_name}, thank you! "
-            f"We have your order {order.order_id}, "
-            f"{format_money(order.total_cents, shop)} in all."
-        ),
-    )
-    analytics.track(
-        "order_placed",
-        {"order_id": order.order_id, "total_cents": order.total_cents},
-    )
-    sms.send(
-        to=shop.warehouse_phone,
-        text=f"Pack {order.order_id}: {', '.join(packing_slip(order))}",
-    )
+    # The order is placed: now tell everyone who listens, in turn.
+    for listener in listeners:
+        listener(order)
 
 
 def sales_report(orders: Iterable[Order], shop: Settings) -> str:

@@ -5,9 +5,7 @@ from shopfront.orders import Order, OrderBuilder, place_order
 from shopfront.payments import Card, GiftCard
 from shopfront.returns import GiftReturn, Refunds, Return, ReturnRefusedError
 from shopfront.settings import GERMAN_SHOP
-from shopfront.vendor.analytics import Analytics
 from shopfront.vendor.mailer import Mailer
-from shopfront.vendor.sms import Sms
 
 
 def a_card_order() -> Order:
@@ -41,9 +39,7 @@ def test_a_return_refunds_the_way_the_shopper_paid(gateway):
 
 def test_a_refund_gives_the_money_back_and_tells_the_shopper(gateway):
     order = a_card_order()
-    place_order(
-        order, starter_catalog(), Mailer(), Analytics(), Sms(), GERMAN_SHOP
-    )
+    place_order(order, starter_catalog(), [])
     mailer = Mailer()
     refunds = Refunds(gateway=gateway, mailer=mailer, shop=GERMAN_SHOP)
 

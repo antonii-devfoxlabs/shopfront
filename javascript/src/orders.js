@@ -236,26 +236,19 @@ export function reset() {
  * @returns {void}
  */
 
-export function placeOrder(order, catalog, mailer, analytics, sms, shop) {
+/**
+ * Take the stock and keep the order, then tell every listener.
+ * @param {Order} order
+ * @param {import('./catalog.js').Catalog} catalog
+ * @param {OrderListener[]} listeners
+ */
+export function placeOrder(order, catalog, listeners) {
   catalog.takeAllFromStock(order.lines);
   OrderBook.instance().add(order);
-  mailer.send({
-    from: shop.storeEmail,
-    to: order.customerEmail,
-    subject: `${shop.storeName}: order ${order.orderId}`,
-    body:
-      `Hi ${order.customerName}, thank you! ` +
-      `We have your order ${order.orderId}, ` +
-      `${formatMoney(order.totalCents, shop)} in all.`,
-  });
-  analytics.track('order_placed', {
-    order_id: order.orderId,
-    total_cents: order.totalCents,
-  });
-  sms.send({
-    to: shop.warehousePhone,
-    text: `Pack ${order.orderId}: ${packingSlip(order).join(', ')}`,
-  });
+  // The order is placed: now tell everyone who listens, in turn.
+  for (const listener of listeners) {
+    listener(order);
+  }
 }
 
 // The owner's Monday line: the orders kept, and what they took.

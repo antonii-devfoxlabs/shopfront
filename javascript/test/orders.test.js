@@ -13,10 +13,7 @@ import {
   reorder,
   salesReport,
 } from '../src/orders.js';
-import { DUTCH_SHOP, GERMAN_SHOP } from '../src/settings.js';
-import { Analytics } from '../src/vendor/analytics.js';
-import { Mailer } from '../src/vendor/mailer.js';
-import { Sms } from '../src/vendor/sms.js';
+import { GERMAN_SHOP } from '../src/settings.js';
 
 function anOrder(lines = [['MUG-01', 2]], orderId = 'SF-00007') {
   return new OrderBuilder(orderId)
@@ -101,46 +98,29 @@ test('order ids count up', () => {
   assert.equal(Number(second.slice(3)), Number(first.slice(3)) + 1);
 });
 
-test('placing an order takes stock, emails and tracks', () => {
+test('placing an order takes stock and tells every listener in turn', () => {
   const catalog = starterCatalog();
-  const mailer = new Mailer();
-  const analytics = new Analytics();
-  placeOrder(anOrder(), catalog, mailer, analytics, new Sms(), GERMAN_SHOP);
-  assert.equal(catalog.find('MUG-01').stock, 38);
-  assert.equal(mailer.outbox[0].from, 'orders@shopfront.example');
-  assert.equal(mailer.outbox[0].to, 'ada@example.com');
-  assert.match(mailer.outbox[0].body, /^Hi Ada, thank you!/);
-  assert.match(mailer.outbox[0].body, /31\.68 EUR/);
-  assert.deepEqual(analytics.events, [
-    ['order_placed', { order_id: 'SF-00007', total_cents: 3_168 }],
+  const told = [];
+  placeOrder(anOrder(), catalog, [
+    (order) => told.push(`first ${order.orderId}`),
+    (order) => told.push(`second ${order.orderId}`),
   ]);
+  assert.equal(catalog.find('MUG-01').stock, 38);
+  assert.deepEqual(told, ['first SF-00007', 'second SF-00007']);
 });
 
-test('placing an order texts the warehouse what to pack', () => {
-  const sms = new Sms();
-  placeOrder(
-    anOrder(),
-    starterCatalog(),
-    new Mailer(),
-    new Analytics(),
-    sms,
-    DUTCH_SHOP,
-  );
-  assert.deepEqual(sms.outbox, [
-    { to: '+44 7700 900200', text: 'Pack SF-00007: 2 x MUG-01' },
+test('a listener is told once the order is in the book', () => {
+  const order = anOrder();
+  const found = [];
+  placeOrder(order, starterCatalog(), [
+    (placed) => found.push(OrderBook.instance().find(placed.orderId)),
   ]);
+  assert.deepEqual(found, [order]);
 });
 
 test('a placed order is in the order book', () => {
   const order = anOrder();
-  placeOrder(
-    order,
-    starterCatalog(),
-    new Mailer(),
-    new Analytics(),
-    new Sms(),
-    GERMAN_SHOP,
-  );
+  placeOrder(order, starterCatalog(), []);
   assert.equal(OrderBook.instance().find('SF-00007'), order);
 });
 
@@ -149,14 +129,7 @@ test('the book lists its orders in the order placed', () => {
   const second = anOrder(undefined, 'SF-00002');
   const catalog = starterCatalog();
   for (const order of [first, second]) {
-    placeOrder(
-      order,
-      catalog,
-      new Mailer(),
-      new Analytics(),
-      new Sms(),
-      GERMAN_SHOP,
-    );
+    placeOrder(order, catalog, []);
   }
   assert.deepEqual(OrderBook.instance().orders(), [first, second]);
 });
@@ -183,37 +156,19 @@ test('the store has one order book', () => {
   assert.throws(() => new OrderBook(), /the store has one order book/);
 });
 
-test('the Dutch shop emails from its own address', () => {
-  const mailer = new Mailer();
-  placeOrder(
-    anOrder(),
-    starterCatalog(),
-    mailer,
-    new Analytics(),
-    new Sms(),
-    DUTCH_SHOP,
-  );
-  assert.equal(mailer.outbox[0].from, 'orders.nl@shopfront.example');
-  assert.equal(mailer.outbox[0].subject, 'Shopfront NL: order SF-00007');
-});
-
-test('an order with a short line takes nothing and sends nothing', () => {
+test('an order with a short line takes nothing and tells nobody', () => {
   const catalog = starterCatalog();
-  const mailer = new Mailer();
-  const analytics = new Analytics();
-  const sms = new Sms();
+  const told = [];
   const order = anOrder([
     ['MUG-01', 2],
     ['KTL-03', 9],
   ]);
   assert.throws(
-    () => placeOrder(order, catalog, mailer, analytics, sms, GERMAN_SHOP),
+    () => placeOrder(order, catalog, [(placed) => told.push(placed)]),
     OutOfStockError,
   );
   assert.equal(catalog.find('MUG-01').stock, 40);
-  assert.deepEqual(mailer.outbox, []);
-  assert.deepEqual(analytics.events, []);
-  assert.deepEqual(sms.outbox, []);
+  assert.deepEqual(told, []);
 });
 
 test('a packing slip lists every line', () => {

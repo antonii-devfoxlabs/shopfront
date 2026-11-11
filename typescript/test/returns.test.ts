@@ -6,9 +6,7 @@ import { OrderBuilder, placeOrder } from '../src/orders.ts';
 import { Card, GiftCard } from '../src/payments.ts';
 import { GiftReturn, Refunds, Return } from '../src/returns.ts';
 import { GERMAN_SHOP } from '../src/settings.ts';
-import { Analytics } from '../src/vendor/analytics.ts';
 import { Mailer } from '../src/vendor/mailer.ts';
-import { Sms } from '../src/vendor/sms.ts';
 import { PaymentGateway } from '../src/vendor/paymentGateway.ts';
 
 // A new payment gateway of the German shop, for one test.
@@ -48,14 +46,7 @@ test('a return refunds the way the shopper paid', () => {
 test('a refund gives the money back and tells the shopper', () => {
   const gateway = aGateway();
   const order = aCardOrder();
-  placeOrder(
-    order,
-    starterCatalog(),
-    new Mailer(),
-    new Analytics(),
-    new Sms(),
-    GERMAN_SHOP,
-  );
+  placeOrder(order, starterCatalog(), []);
   const mailer = new Mailer();
   const refunds = new Refunds({ gateway, mailer, shop: GERMAN_SHOP });
 

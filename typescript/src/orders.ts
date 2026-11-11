@@ -2,9 +2,6 @@
 
 import type { Catalog } from './catalog.ts';
 import type { Settings } from './settings.ts';
-import type { Analytics } from './vendor/analytics.ts';
-import type { Mailer } from './vendor/mailer.ts';
-import type { Sms } from './vendor/sms.ts';
 
 export type OrderStatus = 'placed' | 'cancelled' | 'returned';
 
@@ -246,33 +243,18 @@ export function reset(): void {
 // function that is told the order and answers nothing.
 export type OrderListener = (order: Order) => void;
 
+// Take the stock and keep the order, then tell every listener.
 export function placeOrder(
   order: Order,
   catalog: Catalog,
-  mailer: Mailer,
-  analytics: Analytics,
-  sms: Sms,
-  shop: Settings,
+  listeners: OrderListener[],
 ): void {
   catalog.takeAllFromStock(order.lines);
   OrderBook.instance().add(order);
-  mailer.send({
-    from: shop.storeEmail,
-    to: order.customerEmail,
-    subject: `${shop.storeName}: order ${order.orderId}`,
-    body:
-      `Hi ${order.customerName}, thank you! ` +
-      `We have your order ${order.orderId}, ` +
-      `${formatMoney(order.totalCents, shop)} in all.`,
-  });
-  analytics.track('order_placed', {
-    order_id: order.orderId,
-    total_cents: order.totalCents,
-  });
-  sms.send({
-    to: shop.warehousePhone,
-    text: `Pack ${order.orderId}: ${packingSlip(order).join(', ')}`,
-  });
+  // The order is placed: now tell everyone who listens, in turn.
+  for (const listener of listeners) {
+    listener(order);
+  }
 }
 
 // The owner's Monday line: the orders kept, and what they took.

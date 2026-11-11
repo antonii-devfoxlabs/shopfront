@@ -2,6 +2,7 @@
 
 import { Cart } from './cart.ts';
 import type { Catalog } from './catalog.ts';
+import { emailShopper, textWarehouse, trackOrder } from './listeners.ts';
 import {
   type Order,
   OrderBuilder,
@@ -85,14 +86,11 @@ export class Checkout {
       .paidBy(paidBy)
       .transaction(transactionId)
       .build();
-    placeOrder(
-      order,
-      parts.catalog,
-      parts.mailer,
-      parts.analytics,
-      parts.sms,
-      parts.shop,
-    );
+    placeOrder(order, parts.catalog, [
+      emailShopper(parts.mailer, parts.shop),
+      trackOrder(parts.analytics),
+      textWarehouse(parts.sms, parts.shop),
+    ]);
     return order;
   }
 }

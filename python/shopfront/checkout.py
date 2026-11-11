@@ -6,6 +6,7 @@ from datetime import date
 
 from shopfront.cart import Cart
 from shopfront.catalog import Catalog
+from shopfront.listeners import email_shopper, text_warehouse, track_order
 from shopfront.orders import Order, OrderBuilder, next_order_id, place_order
 from shopfront.payments import Gateway, pay
 from shopfront.pricing import PriceQuote
@@ -72,10 +73,11 @@ class Checkout:
         place_order(
             order,
             self.catalog,
-            self.mailer,
-            self.analytics,
-            self.sms,
-            self.shop,
+            [
+                email_shopper(self.mailer, self.shop),
+                track_order(self.analytics),
+                text_warehouse(self.sms, self.shop),
+            ],
         )
         return order
 

@@ -1,6 +1,7 @@
 // Selling a cart: what the store's pages call to take an order.
 
 import { Cart } from './cart.js';
+import { emailShopper, textWarehouse, trackOrder } from './listeners.js';
 import { OrderBuilder, nextOrderId, placeOrder } from './orders.js';
 import { pay } from './payments.js';
 
@@ -45,14 +46,11 @@ export class Checkout {
       .paidBy(paidBy)
       .transaction(transactionId)
       .build();
-    placeOrder(
-      order,
-      parts.catalog,
-      parts.mailer,
-      parts.analytics,
-      parts.sms,
-      parts.shop,
-    );
+    placeOrder(order, parts.catalog, [
+      emailShopper(parts.mailer, parts.shop),
+      trackOrder(parts.analytics),
+      textWarehouse(parts.sms, parts.shop),
+    ]);
     return order;
   }
 }
