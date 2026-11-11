@@ -87,6 +87,23 @@ export class FreeFriday {
   }
 }
 
+// On one day, every order at home ships free, whatever it costs: Black
+// Friday. today is the clock the offer reads, as in FreeFriday.
+export class FreeOn {
+  /**
+   * @param {Date} day
+   * @param {() => Date} today
+   */
+  constructor(day, today) {
+    this.day = day;
+    this.today = today;
+  }
+
+  shipsFree(paidCents) {
+    return this.today().toDateString() === this.day.toDateString();
+  }
+}
+
 // What one shop charges to ship an order. main hands it the shop, the
 // providers and the offer the shop runs; it never picks an offer itself.
 export class Shipping {

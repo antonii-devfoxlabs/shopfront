@@ -15,6 +15,7 @@ from shopfront.shipping import (
     Cheapest,
     Flat,
     FreeFriday,
+    FreeOn,
     NoShippingError,
     Shipping,
     ShippingOffer,
@@ -26,6 +27,7 @@ from shopfront.vendor.swiftship import SwiftShip
 
 A_WEDNESDAY = date(2026, 7, 15)
 A_FRIDAY = date(2026, 7, 17)
+BLACK_FRIDAY = date(2026, 11, 27)
 
 
 def cart_of(sku: str, quantity: int) -> Cart:
@@ -318,6 +320,16 @@ def test_free_friday_reads_its_clock_every_time():
     assert not offer.ships_free(4_000)
     today = A_FRIDAY
     assert offer.ships_free(4_000)
+
+
+def test_black_friday_ships_every_order_free_on_its_day():
+    offer = FreeOn(BLACK_FRIDAY, today=lambda: BLACK_FRIDAY)
+    assert offer.ships_free(100)
+
+
+def test_black_friday_says_no_on_any_other_day():
+    offer = FreeOn(BLACK_FRIDAY, today=lambda: A_FRIDAY)
+    assert not offer.ships_free(9_000)
 
 
 def test_the_cheapest_provider_wins():

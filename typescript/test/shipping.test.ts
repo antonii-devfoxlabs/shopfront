@@ -13,6 +13,7 @@ import {
   Cheapest,
   Flat,
   FreeFriday,
+  FreeOn,
   NoShippingError,
   Shipping,
   type ShippingOffer,
@@ -24,6 +25,7 @@ import { SwiftShip } from '../src/vendor/swiftship.ts';
 
 const A_WEDNESDAY = new Date(2026, 6, 15);
 const A_FRIDAY = new Date(2026, 6, 17);
+const BLACK_FRIDAY = new Date(2026, 10, 27);
 
 function cartOf(sku: string, quantity: number): Cart {
   const cart = new Cart();
@@ -372,6 +374,16 @@ test('free Friday reads its clock every time', () => {
   assert.equal(offer.shipsFree(4_000), false);
   today = A_FRIDAY;
   assert.equal(offer.shipsFree(4_000), true);
+});
+
+test('Black Friday ships every order free on its day', () => {
+  const offer = new FreeOn(BLACK_FRIDAY, () => BLACK_FRIDAY);
+  assert.equal(offer.shipsFree(100), true);
+});
+
+test('Black Friday says no on any other day', () => {
+  const offer = new FreeOn(BLACK_FRIDAY, () => A_FRIDAY);
+  assert.equal(offer.shipsFree(9_000), false);
 });
 
 test('the cheapest provider wins', () => {

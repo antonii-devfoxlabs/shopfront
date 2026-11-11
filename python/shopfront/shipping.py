@@ -85,6 +85,18 @@ class FreeFriday:
         )
 
 
+@dataclass(frozen=True)
+class FreeOn:
+    """On one day, every order at home ships free, whatever it costs:
+    Black Friday. today is the clock the offer reads, as in FreeFriday."""
+
+    day: date
+    today: Callable[[], date]
+
+    def ships_free(self, paid_cents: int) -> bool:
+        return self.today() == self.day
+
+
 @dataclass(frozen=True, kw_only=True)
 class Shipping:
     """What one shop charges to ship an order. main hands it the shop,

@@ -89,6 +89,22 @@ export class FreeFriday implements ShippingOffer {
   }
 }
 
+// On one day, every order at home ships free, whatever it costs: Black
+// Friday. today is the clock the offer reads, as in FreeFriday.
+export class FreeOn implements ShippingOffer {
+  readonly day: Date;
+  readonly today: () => Date;
+
+  constructor(day: Date, today: () => Date) {
+    this.day = day;
+    this.today = today;
+  }
+
+  shipsFree(paidCents: number): boolean {
+    return this.today().toDateString() === this.day.toDateString();
+  }
+}
+
 // What main hands the shipping once.
 export type ShippingParts = {
   offer: ShippingOffer;
