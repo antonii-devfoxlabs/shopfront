@@ -41,7 +41,7 @@ export class GiftReturn extends Return {
 }
 
 // One call that gives an order's money back, and tells the shopper.
-// main hands it the parts once; the return page calls refund().
+// The return page builds it once with its parts and calls refund().
 export class Refunds {
   #parts;
 
