@@ -11,6 +11,7 @@ import {
   starterCatalog,
 } from '../src/catalog.ts';
 import { Checkout, buyAgain } from '../src/checkout.ts';
+import { emailShopper, textWarehouse, trackOrder } from '../src/listeners.ts';
 import { OrderBuilder, nextOrderId, packingSlip } from '../src/orders.ts';
 import type { Gateway } from '../src/payments.ts';
 import { PriceCalculator, type QuoteOptions } from '../src/pricing.ts';
@@ -76,10 +77,11 @@ function checkoutFor(
     ) => shipping.cost(cart, catalog, country, paidCents),
     catalog,
     gateway,
-    mailer,
-    analytics: new Analytics(),
-    sms: new Sms(),
-    shop,
+    listeners: [
+      emailShopper(mailer, shop),
+      trackOrder(new Analytics()),
+      textWarehouse(new Sms(), shop),
+    ],
   });
 }
 

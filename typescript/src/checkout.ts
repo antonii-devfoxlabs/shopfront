@@ -2,19 +2,15 @@
 
 import { Cart } from './cart.ts';
 import type { Catalog } from './catalog.ts';
-import { emailShopper, textWarehouse, trackOrder } from './listeners.ts';
 import {
   type Order,
   OrderBuilder,
+  type OrderListener,
   nextOrderId,
   placeOrder,
 } from './orders.ts';
 import { type Gateway, type PaymentDetails, pay } from './payments.ts';
 import type { PriceQuote, QuoteOptions } from './pricing.ts';
-import type { Settings } from './settings.ts';
-import type { Analytics } from './vendor/analytics.ts';
-import type { Mailer } from './vendor/mailer.ts';
-import type { Sms } from './vendor/sms.ts';
 
 // The parts main hands the checkout once. quote and shippingCost are the
 // functions it calls, timed or not, as main chooses.
@@ -28,10 +24,8 @@ export type CheckoutParts = {
   ) => number;
   catalog: Catalog;
   gateway: Gateway;
-  mailer: Mailer;
-  analytics: Analytics;
-  sms: Sms;
-  shop: Settings;
+  // Everyone who must hear of a placed order, picked by main.
+  listeners: OrderListener[];
 };
 
 // What a page knows about one purchase.
@@ -86,11 +80,7 @@ export class Checkout {
       .paidBy(paidBy)
       .transaction(transactionId)
       .build();
-    placeOrder(order, parts.catalog, [
-      emailShopper(parts.mailer, parts.shop),
-      trackOrder(parts.analytics),
-      textWarehouse(parts.sms, parts.shop),
-    ]);
+    placeOrder(order, parts.catalog, parts.listeners);
     return order;
   }
 }

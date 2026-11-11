@@ -1,7 +1,6 @@
 // Selling a cart: what the store's pages call to take an order.
 
 import { Cart } from './cart.js';
-import { emailShopper, textWarehouse, trackOrder } from './listeners.js';
 import { OrderBuilder, nextOrderId, placeOrder } from './orders.js';
 import { pay } from './payments.js';
 
@@ -11,8 +10,8 @@ export class Checkout {
   #parts;
 
   // The parts, by name: quote and shippingCost (the functions it calls,
-  // timed or not, as main chooses), catalog, gateway, mailer, analytics,
-  // sms and shop.
+  // timed or not, as main chooses), catalog, gateway, and listeners:
+  // everyone who must hear of a placed order, picked by main.
   constructor(parts) {
     this.#parts = parts;
   }
@@ -46,11 +45,7 @@ export class Checkout {
       .paidBy(paidBy)
       .transaction(transactionId)
       .build();
-    placeOrder(order, parts.catalog, [
-      emailShopper(parts.mailer, parts.shop),
-      trackOrder(parts.analytics),
-      textWarehouse(parts.sms, parts.shop),
-    ]);
+    placeOrder(order, parts.catalog, parts.listeners);
     return order;
   }
 }

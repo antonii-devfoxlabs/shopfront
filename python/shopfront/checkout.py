@@ -6,14 +6,15 @@ from datetime import date
 
 from shopfront.cart import Cart
 from shopfront.catalog import Catalog
-from shopfront.listeners import email_shopper, text_warehouse, track_order
-from shopfront.orders import Order, OrderBuilder, next_order_id, place_order
+from shopfront.orders import (
+    Order,
+    OrderBuilder,
+    OrderListener,
+    next_order_id,
+    place_order,
+)
 from shopfront.payments import Gateway, pay
 from shopfront.pricing import PriceQuote
-from shopfront.settings import Settings
-from shopfront.vendor.analytics import Analytics
-from shopfront.vendor.mailer import Mailer
-from shopfront.vendor.sms import Sms
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -27,10 +28,8 @@ class Checkout:
     shipping_cost: Callable[..., int]
     catalog: Catalog
     gateway: Gateway
-    mailer: Mailer
-    analytics: Analytics
-    sms: Sms
-    shop: Settings
+    # Everyone who must hear of a placed order, picked by main.
+    listeners: list[OrderListener]
 
     def buy(
         self,
@@ -70,15 +69,7 @@ class Checkout:
             .transaction(transaction_id)
             .build()
         )
-        place_order(
-            order,
-            self.catalog,
-            [
-                email_shopper(self.mailer, self.shop),
-                track_order(self.analytics),
-                text_warehouse(self.sms, self.shop),
-            ],
-        )
+        place_order(order, self.catalog, self.listeners)
         return order
 
 

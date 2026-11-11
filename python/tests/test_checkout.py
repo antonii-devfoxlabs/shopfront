@@ -9,6 +9,7 @@ import pytest
 from shopfront.cart import Cart
 from shopfront.catalog import Catalog, OutOfStockError, starter_catalog
 from shopfront.checkout import Checkout, buy_again
+from shopfront.listeners import email_shopper, text_warehouse, track_order
 from shopfront.orders import OrderBuilder, next_order_id, packing_slip
 from shopfront.payments import Gateway
 from shopfront.pricing import PriceCalculator
@@ -59,10 +60,11 @@ def checkout_for(
         shipping_cost=shipping_for(shop).cost,
         catalog=catalog,
         gateway=gateway,
-        mailer=mailer,
-        analytics=Analytics(),
-        sms=Sms(),
-        shop=shop,
+        listeners=[
+            email_shopper(mailer, shop),
+            track_order(Analytics()),
+            text_warehouse(Sms(), shop),
+        ],
     )
 
 

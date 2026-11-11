@@ -8,7 +8,8 @@ from shopfront.cart import Cart
 from shopfront.catalog_file import CatalogError, load_catalog
 from shopfront.checkout import Checkout
 from shopfront.gateways import TimedGateway
-from shopfront.orders import format_money
+from shopfront.listeners import email_shopper, text_warehouse, track_order
+from shopfront.orders import OrderListener, format_money
 from shopfront.pricing import PriceCalculator
 from shopfront.providers import (
     boxroute_quote,
@@ -62,6 +63,13 @@ def main() -> None:
     calculator = PriceCalculator(catalog, taxes, shop)
     mailer = Mailer()
     sms = Sms()
+    # Everyone who must hear of a placed order, told in this order. One
+    # more is one more line here: placing an order does not change.
+    listeners: list[OrderListener] = [
+        email_shopper(mailer, shop),
+        track_order(Analytics()),
+        text_warehouse(sms, shop),
+    ]
     # Every step of an order, in order, behind one call. main still
     # decides what is timed, and hands the checkout the timed parts.
     checkout = Checkout(
@@ -71,10 +79,7 @@ def main() -> None:
         shipping_cost=timed("shipping cost", shipping.cost, print),
         catalog=catalog,
         gateway=gateway,
-        mailer=mailer,
-        analytics=Analytics(),
-        sms=sms,
-        shop=shop,
+        listeners=listeners,
     )
     order = checkout.buy(
         cart,

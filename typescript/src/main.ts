@@ -5,6 +5,7 @@ import type { Catalog } from './catalog.ts';
 import { CatalogError, loadCatalog } from './catalogFile.ts';
 import { Checkout } from './checkout.ts';
 import { TimedGateway } from './gateways.ts';
+import { emailShopper, textWarehouse, trackOrder } from './listeners.ts';
 import { formatMoney } from './orders.ts';
 import { PriceCalculator, type QuoteOptions } from './pricing.ts';
 import {
@@ -65,6 +66,13 @@ const taxes = new CachedRates(new TimedRates(new TaxService(), console.log));
 const calculator = new PriceCalculator(catalog, taxes, shop);
 const mailer = new Mailer();
 const sms = new Sms();
+// Everyone who must hear of a placed order, told in this order. One more
+// is one more line here: placing an order does not change.
+const listeners = [
+  emailShopper(mailer, shop),
+  trackOrder(new Analytics()),
+  textWarehouse(sms, shop),
+];
 // Every step of an order, in order, behind one call. main still
 // decides what is timed, and hands the checkout the timed parts.
 const checkout = new Checkout({
@@ -84,10 +92,7 @@ const checkout = new Checkout({
   ),
   catalog,
   gateway,
-  mailer,
-  analytics: new Analytics(),
-  sms,
-  shop,
+  listeners,
 });
 const order = checkout.buy(cart, 'DE', {
   email: 'ada@example.com',

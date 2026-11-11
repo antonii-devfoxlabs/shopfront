@@ -7,6 +7,7 @@ import { setTimeout as sleep } from 'node:timers/promises';
 import { Cart } from '../src/cart.js';
 import { OutOfStockError, starterCatalog } from '../src/catalog.js';
 import { Checkout, buyAgain } from '../src/checkout.js';
+import { emailShopper, textWarehouse, trackOrder } from '../src/listeners.js';
 import { OrderBuilder, nextOrderId, packingSlip } from '../src/orders.js';
 import { PriceCalculator } from '../src/pricing.js';
 import {
@@ -62,10 +63,11 @@ function checkoutFor(shop, catalog, gateway, mailer) {
       shipping.cost(cart, catalog, country, paidCents),
     catalog,
     gateway,
-    mailer,
-    analytics: new Analytics(),
-    sms: new Sms(),
-    shop,
+    listeners: [
+      emailShopper(mailer, shop),
+      trackOrder(new Analytics()),
+      textWarehouse(new Sms(), shop),
+    ],
   });
 }
 

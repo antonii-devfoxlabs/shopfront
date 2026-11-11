@@ -4,6 +4,7 @@ import { Cart } from './cart.js';
 import { CatalogError, loadCatalog } from './catalogFile.js';
 import { Checkout } from './checkout.js';
 import { TimedGateway } from './gateways.js';
+import { emailShopper, textWarehouse, trackOrder } from './listeners.js';
 import { formatMoney } from './orders.js';
 import { PriceCalculator } from './pricing.js';
 import {
@@ -64,6 +65,13 @@ const taxes = new CachedRates(new TimedRates(new TaxService(), console.log));
 const calculator = new PriceCalculator(catalog, taxes, shop);
 const mailer = new Mailer();
 const sms = new Sms();
+// Everyone who must hear of a placed order, told in this order. One more
+// is one more line here: placing an order does not change.
+const listeners = [
+  emailShopper(mailer, shop),
+  trackOrder(new Analytics()),
+  textWarehouse(sms, shop),
+];
 // Every step of an order, in order, behind one call. main still
 // decides what is timed, and hands the checkout the timed parts.
 const checkout = new Checkout({
@@ -82,10 +90,7 @@ const checkout = new Checkout({
   ),
   catalog,
   gateway,
-  mailer,
-  analytics: new Analytics(),
-  sms,
-  shop,
+  listeners,
 });
 const order = checkout.buy(cart, 'DE', {
   email: 'ada@example.com',
