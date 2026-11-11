@@ -66,12 +66,15 @@ const taxes = new CachedRates(new TimedRates(new TaxService(), console.log));
 const calculator = new PriceCalculator(catalog, taxes, shop);
 const mailer = new Mailer();
 const sms = new Sms();
+// Kept by name: the staff page takes it off the list while the warehouse
+// is closed (24 to 26 December), and puts it back after.
+const warehouse = textWarehouse(sms, shop);
 // Everyone who must hear of a placed order, told in this order. One more
 // is one more line here: placing an order does not change.
 const listeners = [
   emailShopper(mailer, shop),
   trackOrder(new Analytics()),
-  textWarehouse(sms, shop),
+  warehouse,
 ];
 // Every step of an order, in order, behind one call. main still
 // decides what is timed, and hands the checkout the timed parts.

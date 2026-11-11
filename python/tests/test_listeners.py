@@ -1,14 +1,21 @@
-from shopfront.listeners import email_shopper, text_warehouse, track_order
-from shopfront.orders import Order, OrderBuilder
+from shopfront.catalog import starter_catalog
+from shopfront.listeners import (
+    close_warehouse,
+    email_shopper,
+    open_warehouse,
+    text_warehouse,
+    track_order,
+)
+from shopfront.orders import Order, OrderBuilder, place_order
 from shopfront.settings import DUTCH_SHOP, GERMAN_SHOP
 from shopfront.vendor.analytics import Analytics
 from shopfront.vendor.mailer import Mailer
 from shopfront.vendor.sms import Sms
 
 
-def an_order() -> Order:
+def an_order(order_id: str = "SF-00007") -> Order:
     return (
-        OrderBuilder("SF-00007")
+        OrderBuilder(order_id)
         .email("ada@example.com")
         .name("Ada")
         .lines({"MUG-01": 2})
@@ -52,4 +59,17 @@ def test_the_warehouse_listener_texts_what_to_pack():
     text_warehouse(sms, DUTCH_SHOP)(an_order())
     assert sms.outbox == [
         {"to": "+44 7700 900200", "text": "Pack SF-00007: 2 x MUG-01"}
+    ]
+
+
+def test_a_closed_warehouse_gets_no_text_until_it_opens_again():
+    sms, catalog = Sms(), starter_catalog()
+    warehouse = text_warehouse(sms, GERMAN_SHOP)
+    listeners = [warehouse]
+    close_warehouse(listeners, warehouse)
+    place_order(an_order("SF-00001"), catalog, listeners)
+    open_warehouse(listeners, warehouse)
+    place_order(an_order("SF-00002"), catalog, listeners)
+    assert [text["text"] for text in sms.outbox] == [
+        "Pack SF-00002: 2 x MUG-01"
     ]

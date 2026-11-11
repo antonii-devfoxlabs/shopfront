@@ -1,15 +1,22 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { emailShopper, textWarehouse, trackOrder } from '../src/listeners.js';
-import { OrderBuilder } from '../src/orders.js';
+import { starterCatalog } from '../src/catalog.js';
+import {
+  closeWarehouse,
+  emailShopper,
+  openWarehouse,
+  textWarehouse,
+  trackOrder,
+} from '../src/listeners.js';
+import { OrderBuilder, placeOrder } from '../src/orders.js';
 import { DUTCH_SHOP, GERMAN_SHOP } from '../src/settings.js';
 import { Analytics } from '../src/vendor/analytics.js';
 import { Mailer } from '../src/vendor/mailer.js';
 import { Sms } from '../src/vendor/sms.js';
 
-function anOrder() {
-  return new OrderBuilder('SF-00007')
+function anOrder(orderId = 'SF-00007') {
+  return new OrderBuilder(orderId)
     .email('ada@example.com')
     .name('Ada')
     .lines([['MUG-01', 2]])
@@ -55,4 +62,19 @@ test('the warehouse listener texts what to pack', () => {
   assert.deepEqual(sms.outbox, [
     { to: '+44 7700 900200', text: 'Pack SF-00007: 2 x MUG-01' },
   ]);
+});
+
+test('a closed warehouse gets no text until it opens again', () => {
+  const sms = new Sms();
+  const catalog = starterCatalog();
+  const warehouse = textWarehouse(sms, GERMAN_SHOP);
+  const listeners = [warehouse];
+  closeWarehouse(listeners, warehouse);
+  placeOrder(anOrder('SF-00001'), catalog, listeners);
+  openWarehouse(listeners, warehouse);
+  placeOrder(anOrder('SF-00002'), catalog, listeners);
+  assert.deepEqual(
+    sms.outbox.map((text) => text.text),
+    ['Pack SF-00002: 2 x MUG-01'],
+  );
 });

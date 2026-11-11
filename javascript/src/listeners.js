@@ -53,3 +53,21 @@ export function textWarehouse(sms, shop) {
     });
   };
 }
+
+/**
+ * The warehouse is closed: take its listener off the list.
+ * @param {OrderListener[]} listeners
+ * @param {OrderListener} warehouse
+ */
+export function closeWarehouse(listeners, warehouse) {
+  listeners.splice(listeners.indexOf(warehouse), 1);
+}
+
+/**
+ * The warehouse is open again: put its listener back.
+ * @param {OrderListener[]} listeners
+ * @param {OrderListener} warehouse
+ */
+export function openWarehouse(listeners, warehouse) {
+  listeners.push(warehouse);
+}

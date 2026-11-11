@@ -48,3 +48,17 @@ def text_warehouse(sms: Sms, shop: Settings) -> OrderListener:
         )
 
     return send_text
+
+
+def close_warehouse(
+    listeners: list[OrderListener], warehouse: OrderListener
+) -> None:
+    """The warehouse is closed: take its listener off the list."""
+    listeners.remove(warehouse)
+
+
+def open_warehouse(
+    listeners: list[OrderListener], warehouse: OrderListener
+) -> None:
+    """The warehouse is open again: put its listener back."""
+    listeners.append(warehouse)

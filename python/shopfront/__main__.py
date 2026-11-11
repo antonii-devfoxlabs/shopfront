@@ -63,12 +63,15 @@ def main() -> None:
     calculator = PriceCalculator(catalog, taxes, shop)
     mailer = Mailer()
     sms = Sms()
+    # Kept by name: the staff page takes it off the list while the
+    # warehouse is closed (24 to 26 December), and puts it back after.
+    warehouse = text_warehouse(sms, shop)
     # Everyone who must hear of a placed order, told in this order. One
     # more is one more line here: placing an order does not change.
     listeners: list[OrderListener] = [
         email_shopper(mailer, shop),
         track_order(Analytics()),
-        text_warehouse(sms, shop),
+        warehouse,
     ]
     # Every step of an order, in order, behind one call. main still
     # decides what is timed, and hands the checkout the timed parts.

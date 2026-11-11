@@ -41,3 +41,19 @@ export function textWarehouse(sms: Sms, shop: Settings): OrderListener {
     });
   };
 }
+
+// The warehouse is closed: take its listener off the list.
+export function closeWarehouse(
+  listeners: OrderListener[],
+  warehouse: OrderListener,
+): void {
+  listeners.splice(listeners.indexOf(warehouse), 1);
+}
+
+// The warehouse is open again: put its listener back.
+export function openWarehouse(
+  listeners: OrderListener[],
+  warehouse: OrderListener,
+): void {
+  listeners.push(warehouse);
+}
