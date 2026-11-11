@@ -23,6 +23,7 @@ from shopfront.vendor.analytics import Analytics
 from shopfront.vendor.mailer import Mailer
 from shopfront.vendor.parcelnow import ParcelNowClient
 from shopfront.vendor.payment_gateway import PaymentGateway
+from shopfront.vendor.sms import Sms
 from shopfront.vendor.swiftship import SwiftShip
 from shopfront.vendor.tax_service import TaxService
 
@@ -60,6 +61,7 @@ def main() -> None:
     taxes = CachedRates(TimedRates(TaxService(), print))
     calculator = PriceCalculator(catalog, taxes, shop)
     mailer = Mailer()
+    sms = Sms()
     # Every step of an order, in order, behind one call. main still
     # decides what is timed, and hands the checkout the timed parts.
     checkout = Checkout(
@@ -71,6 +73,7 @@ def main() -> None:
         gateway=gateway,
         mailer=mailer,
         analytics=Analytics(),
+        sms=sms,
         shop=shop,
     )
     order = checkout.buy(
@@ -92,6 +95,7 @@ def main() -> None:
     print(f"  shipping  {format_money(order.shipping_cents, shop)}")
     print(f"  total     {format_money(order.total_cents, shop)}")
     print(f"Email sent to {mailer.outbox[0]['to']}")
+    print(f"Text sent to {sms.outbox[0]['to']}")
 
 
 if __name__ == "__main__":

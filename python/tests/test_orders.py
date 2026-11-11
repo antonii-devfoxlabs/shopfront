@@ -17,6 +17,7 @@ from shopfront.orders import (
 from shopfront.settings import DUTCH_SHOP, GERMAN_SHOP
 from shopfront.vendor.analytics import Analytics
 from shopfront.vendor.mailer import Mailer
+from shopfront.vendor.sms import Sms
 
 
 def an_order(
@@ -104,7 +105,7 @@ def test_order_ids_count_up():
 
 def test_placing_an_order_takes_stock_emails_and_tracks():
     catalog, mailer, analytics = starter_catalog(), Mailer(), Analytics()
-    place_order(an_order(), catalog, mailer, analytics, GERMAN_SHOP)
+    place_order(an_order(), catalog, mailer, analytics, Sms(), GERMAN_SHOP)
     assert catalog.find("MUG-01").stock == 38
     assert mailer.outbox[0]["from"] == "orders@shopfront.example"
     assert mailer.outbox[0]["to"] == "ada@example.com"
@@ -115,9 +116,21 @@ def test_placing_an_order_takes_stock_emails_and_tracks():
     ]
 
 
+def test_placing_an_order_texts_the_warehouse_what_to_pack():
+    sms = Sms()
+    place_order(
+        an_order(), starter_catalog(), Mailer(), Analytics(), sms, DUTCH_SHOP
+    )
+    assert sms.outbox == [
+        {"to": "+44 7700 900200", "text": "Pack SF-00007: 2 x MUG-01"}
+    ]
+
+
 def test_a_placed_order_is_in_the_order_book():
     order = an_order()
-    place_order(order, starter_catalog(), Mailer(), Analytics(), GERMAN_SHOP)
+    place_order(
+        order, starter_catalog(), Mailer(), Analytics(), Sms(), GERMAN_SHOP
+    )
     assert OrderBook.instance().find("SF-00007") is order
 
 
@@ -126,7 +139,7 @@ def test_the_book_lists_its_orders_in_the_order_placed():
     second = an_order(order_id="SF-00002")
     catalog = starter_catalog()
     for order in (first, second):
-        place_order(order, catalog, Mailer(), Analytics(), GERMAN_SHOP)
+        place_order(order, catalog, Mailer(), Analytics(), Sms(), GERMAN_SHOP)
     assert OrderBook.instance().orders() == [first, second]
 
 
@@ -153,7 +166,7 @@ def test_the_store_has_one_order_book():
 def test_the_dutch_shop_emails_from_its_own_address():
     mailer = Mailer()
     place_order(
-        an_order(), starter_catalog(), mailer, Analytics(), DUTCH_SHOP
+        an_order(), starter_catalog(), mailer, Analytics(), Sms(), DUTCH_SHOP
     )
     assert mailer.outbox[0]["from"] == "orders.nl@shopfront.example"
     assert mailer.outbox[0]["subject"] == "Shopfront NL: order SF-00007"
@@ -161,12 +174,14 @@ def test_the_dutch_shop_emails_from_its_own_address():
 
 def test_an_order_with_a_short_line_takes_nothing_and_sends_nothing():
     catalog, mailer, analytics = starter_catalog(), Mailer(), Analytics()
+    sms = Sms()
     order = an_order({"MUG-01": 2, "KTL-03": 9})
     with pytest.raises(OutOfStockError):
-        place_order(order, catalog, mailer, analytics, GERMAN_SHOP)
+        place_order(order, catalog, mailer, analytics, sms, GERMAN_SHOP)
     assert catalog.find("MUG-01").stock == 40
     assert mailer.outbox == []
     assert analytics.events == []
+    assert sms.outbox == []
 
 
 def test_a_packing_slip_lists_every_line():

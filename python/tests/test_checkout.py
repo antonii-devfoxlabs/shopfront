@@ -22,6 +22,7 @@ from shopfront.shipping import Shipping, ShippingQuote, offer_for
 from shopfront.vendor.analytics import Analytics
 from shopfront.vendor.mailer import Mailer
 from shopfront.vendor.parcelnow import ParcelNowClient
+from shopfront.vendor.sms import Sms
 from shopfront.vendor.swiftship import SwiftShip
 from shopfront.vendor.tax_service import TaxService
 
@@ -60,6 +61,7 @@ def checkout_for(
         gateway=gateway,
         mailer=mailer,
         analytics=Analytics(),
+        sms=Sms(),
         shop=shop,
     )
 

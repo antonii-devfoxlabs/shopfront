@@ -20,6 +20,7 @@ import { Analytics } from '../src/vendor/analytics.js';
 import { Mailer } from '../src/vendor/mailer.js';
 import { ParcelNowClient } from '../src/vendor/parcelnow.js';
 import { PaymentGateway } from '../src/vendor/paymentGateway.js';
+import { Sms } from '../src/vendor/sms.js';
 import { SwiftShip } from '../src/vendor/swiftship.js';
 import { TaxService } from '../src/vendor/taxService.js';
 
@@ -63,6 +64,7 @@ function checkoutFor(shop, catalog, gateway, mailer) {
     gateway,
     mailer,
     analytics: new Analytics(),
+    sms: new Sms(),
     shop,
   });
 }

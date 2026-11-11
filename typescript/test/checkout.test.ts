@@ -25,6 +25,7 @@ import { Analytics } from '../src/vendor/analytics.ts';
 import { Mailer } from '../src/vendor/mailer.ts';
 import { ParcelNowClient } from '../src/vendor/parcelnow.ts';
 import { PaymentGateway } from '../src/vendor/paymentGateway.ts';
+import { Sms } from '../src/vendor/sms.ts';
 import { SwiftShip } from '../src/vendor/swiftship.ts';
 import { TaxService } from '../src/vendor/taxService.ts';
 
@@ -77,6 +78,7 @@ function checkoutFor(
     gateway,
     mailer,
     analytics: new Analytics(),
+    sms: new Sms(),
     shop,
   });
 }

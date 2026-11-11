@@ -8,6 +8,7 @@ import { GiftReturn, Refunds, Return } from '../src/returns.js';
 import { GERMAN_SHOP } from '../src/settings.js';
 import { Analytics } from '../src/vendor/analytics.js';
 import { Mailer } from '../src/vendor/mailer.js';
+import { Sms } from '../src/vendor/sms.js';
 import { PaymentGateway } from '../src/vendor/paymentGateway.js';
 
 // A new payment gateway of the German shop, for one test.
@@ -52,6 +53,7 @@ test('a refund gives the money back and tells the shopper', () => {
     starterCatalog(),
     new Mailer(),
     new Analytics(),
+    new Sms(),
     GERMAN_SHOP,
   );
   const mailer = new Mailer();

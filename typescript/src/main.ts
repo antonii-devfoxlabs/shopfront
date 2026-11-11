@@ -20,6 +20,7 @@ import { Analytics } from './vendor/analytics.ts';
 import { Mailer } from './vendor/mailer.ts';
 import { ParcelNowClient } from './vendor/parcelnow.ts';
 import { PaymentGateway } from './vendor/paymentGateway.ts';
+import { Sms } from './vendor/sms.ts';
 import { SwiftShip } from './vendor/swiftship.ts';
 import { TaxService } from './vendor/taxService.ts';
 
@@ -63,6 +64,7 @@ cart.add('TEA-02');
 const taxes = new CachedRates(new TimedRates(new TaxService(), console.log));
 const calculator = new PriceCalculator(catalog, taxes, shop);
 const mailer = new Mailer();
+const sms = new Sms();
 // Every step of an order, in order, behind one call. main still
 // decides what is timed, and hands the checkout the timed parts.
 const checkout = new Checkout({
@@ -84,6 +86,7 @@ const checkout = new Checkout({
   gateway,
   mailer,
   analytics: new Analytics(),
+  sms,
   shop,
 });
 const order = checkout.buy(cart, 'DE', {
@@ -104,3 +107,4 @@ console.log(`  tax       ${formatMoney(order.taxCents, shop)}`);
 console.log(`  shipping  ${formatMoney(order.shippingCents, shop)}`);
 console.log(`  total     ${formatMoney(order.totalCents, shop)}`);
 console.log(`Email sent to ${mailer.outbox[0]?.to}`);
+console.log(`Text sent to ${sms.outbox[0]?.to}`);

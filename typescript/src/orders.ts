@@ -4,6 +4,7 @@ import type { Catalog } from './catalog.ts';
 import type { Settings } from './settings.ts';
 import type { Analytics } from './vendor/analytics.ts';
 import type { Mailer } from './vendor/mailer.ts';
+import type { Sms } from './vendor/sms.ts';
 
 export type OrderStatus = 'placed' | 'cancelled' | 'returned';
 
@@ -246,6 +247,7 @@ export function placeOrder(
   catalog: Catalog,
   mailer: Mailer,
   analytics: Analytics,
+  sms: Sms,
   shop: Settings,
 ): void {
   catalog.takeAllFromStock(order.lines);
@@ -262,6 +264,10 @@ export function placeOrder(
   analytics.track('order_placed', {
     order_id: order.orderId,
     total_cents: order.totalCents,
+  });
+  sms.send({
+    to: shop.warehousePhone,
+    text: `Pack ${order.orderId}: ${packingSlip(order).join(', ')}`,
   });
 }
 

@@ -8,6 +8,7 @@ from shopfront.catalog import Catalog
 from shopfront.settings import Settings
 from shopfront.vendor.analytics import Analytics
 from shopfront.vendor.mailer import Mailer
+from shopfront.vendor.sms import Sms
 
 _last_order_number = 0
 
@@ -223,6 +224,7 @@ def place_order(
     catalog: Catalog,
     mailer: Mailer,
     analytics: Analytics,
+    sms: Sms,
     shop: Settings,
 ) -> None:
     catalog.take_all_from_stock(order.lines)
@@ -240,6 +242,10 @@ def place_order(
     analytics.track(
         "order_placed",
         {"order_id": order.order_id, "total_cents": order.total_cents},
+    )
+    sms.send(
+        to=shop.warehouse_phone,
+        text=f"Pack {order.order_id}: {', '.join(packing_slip(order))}",
     )
 
 

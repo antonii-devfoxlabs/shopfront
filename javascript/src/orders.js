@@ -228,7 +228,7 @@ export function reset() {
   OrderBook.reset();
 }
 
-export function placeOrder(order, catalog, mailer, analytics, shop) {
+export function placeOrder(order, catalog, mailer, analytics, sms, shop) {
   catalog.takeAllFromStock(order.lines);
   OrderBook.instance().add(order);
   mailer.send({
@@ -243,6 +243,10 @@ export function placeOrder(order, catalog, mailer, analytics, shop) {
   analytics.track('order_placed', {
     order_id: order.orderId,
     total_cents: order.totalCents,
+  });
+  sms.send({
+    to: shop.warehousePhone,
+    text: `Pack ${order.orderId}: ${packingSlip(order).join(', ')}`,
   });
 }
 

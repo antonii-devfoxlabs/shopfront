@@ -18,6 +18,8 @@ class Settings:
     free_friday_from_cents: int
     # The name of the free-shipping offer the shop runs.
     offer_name: str
+    # The warehouse's phone: it is texted what to pack.
+    warehouse_phone: str
     # The accounts the shop uses with its providers.
     parcelnow_account: str
     merchant_id: str
@@ -31,6 +33,7 @@ GERMAN_SHOP = Settings(
     free_shipping_from_cents=5_000,
     free_friday_from_cents=4_000,
     offer_name="black-friday",
+    warehouse_phone="+44 7700 900100",
     parcelnow_account="shopfront",
     merchant_id="shopfront-store",
 )
@@ -43,6 +46,7 @@ DUTCH_SHOP = Settings(
     free_shipping_from_cents=6_000,
     free_friday_from_cents=5_000,
     offer_name="free-friday",
+    warehouse_phone="+44 7700 900200",
     parcelnow_account="shopfront-nl",
     merchant_id="shopfront-nl",
 )

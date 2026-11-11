@@ -13,6 +13,7 @@ import type { PriceQuote, QuoteOptions } from './pricing.ts';
 import type { Settings } from './settings.ts';
 import type { Analytics } from './vendor/analytics.ts';
 import type { Mailer } from './vendor/mailer.ts';
+import type { Sms } from './vendor/sms.ts';
 
 // The parts main hands the checkout once. quote and shippingCost are the
 // functions it calls, timed or not, as main chooses.
@@ -28,6 +29,7 @@ export type CheckoutParts = {
   gateway: Gateway;
   mailer: Mailer;
   analytics: Analytics;
+  sms: Sms;
   shop: Settings;
 };
 
@@ -88,6 +90,7 @@ export class Checkout {
       parts.catalog,
       parts.mailer,
       parts.analytics,
+      parts.sms,
       parts.shop,
     );
     return order;

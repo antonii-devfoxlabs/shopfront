@@ -10,8 +10,8 @@ export class Checkout {
   #parts;
 
   // The parts, by name: quote and shippingCost (the functions it calls,
-  // timed or not, as main chooses), catalog, gateway, mailer, analytics
-  // and shop.
+  // timed or not, as main chooses), catalog, gateway, mailer, analytics,
+  // sms and shop.
   constructor(parts) {
     this.#parts = parts;
   }
@@ -50,6 +50,7 @@ export class Checkout {
       parts.catalog,
       parts.mailer,
       parts.analytics,
+      parts.sms,
       parts.shop,
     );
     return order;

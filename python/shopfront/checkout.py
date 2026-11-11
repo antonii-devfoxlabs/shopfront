@@ -12,6 +12,7 @@ from shopfront.pricing import PriceQuote
 from shopfront.settings import Settings
 from shopfront.vendor.analytics import Analytics
 from shopfront.vendor.mailer import Mailer
+from shopfront.vendor.sms import Sms
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -27,6 +28,7 @@ class Checkout:
     gateway: Gateway
     mailer: Mailer
     analytics: Analytics
+    sms: Sms
     shop: Settings
 
     def buy(
@@ -68,7 +70,12 @@ class Checkout:
             .build()
         )
         place_order(
-            order, self.catalog, self.mailer, self.analytics, self.shop
+            order,
+            self.catalog,
+            self.mailer,
+            self.analytics,
+            self.sms,
+            self.shop,
         )
         return order
 
