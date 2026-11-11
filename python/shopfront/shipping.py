@@ -13,11 +13,17 @@ class NoShippingError(Exception):
     pass
 
 
+class UnknownOfferError(Exception):
+    pass
+
+
 # Every shipping provider fills this slot: a function of a parcel's
 # grams and its country that answers what the parcel costs, in cents.
 ShippingQuote = Callable[[int, str], int]
 
 FRIDAY = 4  # What date.weekday() answers on a Friday: Monday is 0.
+# This year's Black Friday.
+BLACK_FRIDAY = date(2026, 11, 27)
 
 
 def cart_weight_grams(cart: Cart, catalog: Catalog) -> int:

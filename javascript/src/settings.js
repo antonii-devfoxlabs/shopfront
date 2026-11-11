@@ -11,6 +11,8 @@
  * @property {number} freeShippingFromCents
  * @property {number} freeFridayFromCents On Free Friday, orders at home
  *   ship free from this line.
+ * @property {string} offerName The name of the free-shipping offer the
+ *   shop runs.
  * @property {string} parcelNowAccount The accounts the shop uses with
  *   its providers.
  * @property {string} merchantId
@@ -24,6 +26,7 @@ export const GERMAN_SHOP = Object.freeze({
   homeCountry: 'DE',
   freeShippingFromCents: 5_000,
   freeFridayFromCents: 4_000,
+  offerName: 'black-friday',
   parcelNowAccount: 'shopfront',
   merchantId: 'shopfront-store',
 });
@@ -36,6 +39,7 @@ export const DUTCH_SHOP = Object.freeze({
   homeCountry: 'NL',
   freeShippingFromCents: 6_000,
   freeFridayFromCents: 5_000,
+  offerName: 'free-friday',
   parcelNowAccount: 'shopfront-nl',
   merchantId: 'shopfront-nl',
 });

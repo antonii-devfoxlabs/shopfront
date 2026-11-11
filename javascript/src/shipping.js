@@ -4,6 +4,10 @@ export class NoShippingError extends Error {
   name = 'NoShippingError';
 }
 
+export class UnknownOfferError extends Error {
+  name = 'UnknownOfferError';
+}
+
 /**
  * Every shipping provider fills this slot: a function of a parcel's
  * grams and its country that answers what the parcel costs, in cents.
@@ -14,6 +18,8 @@ export class NoShippingError extends Error {
  */
 
 const FRIDAY = 5; // What a Date's getDay() answers on a Friday: Sunday is 0.
+// This year's Black Friday.
+export const BLACK_FRIDAY = new Date(2026, 10, 27);
 
 export function cartWeightGrams(cart, catalog) {
   let grams = 0;

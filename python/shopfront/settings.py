@@ -16,6 +16,8 @@ class Settings:
     free_shipping_from_cents: int
     # On Free Friday, orders at home ship free from this line.
     free_friday_from_cents: int
+    # The name of the free-shipping offer the shop runs.
+    offer_name: str
     # The accounts the shop uses with its providers.
     parcelnow_account: str
     merchant_id: str
@@ -28,6 +30,7 @@ GERMAN_SHOP = Settings(
     home_country="DE",
     free_shipping_from_cents=5_000,
     free_friday_from_cents=4_000,
+    offer_name="black-friday",
     parcelnow_account="shopfront",
     merchant_id="shopfront-store",
 )
@@ -39,6 +42,7 @@ DUTCH_SHOP = Settings(
     home_country="NL",
     free_shipping_from_cents=6_000,
     free_friday_from_cents=5_000,
+    offer_name="free-friday",
     parcelnow_account="shopfront-nl",
     merchant_id="shopfront-nl",
 )

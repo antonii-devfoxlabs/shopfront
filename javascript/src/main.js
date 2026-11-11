@@ -12,7 +12,13 @@ import {
   swiftShipQuote,
 } from './providers.js';
 import { GERMAN_SHOP } from './settings.js';
-import { Shipping, freeFriday, freeOn } from './shipping.js';
+import {
+  BLACK_FRIDAY,
+  Shipping,
+  UnknownOfferError,
+  freeFriday,
+  freeOn,
+} from './shipping.js';
 import { CachedRates, TimedRates } from './taxes.js';
 import { timed } from './timing.js';
 import { Analytics } from './vendor/analytics.js';
@@ -36,14 +42,14 @@ const providers = [
   timed('swiftship quote', swiftShipQuote(new SwiftShip()), console.log),
   timed('boxroute quote', boxRouteQuote, console.log),
 ];
-// The offer the shop runs, picked here with the shop, on the real clock:
-// Black Friday in the German shop this November, Free Friday from its own
-// line in every other shop.
+// The offer the shop's settings name, made here on the real clock.
 let offer;
-if (shop.homeCountry === 'DE') {
-  offer = freeOn(new Date(2026, 10, 27), () => new Date());
-} else {
+if (shop.offerName === 'free-friday') {
   offer = freeFriday(shop.freeFridayFromCents, () => new Date());
+} else if (shop.offerName === 'black-friday') {
+  offer = freeOn(BLACK_FRIDAY, () => new Date());
+} else {
+  throw new UnknownOfferError(shop.offerName);
 }
 const shipping = new Shipping({
   offer,
