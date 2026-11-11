@@ -20,7 +20,7 @@ import {
   swiftShipQuote,
 } from '../src/providers.ts';
 import { DUTCH_SHOP, GERMAN_SHOP, type Settings } from '../src/settings.ts';
-import { Shipping, freeFriday, type ShippingQuote } from '../src/shipping.ts';
+import { Shipping, offerFor, type ShippingQuote } from '../src/shipping.ts';
 import { Analytics } from '../src/vendor/analytics.ts';
 import { Mailer } from '../src/vendor/mailer.ts';
 import { ParcelNowClient } from '../src/vendor/parcelnow.ts';
@@ -39,12 +39,12 @@ function providersFor(shop: Settings): ShippingQuote[] {
 
 const A_MONDAY = new Date(2026, 5, 15);
 
-// The shop's shipping, with Free Friday on a clock that says Monday: the
-// offer reads its own clock, so these tests never depend on the day they
-// run.
+// The shop's shipping, with the offer its settings name, on a clock that
+// says Monday: the offer reads its own clock, so these tests never depend
+// on the day they run.
 function shippingFor(shop: Settings): Shipping {
   return new Shipping({
-    offer: freeFriday(shop.freeFridayFromCents, () => A_MONDAY),
+    offer: offerFor(shop, () => A_MONDAY),
     providers: providersFor(shop),
     shop,
   });

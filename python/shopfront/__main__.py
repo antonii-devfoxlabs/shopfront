@@ -16,15 +16,7 @@ from shopfront.providers import (
     swiftship_quote,
 )
 from shopfront.settings import GERMAN_SHOP
-from shopfront.shipping import (
-    BLACK_FRIDAY,
-    Shipping,
-    ShippingOffer,
-    ShippingQuote,
-    UnknownOfferError,
-    free_friday,
-    free_on,
-)
+from shopfront.shipping import Shipping, ShippingQuote, offer_for
 from shopfront.taxes import CachedRates, TimedRates
 from shopfront.timing import timed
 from shopfront.vendor.analytics import Analytics
@@ -47,15 +39,12 @@ def main() -> None:
         timed("swiftship quote", swiftship_quote(SwiftShip()), print),
         timed("boxroute quote", boxroute_quote, print),
     ]
-    # The offer the shop's settings name, made here on the real clock.
-    offer: ShippingOffer
-    if shop.offer_name == "free-friday":
-        offer = free_friday(shop.free_friday_from_cents, today=date.today)
-    elif shop.offer_name == "black-friday":
-        offer = free_on(BLACK_FRIDAY, today=date.today)
-    else:
-        raise UnknownOfferError(shop.offer_name)
-    shipping = Shipping(offer=offer, providers=providers, shop=shop)
+    # The shop's settings name its offer; main hands it the real clock.
+    shipping = Shipping(
+        offer=offer_for(shop, today=date.today),
+        providers=providers,
+        shop=shop,
+    )
     # The owner edits catalog.json; the shop reads it when it starts,
     # and will not start on a file it cannot read.
     try:
