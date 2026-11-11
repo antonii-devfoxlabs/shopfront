@@ -1,6 +1,6 @@
 // Orders sent back, and the money that goes back with them.
 
-import { OrderBook, formatMoney } from './orders.js';
+import { OrderBook, REFUNDED, formatMoney } from './orders.js';
 import { payment } from './payments.js';
 
 export class ReturnRefusedError extends Error {
@@ -64,7 +64,7 @@ export class Refunds {
         `Hi ${order.customerName}, we have refunded ` +
         `${formatMoney(order.totalCents, shop)}.`,
     });
-    events.emit('refunded', order);
+    events.emit(REFUNDED, order);
     return refundId;
   }
 }

@@ -6,6 +6,7 @@ import {
   OrderBook,
   OrderBuilder,
   OrderEvents,
+  PLACED,
   UnknownOrderError,
   formatMoney,
   nextOrderId,
@@ -32,12 +33,12 @@ function anOrder(lines = [['MUG-01', 2]], orderId = 'SF-00007') {
 }
 
 /**
- * The subject's list, with these listeners of 'placed' in turn.
+ * The subject's lists, with these listeners of placed orders.
  * @param {...import('../src/orders.js').OrderListener} listeners
  */
 function eventsOf(...listeners) {
   const events = new OrderEvents();
-  for (const listener of listeners) events.on('placed', listener);
+  for (const listener of listeners) events.on(PLACED, listener);
   return events;
 }
 

@@ -8,7 +8,12 @@ import {
   textWarehouse,
   trackOrder,
 } from '../src/listeners.js';
-import { OrderBuilder, OrderEvents, placeOrder } from '../src/orders.js';
+import {
+  OrderBuilder,
+  OrderEvents,
+  PLACED,
+  placeOrder,
+} from '../src/orders.js';
 import { DUTCH_SHOP, GERMAN_SHOP } from '../src/settings.js';
 import { Analytics } from '../src/vendor/analytics.js';
 import { Mailer } from '../src/vendor/mailer.js';
@@ -76,15 +81,15 @@ test('a closed warehouse gets no text until it opens again', () => {
   const catalog = starterCatalog();
   const warehouse = textWarehouse(sms, GERMAN_SHOP);
   const events = new OrderEvents();
-  events.on('placed', warehouse);
+  events.on(PLACED, warehouse);
   // The staff page may press Close, or Open, twice: no harm either way.
   // off takes one copy, and is quiet when there is none. on adds a copy
   // every time, so Open takes the warehouse off first.
-  events.off('placed', warehouse);
-  events.off('placed', warehouse);
+  events.off(PLACED, warehouse);
+  events.off(PLACED, warehouse);
   placeOrder(anOrder('SF-00001'), catalog, events);
-  events.off('placed', warehouse).on('placed', warehouse);
-  events.off('placed', warehouse).on('placed', warehouse);
+  events.off(PLACED, warehouse).on(PLACED, warehouse);
+  events.off(PLACED, warehouse).on(PLACED, warehouse);
   placeOrder(anOrder('SF-00002'), catalog, events);
   assert.deepEqual(
     sms.outbox.map((text) => text.text),

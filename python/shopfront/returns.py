@@ -68,5 +68,5 @@ class Refunds:
                 f"{format_money(order.total_cents, self.shop)}."
             ),
         )
-        self.events.notify("refunded", order)
+        self.events.refunded.notify(order)
         return refund_id

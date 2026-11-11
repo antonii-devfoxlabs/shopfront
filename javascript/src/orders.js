@@ -238,9 +238,15 @@ export function reset() {
  * @returns {void}
  */
 
+// The news an order's events carry. Name it through these, never as a
+// string: a misspelt constant is an error, where a misspelt string is
+// a list nobody is told.
+export const PLACED = 'placed';
+export const REFUNDED = 'refunded';
+
 /**
- * Who hears of what happens to an order, by the news's name: 'placed' or
- * 'refunded'. Node's EventEmitter keeps a list per name: subscribe with
+ * Who hears of what happens to an order, by the news's name: PLACED or
+ * REFUNDED. Node's EventEmitter keeps a list per name: subscribe with
  * `on`, unsubscribe with `off`, notify with `emit`.
  */
 export class OrderEvents extends EventEmitter {}
@@ -255,7 +261,7 @@ export function placeOrder(order, catalog, events) {
   catalog.takeAllFromStock(order.lines);
   OrderBook.instance().add(order);
   // The order is placed: now tell everyone subscribed at this moment.
-  events.emit('placed', order);
+  events.emit(PLACED, order);
 }
 
 // The owner's Monday line: the orders kept, and what they took.

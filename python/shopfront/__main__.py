@@ -71,14 +71,14 @@ def main() -> None:
     # Kept by name: the staff page unsubscribes it while the warehouse
     # is closed (24 to 26 December), and subscribes it again after.
     warehouse = text_warehouse(sms, shop)
-    # Everyone who hears of a placed or refunded order, by the news's
-    # name, told in the order they subscribe. One more is one more line.
+    # Everyone who hears of a placed or refunded order, told in the
+    # order they subscribe. One more is one more line here.
     events = OrderEvents()
-    events.subscribe("placed", email_shopper(mailer, shop))
-    events.subscribe("placed", track_order(Analytics()))
-    events.subscribe("placed", warehouse)
+    events.placed.subscribe(email_shopper(mailer, shop))
+    events.placed.subscribe(track_order(Analytics()))
+    events.placed.subscribe(warehouse)
     # Refunds, made for the return page, tell the same events.
-    events.subscribe("refunded", expect_return(sms, shop))
+    events.refunded.subscribe(expect_return(sms, shop))
     # Every step of an order, in order, behind one call. main still
     # decides what is timed, and hands the checkout the timed parts.
     checkout = Checkout(

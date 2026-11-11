@@ -110,9 +110,7 @@ def test_a_refund_is_announced_once_the_money_is_back(gateway):
     events = OrderEvents()
     place_order(order, starter_catalog(), events)
     told: list[str] = []
-    events.subscribe(
-        "refunded", lambda refunded: told.append(refunded.status)
-    )
+    events.refunded.subscribe(lambda refunded: told.append(refunded.status))
     refunds = Refunds(
         gateway=gateway, mailer=Mailer(), shop=GERMAN_SHOP, events=events
     )

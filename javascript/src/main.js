@@ -10,7 +10,7 @@ import {
   textWarehouse,
   trackOrder,
 } from './listeners.js';
-import { OrderEvents, formatMoney } from './orders.js';
+import { OrderEvents, PLACED, REFUNDED, formatMoney } from './orders.js';
 import { PriceCalculator } from './pricing.js';
 import {
   boxRouteQuote,
@@ -73,14 +73,14 @@ const sms = new Sms();
 // Kept by name: the staff page unsubscribes it while the warehouse is
 // closed (24 to 26 December), and subscribes it again after.
 const warehouse = textWarehouse(sms, shop);
-// Everyone who hears of a placed or refunded order, by the news's name,
-// told in the order they subscribe. One more is one more line here.
+// Everyone who hears of a placed or refunded order, told in the order they
+// subscribe. One more is one more line here.
 const events = new OrderEvents();
-events.on('placed', emailShopper(mailer, shop));
-events.on('placed', trackOrder(new Analytics()));
-events.on('placed', warehouse);
+events.on(PLACED, emailShopper(mailer, shop));
+events.on(PLACED, trackOrder(new Analytics()));
+events.on(PLACED, warehouse);
 // Refunds, made for the return page, tell the same events.
-events.on('refunded', expectReturn(sms, shop));
+events.on(REFUNDED, expectReturn(sms, shop));
 // Every step of an order, in order, behind one call. main still
 // decides what is timed, and hands the checkout the timed parts.
 const checkout = new Checkout({

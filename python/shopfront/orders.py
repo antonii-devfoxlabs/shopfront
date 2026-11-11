@@ -248,30 +248,13 @@ class Listeners:
 
 
 class OrderEvents:
-    """Who hears of what happens to an order, by the news's name: "placed"
-    or "refunded". Listeners join and leave while the shop runs."""
+    """What happens to an order, one list of listeners per kind of news.
+    Each kind is named in code: a misspelt one is an error, for mypy and
+    when the line runs."""
 
     def __init__(self) -> None:
-        self._listeners: dict[str, list[OrderListener]] = {}
-
-    def subscribe(self, name: str, listener: OrderListener) -> None:
-        """Tell this listener of every such news from now on, once each."""
-        listeners = self._listeners.setdefault(name, [])
-        if listener not in listeners:
-            listeners.append(listener)
-
-    def unsubscribe(self, name: str, listener: OrderListener) -> None:
-        """Tell this listener nothing more; one not on the list is fine."""
-        listeners = self._listeners.get(name, [])
-        if listener in listeners:
-            listeners.remove(listener)
-
-    def notify(self, name: str, order: Order) -> None:
-        """Tell every listener of this news, in the order they joined."""
-        # A copy: a listener that joins or leaves while they are told
-        # changes the list for the next order, not for this one.
-        for listener in list(self._listeners.get(name, [])):
-            listener(order)
+        self.placed = Listeners()
+        self.refunded = Listeners()
 
 
 def place_order(order: Order, catalog: Catalog, events: OrderEvents) -> None:
@@ -279,7 +262,7 @@ def place_order(order: Order, catalog: Catalog, events: OrderEvents) -> None:
     catalog.take_all_from_stock(order.lines)
     OrderBook.instance().add(order)
     # The order is placed: now tell everyone subscribed at this moment.
-    events.notify("placed", order)
+    events.placed.notify(order)
 
 
 def sales_report(orders: Iterable[Order], shop: Settings) -> str:

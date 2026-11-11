@@ -2,7 +2,12 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { starterCatalog } from '../src/catalog.js';
-import { OrderBuilder, OrderEvents, placeOrder } from '../src/orders.js';
+import {
+  OrderBuilder,
+  OrderEvents,
+  REFUNDED,
+  placeOrder,
+} from '../src/orders.js';
 import { Card, GiftCard } from '../src/payments.js';
 import { GiftReturn, Refunds, Return } from '../src/returns.js';
 import { GERMAN_SHOP } from '../src/settings.js';
@@ -123,7 +128,7 @@ test('a refund is announced once the money is back', () => {
   const events = new OrderEvents();
   placeOrder(order, starterCatalog(), events);
   const told = [];
-  events.on('refunded', (refunded) => told.push(refunded.status));
+  events.on(REFUNDED, (refunded) => told.push(refunded.status));
   const refunds = new Refunds({
     gateway,
     mailer: new Mailer(),

@@ -40,10 +40,10 @@ def an_order(
 
 
 def events_of(*listeners: OrderListener) -> OrderEvents:
-    """The subject's list, with these listeners of "placed" in turn."""
+    """The subject's lists, with these listeners of placed orders."""
     events = OrderEvents()
     for listener in listeners:
-        events.subscribe("placed", listener)
+        events.placed.subscribe(listener)
     return events
 
 
@@ -276,6 +276,6 @@ def test_a_listener_that_joins_while_told_hears_from_the_next_order():
 def test_a_listener_hears_only_the_news_it_subscribed_to():
     events = OrderEvents()
     told: list[Order] = []
-    events.subscribe("refunded", told.append)
-    events.notify("placed", an_order())
+    events.refunded.subscribe(told.append)
+    events.placed.notify(an_order())
     assert told == []
