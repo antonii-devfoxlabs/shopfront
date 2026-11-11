@@ -251,6 +251,24 @@ def test_unsubscribing_a_listener_that_is_not_on_the_list_is_fine():
     listeners.notify(an_order())
 
 
+def test_cancelling_takes_the_listener_off_the_list():
+    listeners, told = Listeners(), []
+    cancel = listeners.subscribe(lambda order: told.append(order.order_id))
+    listeners.notify(an_order(order_id="SF-00001"))
+    cancel()
+    listeners.notify(an_order(order_id="SF-00002"))
+    assert told == ["SF-00001"]
+    assert len(listeners) == 0
+
+
+def test_cancelling_twice_is_fine():
+    listeners = Listeners()
+    cancel = listeners.subscribe(print)
+    cancel()
+    cancel()
+    assert len(listeners) == 0
+
+
 def test_a_listener_that_leaves_while_told_does_not_hide_the_next():
     listeners = Listeners()
     told: list[Order] = []
@@ -267,7 +285,11 @@ def test_a_listener_that_leaves_while_told_does_not_hide_the_next():
 def test_a_listener_that_joins_while_told_hears_from_the_next_order():
     listeners = Listeners()
     told: list[Order] = []
-    listeners.subscribe(lambda order: listeners.subscribe(told.append))
+
+    def join(order: Order) -> None:
+        listeners.subscribe(told.append)
+
+    listeners.subscribe(join)
     listeners.notify(an_order(order_id="SF-00001"))
     listeners.notify(an_order(order_id="SF-00002"))
     assert [order.order_id for order in told] == ["SF-00002"]

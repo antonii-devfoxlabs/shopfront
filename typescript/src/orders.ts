@@ -245,6 +245,9 @@ export function reset(): void {
 // function that is told the order and answers nothing.
 export type OrderListener = (order: Order) => void;
 
+// What subscribing answers: call it to take that listener off again.
+export type Cancel = () => void;
+
 // The news an order's events carry, and what each hands its listeners.
 // tsc refuses a name that is not here, and a listener or an emit that
 // does not fit it.
@@ -256,7 +259,15 @@ export type OrderEventMap = {
 // Who hears of what happens to an order, by the news's name: 'placed' or
 // 'refunded'. Node's EventEmitter keeps a list per name: subscribe with
 // `on`, unsubscribe with `off`, notify with `emit`.
-export class OrderEvents extends EventEmitter<OrderEventMap> {}
+export class OrderEvents extends EventEmitter<OrderEventMap> {
+  // Subscribe, and answer the way to cancel: whoever subscribes keeps it.
+  subscribe(name: keyof OrderEventMap, listener: OrderListener): Cancel {
+    this.on(name, listener);
+    return () => {
+      this.off(name, listener);
+    };
+  }
+}
 
 // Take the stock and keep the order, then announce it.
 export function placeOrder(

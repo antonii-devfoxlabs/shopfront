@@ -245,11 +245,30 @@ export const PLACED = 'placed';
 export const REFUNDED = 'refunded';
 
 /**
+ * What subscribing answers: call it to take that listener off again.
+ * @callback Cancel
+ * @returns {void}
+ */
+
+/**
  * Who hears of what happens to an order, by the news's name: PLACED or
  * REFUNDED. Node's EventEmitter keeps a list per name: subscribe with
  * `on`, unsubscribe with `off`, notify with `emit`.
  */
-export class OrderEvents extends EventEmitter {}
+export class OrderEvents extends EventEmitter {
+  /**
+   * Subscribe, and answer the way to cancel: whoever subscribes keeps it.
+   * @param {string} name
+   * @param {OrderListener} listener
+   * @returns {Cancel}
+   */
+  subscribe(name, listener) {
+    this.on(name, listener);
+    return () => {
+      this.off(name, listener);
+    };
+  }
+}
 
 /**
  * Take the stock and keep the order, then announce it.

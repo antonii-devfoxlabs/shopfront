@@ -220,6 +220,9 @@ def reset() -> None:
 # function that is told the order and answers nothing.
 OrderListener = Callable[[Order], None]
 
+# What subscribing answers: call it to take that listener off again.
+Cancel = Callable[[], None]
+
 
 class Listeners:
     """Who hears of one kind of news about an order: a plain list of
@@ -229,10 +232,16 @@ class Listeners:
     def __init__(self) -> None:
         self._listeners: list[OrderListener] = []
 
-    def subscribe(self, listener: OrderListener) -> None:
-        """Tell this listener of every such news from now on, once each."""
+    def subscribe(self, listener: OrderListener) -> Cancel:
+        """Tell this listener of every such news from now on, once each.
+        Answers the way to cancel: whoever subscribes keeps it."""
         if listener not in self._listeners:
             self._listeners.append(listener)
+
+        def cancel() -> None:
+            self.unsubscribe(listener)
+
+        return cancel
 
     def unsubscribe(self, listener: OrderListener) -> None:
         """Tell this listener nothing more; one not on the list is fine."""
@@ -245,6 +254,10 @@ class Listeners:
         # changes the list for the next order, not for this one.
         for listener in list(self._listeners):
             listener(order)
+
+    def __len__(self) -> int:
+        """How many listeners are on the list now."""
+        return len(self._listeners)
 
 
 class OrderEvents:

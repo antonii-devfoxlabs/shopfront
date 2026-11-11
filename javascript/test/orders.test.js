@@ -227,3 +227,24 @@ test('money is shown in euros', () => {
   assert.equal(formatMoney(5, GERMAN_SHOP), '0.05 EUR');
   assert.equal(formatMoney(-205, GERMAN_SHOP), '-2.05 EUR');
 });
+
+test('cancelling takes the listener off the list', () => {
+  const events = new OrderEvents();
+  const told = [];
+  const cancel = events.subscribe(PLACED, (order) =>
+    told.push(order.orderId),
+  );
+  events.emit(PLACED, anOrder(undefined, 'SF-00001'));
+  cancel();
+  events.emit(PLACED, anOrder(undefined, 'SF-00002'));
+  assert.deepEqual(told, ['SF-00001']);
+  assert.equal(events.listenerCount(PLACED), 0);
+});
+
+test('cancelling twice is fine', () => {
+  const events = new OrderEvents();
+  const cancel = events.subscribe(PLACED, () => {});
+  cancel();
+  cancel();
+  assert.equal(events.listenerCount(PLACED), 0);
+});
