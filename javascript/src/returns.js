@@ -64,7 +64,7 @@ export class Refunds {
         `Hi ${order.customerName}, we have refunded ` +
         `${formatMoney(order.totalCents, shop)}.`,
     });
-    events.notify('refunded', order);
+    events.emit('refunded', order);
     return refundId;
   }
 }

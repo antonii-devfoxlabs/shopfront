@@ -76,13 +76,15 @@ test('a closed warehouse gets no text until it opens again', () => {
   const catalog = starterCatalog();
   const warehouse = textWarehouse(sms, GERMAN_SHOP);
   const events = new OrderEvents();
-  events.subscribe('placed', warehouse);
+  events.on('placed', warehouse);
   // The staff page may press Close, or Open, twice: no harm either way.
-  events.unsubscribe('placed', warehouse);
-  events.unsubscribe('placed', warehouse);
+  // off takes one copy, and is quiet when there is none. on adds a copy
+  // every time, so Open takes the warehouse off first.
+  events.off('placed', warehouse);
+  events.off('placed', warehouse);
   placeOrder(anOrder('SF-00001'), catalog, events);
-  events.subscribe('placed', warehouse);
-  events.subscribe('placed', warehouse);
+  events.off('placed', warehouse).on('placed', warehouse);
+  events.off('placed', warehouse).on('placed', warehouse);
   placeOrder(anOrder('SF-00002'), catalog, events);
   assert.deepEqual(
     sms.outbox.map((text) => text.text),

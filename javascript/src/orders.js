@@ -1,5 +1,7 @@
 // An order, and what happens once it is placed.
 
+import { EventEmitter } from 'node:events';
+
 let lastOrderNumber = 0;
 
 export function nextOrderId() {
@@ -238,44 +240,10 @@ export function reset() {
 
 /**
  * Who hears of what happens to an order, by the news's name: 'placed' or
- * 'refunded'. Listeners join and leave while the shop runs.
+ * 'refunded'. Node's EventEmitter keeps a list per name: subscribe with
+ * `on`, unsubscribe with `off`, notify with `emit`.
  */
-export class OrderEvents {
-  /** @type {Map<string, Set<OrderListener>>} */
-  #listeners = new Map();
-
-  /**
-   * Tell this listener of every such news from now on, once each.
-   * @param {string} name
-   * @param {OrderListener} listener
-   */
-  subscribe(name, listener) {
-    if (!this.#listeners.has(name)) this.#listeners.set(name, new Set());
-    this.#listeners.get(name)?.add(listener);
-  }
-
-  /**
-   * Tell this listener nothing more; one not on the list is fine.
-   * @param {string} name
-   * @param {OrderListener} listener
-   */
-  unsubscribe(name, listener) {
-    this.#listeners.get(name)?.delete(listener);
-  }
-
-  /**
-   * Tell every listener of this news, in the order they joined.
-   * @param {string} name
-   * @param {Order} order
-   */
-  notify(name, order) {
-    // A copy: a listener that joins or leaves while they are told
-    // changes the list for the next order, not for this one.
-    for (const listener of [...(this.#listeners.get(name) ?? [])]) {
-      listener(order);
-    }
-  }
-}
+export class OrderEvents extends EventEmitter {}
 
 /**
  * Take the stock and keep the order, then announce it.
@@ -287,7 +255,7 @@ export function placeOrder(order, catalog, events) {
   catalog.takeAllFromStock(order.lines);
   OrderBook.instance().add(order);
   // The order is placed: now tell everyone subscribed at this moment.
-  events.notify('placed', order);
+  events.emit('placed', order);
 }
 
 // The owner's Monday line: the orders kept, and what they took.

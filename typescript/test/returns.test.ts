@@ -123,7 +123,7 @@ test('a refund is announced once the money is back', () => {
   const events = new OrderEvents();
   placeOrder(order, starterCatalog(), events);
   const told: string[] = [];
-  events.subscribe('refunded', (refunded) => told.push(refunded.status));
+  events.on('refunded', (refunded) => told.push(refunded.status));
   const refunds = new Refunds({
     gateway,
     mailer: new Mailer(),

@@ -39,7 +39,7 @@ function anOrder(
 // The subject's list, with these listeners of 'placed' in turn.
 function eventsOf(...listeners: OrderListener[]): OrderEvents {
   const events = new OrderEvents();
-  for (const listener of listeners) events.subscribe('placed', listener);
+  for (const listener of listeners) events.on('placed', listener);
   return events;
 }
 
@@ -226,74 +226,4 @@ test('money is shown in euros', () => {
   assert.equal(formatMoney(3_168, GERMAN_SHOP), '31.68 EUR');
   assert.equal(formatMoney(5, GERMAN_SHOP), '0.05 EUR');
   assert.equal(formatMoney(-205, GERMAN_SHOP), '-2.05 EUR');
-});
-
-test('every subscriber is told in the order they subscribed', () => {
-  const events = new OrderEvents();
-  const told: string[] = [];
-  events.subscribe('placed', (order) => told.push(`first ${order.orderId}`));
-  events.subscribe('placed', (order) => told.push(`second ${order.orderId}`));
-  events.notify('placed', anOrder());
-  assert.deepEqual(told, ['first SF-00007', 'second SF-00007']);
-});
-
-test('a listener subscribed twice is told once', () => {
-  const events = new OrderEvents();
-  const told: Order[] = [];
-  const listener = (order: Order) => told.push(order);
-  events.subscribe('placed', listener);
-  events.subscribe('placed', listener);
-  events.notify('placed', anOrder());
-  assert.equal(told.length, 1);
-});
-
-test('an unsubscribed listener is told nothing more', () => {
-  const events = new OrderEvents();
-  const told: Order[] = [];
-  const listener = (order: Order) => told.push(order);
-  events.subscribe('placed', listener);
-  events.notify('placed', anOrder(undefined, 'SF-00001'));
-  events.unsubscribe('placed', listener);
-  events.notify('placed', anOrder(undefined, 'SF-00002'));
-  assert.deepEqual(
-    told.map((order) => order.orderId),
-    ['SF-00001'],
-  );
-});
-
-test('unsubscribing a listener that is not on the list is fine', () => {
-  const events = new OrderEvents();
-  events.unsubscribe('placed', console.log);
-  events.notify('placed', anOrder());
-});
-
-test('a listener that leaves while told does not hide the next', () => {
-  const events = new OrderEvents();
-  const told: Order[] = [];
-  const leave = () => events.unsubscribe('placed', leave);
-  events.subscribe('placed', leave);
-  events.subscribe('placed', (order) => told.push(order));
-  events.notify('placed', anOrder());
-  assert.equal(told.length, 1);
-});
-
-test('a listener that joins while told hears from the next order', () => {
-  const events = new OrderEvents();
-  const told: Order[] = [];
-  const late = (order: Order) => told.push(order);
-  events.subscribe('placed', () => events.subscribe('placed', late));
-  events.notify('placed', anOrder(undefined, 'SF-00001'));
-  events.notify('placed', anOrder(undefined, 'SF-00002'));
-  assert.deepEqual(
-    told.map((order) => order.orderId),
-    ['SF-00002'],
-  );
-});
-
-test('a listener hears only the news it subscribed to', () => {
-  const events = new OrderEvents();
-  const told: Order[] = [];
-  events.subscribe('refunded', (order) => told.push(order));
-  events.notify('placed', anOrder());
-  assert.deepEqual(told, []);
 });

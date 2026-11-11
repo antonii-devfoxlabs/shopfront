@@ -3,6 +3,7 @@ import pytest
 from shopfront.catalog import OutOfStockError, starter_catalog
 from shopfront.orders import (
     IncompleteOrderError,
+    Listeners,
     Order,
     OrderBook,
     OrderBuilder,
@@ -218,63 +219,57 @@ def test_money_is_shown_in_euros():
 
 
 def test_every_subscriber_is_told_in_the_order_they_subscribed():
-    events, told = OrderEvents(), []
-    events.subscribe(
-        "placed", lambda order: told.append(f"first {order.order_id}")
-    )
-    events.subscribe(
-        "placed", lambda order: told.append(f"second {order.order_id}")
-    )
-    events.notify("placed", an_order())
+    listeners, told = Listeners(), []
+    listeners.subscribe(lambda order: told.append(f"first {order.order_id}"))
+    listeners.subscribe(lambda order: told.append(f"second {order.order_id}"))
+    listeners.notify(an_order())
     assert told == ["first SF-00007", "second SF-00007"]
 
 
 def test_a_listener_subscribed_twice_is_told_once():
-    events = OrderEvents()
+    listeners = Listeners()
     told: list[Order] = []
-    events.subscribe("placed", told.append)
-    events.subscribe("placed", told.append)
-    events.notify("placed", an_order())
+    listeners.subscribe(told.append)
+    listeners.subscribe(told.append)
+    listeners.notify(an_order())
     assert len(told) == 1
 
 
 def test_an_unsubscribed_listener_is_told_nothing_more():
-    events = OrderEvents()
+    listeners = Listeners()
     told: list[Order] = []
-    events.subscribe("placed", told.append)
-    events.notify("placed", an_order(order_id="SF-00001"))
-    events.unsubscribe("placed", told.append)
-    events.notify("placed", an_order(order_id="SF-00002"))
+    listeners.subscribe(told.append)
+    listeners.notify(an_order(order_id="SF-00001"))
+    listeners.unsubscribe(told.append)
+    listeners.notify(an_order(order_id="SF-00002"))
     assert [order.order_id for order in told] == ["SF-00001"]
 
 
 def test_unsubscribing_a_listener_that_is_not_on_the_list_is_fine():
-    events = OrderEvents()
-    events.unsubscribe("placed", print)
-    events.notify("placed", an_order())
+    listeners = Listeners()
+    listeners.unsubscribe(print)
+    listeners.notify(an_order())
 
 
 def test_a_listener_that_leaves_while_told_does_not_hide_the_next():
-    events = OrderEvents()
+    listeners = Listeners()
     told: list[Order] = []
 
     def leave(order: Order) -> None:
-        events.unsubscribe("placed", leave)
+        listeners.unsubscribe(leave)
 
-    events.subscribe("placed", leave)
-    events.subscribe("placed", told.append)
-    events.notify("placed", an_order())
+    listeners.subscribe(leave)
+    listeners.subscribe(told.append)
+    listeners.notify(an_order())
     assert len(told) == 1
 
 
 def test_a_listener_that_joins_while_told_hears_from_the_next_order():
-    events = OrderEvents()
+    listeners = Listeners()
     told: list[Order] = []
-    events.subscribe(
-        "placed", lambda order: events.subscribe("placed", told.append)
-    )
-    events.notify("placed", an_order(order_id="SF-00001"))
-    events.notify("placed", an_order(order_id="SF-00002"))
+    listeners.subscribe(lambda order: listeners.subscribe(told.append))
+    listeners.notify(an_order(order_id="SF-00001"))
+    listeners.notify(an_order(order_id="SF-00002"))
     assert [order.order_id for order in told] == ["SF-00002"]
 
 
