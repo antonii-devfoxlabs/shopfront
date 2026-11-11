@@ -33,6 +33,28 @@ test('lists every product', () => {
   assert.equal(starterCatalog().allProducts().length, 5);
 });
 
+test('a cursor hands over every product in order', () => {
+  const cursor = starterCatalog().cursor();
+  const skus = [];
+  let product = cursor.next();
+  while (product !== undefined) {
+    skus.push(product.sku);
+    product = cursor.next();
+  }
+  assert.deepEqual(skus, ['MUG-01', 'TEA-02', 'KTL-03', 'CUP-04', 'FLT-05']);
+  assert.equal(cursor.next(), undefined);
+});
+
+test('each cursor keeps its own place', () => {
+  const catalog = starterCatalog();
+  const first = catalog.cursor();
+  first.next();
+  first.next();
+  const second = catalog.cursor();
+  assert.equal(second.next(), catalog.find('MUG-01'));
+  assert.equal(first.next(), catalog.find('KTL-03'));
+});
+
 test('a page holds the products in catalog order', () => {
   const catalog = starterCatalog();
   assert.deepEqual(

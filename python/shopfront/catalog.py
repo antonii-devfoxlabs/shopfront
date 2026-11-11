@@ -1,6 +1,6 @@
 """The products Shopfront sells, and how many of each are left."""
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
 
@@ -21,12 +21,34 @@ class OutOfStockError(Exception):
     pass
 
 
+class ProductCursor:
+    """Hands over the catalog's products one at a time, in order. It
+    keeps its own place, so each walk has a cursor of its own."""
+
+    def __init__(self, products: Sequence[Product]) -> None:
+        self._products = products
+        self._place = 0
+
+    def next(self) -> Product | None:
+        """The next product, or None once every one is handed over."""
+        if self._place == len(self._products):
+            return None
+        product = self._products[self._place]
+        self._place += 1
+        return product
+
+
 class Catalog:
     def __init__(self, products: list[Product]) -> None:
-        self._products = {product.sku: product for product in products}
+        self._products = list(products)
+        self._by_sku = {product.sku: product for product in products}
 
     def all_products(self) -> list[Product]:
-        return list(self._products.values())
+        return list(self._products)
+
+    def cursor(self) -> ProductCursor:
+        """A new walk over every product, from the first."""
+        return ProductCursor(self._products)
 
     def page(self, number: int, size: int) -> list[Product]:
         """The products on page `number`, counted from 1."""
@@ -35,7 +57,7 @@ class Catalog:
 
     def find(self, sku: str) -> Product:
         try:
-            return self._products[sku]
+            return self._by_sku[sku]
         except KeyError:
             raise UnknownProductError(sku) from None
 

@@ -16,17 +16,41 @@ export class OutOfStockError extends Error {
   override name = 'OutOfStockError';
 }
 
+// Hands over the catalog's products one at a time, in order. It keeps
+// its own place, so each walk has a cursor of its own.
+export class ProductCursor {
+  readonly #products: readonly Product[];
+  #place = 0;
+
+  constructor(products: readonly Product[]) {
+    this.#products = products;
+  }
+
+  // The next product, or undefined once every one is handed over.
+  next(): Product | undefined {
+    if (this.#place === this.#products.length) return undefined;
+    const product = this.#products[this.#place];
+    this.#place += 1;
+    return product;
+  }
+}
+
 export class Catalog {
-  readonly #products: Map<string, Product>;
+  readonly #products: Product[];
+  readonly #bySku: Map<string, Product>;
 
   constructor(products: Product[]) {
-    this.#products = new Map(
-      products.map((product) => [product.sku, product]),
-    );
+    this.#products = [...products];
+    this.#bySku = new Map(products.map((product) => [product.sku, product]));
   }
 
   allProducts(): Product[] {
-    return [...this.#products.values()];
+    return [...this.#products];
+  }
+
+  // A new walk over every product, from the first.
+  cursor(): ProductCursor {
+    return new ProductCursor(this.#products);
   }
 
   // The products on page `number`, counted from 1.
@@ -36,7 +60,7 @@ export class Catalog {
   }
 
   find(sku: string): Product {
-    const product = this.#products.get(sku);
+    const product = this.#bySku.get(sku);
     if (product === undefined) throw new UnknownProductError(sku);
     return product;
   }

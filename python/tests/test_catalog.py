@@ -36,6 +36,27 @@ def test_lists_every_product():
     assert len(starter_catalog().all_products()) == 5
 
 
+def test_a_cursor_hands_over_every_product_in_order():
+    cursor = starter_catalog().cursor()
+    skus = []
+    product = cursor.next()
+    while product is not None:
+        skus.append(product.sku)
+        product = cursor.next()
+    assert skus == ["MUG-01", "TEA-02", "KTL-03", "CUP-04", "FLT-05"]
+    assert cursor.next() is None
+
+
+def test_each_cursor_keeps_its_own_place():
+    catalog = starter_catalog()
+    first = catalog.cursor()
+    first.next()
+    first.next()
+    second = catalog.cursor()
+    assert second.next() == catalog.find("MUG-01")
+    assert first.next() == catalog.find("KTL-03")
+
+
 def test_a_page_holds_the_products_in_catalog_order():
     catalog = starter_catalog()
     assert [product.sku for product in catalog.page(1, 2)] == [
