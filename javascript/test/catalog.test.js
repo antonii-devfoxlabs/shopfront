@@ -5,6 +5,7 @@ import {
   OutOfStockError,
   UnknownProductError,
   starterCatalog,
+  take,
 } from '../src/catalog.js';
 import { loadCatalog } from '../src/catalogFile.js';
 
@@ -55,17 +56,13 @@ test('each cursor keeps its own place', () => {
   assert.equal(first.next(), catalog.find('KTL-03'));
 });
 
-test('a page holds the products in catalog order', () => {
-  const catalog = starterCatalog();
-  assert.deepEqual(
-    catalog.page(1, 2).map((product) => product.sku),
-    ['MUG-01', 'TEA-02'],
-  );
-  assert.deepEqual(
-    catalog.page(3, 2).map((product) => product.sku),
-    ['FLT-05'],
-  );
-  assert.deepEqual(catalog.page(4, 2), []);
+test('a page takes the next products from its cursor', () => {
+  const cursor = starterCatalog().cursor();
+  const skus = (products) => products.map((product) => product.sku);
+  assert.deepEqual(skus(take(cursor, 2)), ['MUG-01', 'TEA-02']);
+  assert.deepEqual(skus(take(cursor, 2)), ['KTL-03', 'CUP-04']);
+  assert.deepEqual(skus(take(cursor, 2)), ['FLT-05']);
+  assert.deepEqual(take(cursor, 2), []);
 });
 
 test('search finds names whatever the case', () => {

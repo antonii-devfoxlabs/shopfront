@@ -6,6 +6,7 @@ from shopfront.catalog import (
     OutOfStockError,
     UnknownProductError,
     starter_catalog,
+    take,
 )
 from shopfront.catalog_file import load_catalog
 
@@ -57,14 +58,18 @@ def test_each_cursor_keeps_its_own_place():
     assert first.next() == catalog.find("KTL-03")
 
 
-def test_a_page_holds_the_products_in_catalog_order():
-    catalog = starter_catalog()
-    assert [product.sku for product in catalog.page(1, 2)] == [
+def test_a_page_takes_the_next_products_from_its_cursor():
+    cursor = starter_catalog().cursor()
+    assert [product.sku for product in take(cursor, 2)] == [
         "MUG-01",
         "TEA-02",
     ]
-    assert [product.sku for product in catalog.page(3, 2)] == ["FLT-05"]
-    assert catalog.page(4, 2) == []
+    assert [product.sku for product in take(cursor, 2)] == [
+        "KTL-03",
+        "CUP-04",
+    ]
+    assert [product.sku for product in take(cursor, 2)] == ["FLT-05"]
+    assert take(cursor, 2) == []
 
 
 def test_search_finds_names_whatever_the_case():

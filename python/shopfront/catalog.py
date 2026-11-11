@@ -50,11 +50,6 @@ class Catalog:
         """A new walk over every product, from the first."""
         return ProductCursor(self._products)
 
-    def page(self, number: int, size: int) -> list[Product]:
-        """The products on page `number`, counted from 1."""
-        start = (number - 1) * size
-        return self.all_products()[start : start + size]
-
     def find(self, sku: str) -> Product:
         try:
             return self._by_sku[sku]
@@ -87,12 +82,26 @@ class Catalog:
     def search(self, text: str, limit: int) -> list[Product]:
         """The first `limit` products whose names hold `text`, any case."""
         wanted = text.lower()
-        found = [
-            product
-            for product in self.all_products()
-            if wanted in product.name.lower()
-        ]
-        return found[:limit]
+        found: list[Product] = []
+        cursor = self.cursor()
+        while len(found) < limit:
+            product = cursor.next()
+            if product is None:
+                break
+            if wanted in product.name.lower():
+                found.append(product)
+        return found
+
+
+def take(cursor: ProductCursor, count: int) -> list[Product]:
+    """The next `count` products from the cursor, or fewer at the end."""
+    taken: list[Product] = []
+    while len(taken) < count:
+        product = cursor.next()
+        if product is None:
+            break
+        taken.append(product)
+    return taken
 
 
 def starter_catalog() -> Catalog:

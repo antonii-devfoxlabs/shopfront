@@ -45,12 +45,6 @@ export class Catalog {
     return new ProductCursor(this.#products);
   }
 
-  // The products on page `number`, counted from 1.
-  page(number, size) {
-    const start = (number - 1) * size;
-    return this.allProducts().slice(start, start + size);
-  }
-
   find(sku) {
     const product = this.#bySku.get(sku);
     if (product === undefined) throw new UnknownProductError(sku);
@@ -90,11 +84,26 @@ export class Catalog {
   // The first `limit` products whose names hold `text`, any case.
   search(text, limit) {
     const wanted = text.toLowerCase();
-    const found = this.allProducts().filter((product) =>
-      product.name.toLowerCase().includes(wanted),
-    );
-    return found.slice(0, limit);
+    const found = [];
+    const cursor = this.cursor();
+    while (found.length < limit) {
+      const product = cursor.next();
+      if (product === undefined) break;
+      if (product.name.toLowerCase().includes(wanted)) found.push(product);
+    }
+    return found;
   }
+}
+
+// The next `count` products from the cursor, or fewer at the end.
+export function take(cursor, count) {
+  const taken = [];
+  while (taken.length < count) {
+    const product = cursor.next();
+    if (product === undefined) break;
+    taken.push(product);
+  }
+  return taken;
 }
 
 export function starterCatalog() {
