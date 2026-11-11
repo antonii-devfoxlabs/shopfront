@@ -13,7 +13,9 @@ class SalesBoard:
     def __init__(self, events: OrderEvents, shop: Settings) -> None:
         self.rows: list[str] = []
         self._shop = shop
-        events.placed.subscribe(self.show)
+        # The events hold this board for as long as it is on their list:
+        # close must take it off, or the board is never let go.
+        self._cancel = events.placed.subscribe(self.show)
 
     def show(self, order: Order) -> None:
         """Add a row for an order just placed."""
@@ -21,5 +23,7 @@ class SalesBoard:
         self.rows.append(f"{order.order_id}  {total}")
 
     def close(self) -> None:
-        """Clear the screen: whoever opened it is done with it."""
+        """Leave the events, then clear the screen: whoever opened it is
+        done with it."""
+        self._cancel()
         self.rows.clear()

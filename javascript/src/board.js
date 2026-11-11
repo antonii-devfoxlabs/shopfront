@@ -10,6 +10,7 @@ export class SalesBoard {
   /** @type {string[]} */
   rows = [];
   #shop;
+  #cancel;
 
   /**
    * @param {import('./orders.js').OrderEvents} events
@@ -17,7 +18,9 @@ export class SalesBoard {
    */
   constructor(events, shop) {
     this.#shop = shop;
-    events.on(PLACED, (order) => this.show(order));
+    // The events hold this board for as long as it is on their list:
+    // close must take it off, or the board is never let go.
+    this.#cancel = events.subscribe(PLACED, (order) => this.show(order));
   }
 
   /**
@@ -29,8 +32,10 @@ export class SalesBoard {
     this.rows.push(`${order.orderId}  ${total}`);
   }
 
-  // Clear the screen: whoever opened it is done with it.
+  // Leave the events, then clear the screen: whoever opened it is done
+  // with it.
   close() {
+    this.#cancel();
     this.rows.length = 0;
   }
 }

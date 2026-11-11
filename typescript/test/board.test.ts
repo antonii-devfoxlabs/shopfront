@@ -38,3 +38,12 @@ test('a closed board is cleared', () => {
   board.close();
   assert.deepEqual(board.rows, []);
 });
+
+test('a closed board is told nothing more and leaves no listener', () => {
+  const events = new OrderEvents();
+  const board = new SalesBoard(events, GERMAN_SHOP);
+  board.close();
+  events.emit('placed', anOrder('SF-00001'));
+  assert.deepEqual(board.rows, []);
+  assert.equal(events.listenerCount('placed'), 0);
+});

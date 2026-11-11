@@ -34,3 +34,12 @@ def test_a_closed_board_is_cleared():
     events.placed.notify(an_order("SF-00001"))
     board.close()
     assert board.rows == []
+
+
+def test_a_closed_board_is_told_nothing_more_and_leaves_no_listener():
+    events = OrderEvents()
+    board = SalesBoard(events, GERMAN_SHOP)
+    board.close()
+    events.placed.notify(an_order("SF-00001"))
+    assert board.rows == []
+    assert len(events.placed) == 0
