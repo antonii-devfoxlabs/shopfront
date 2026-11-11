@@ -6,6 +6,7 @@ from shopfront.orders import (
     Order,
     OrderBook,
     OrderBuilder,
+    OrderEvents,
     UnknownOrderError,
     format_money,
     next_order_id,
@@ -205,3 +206,58 @@ def test_money_is_shown_in_euros():
     assert format_money(3_168, GERMAN_SHOP) == "31.68 EUR"
     assert format_money(5, GERMAN_SHOP) == "0.05 EUR"
     assert format_money(-205, GERMAN_SHOP) == "-2.05 EUR"
+
+
+def test_every_subscriber_is_told_in_the_order_they_subscribed():
+    events, told = OrderEvents(), []
+    events.subscribe(lambda order: told.append(f"first {order.order_id}"))
+    events.subscribe(lambda order: told.append(f"second {order.order_id}"))
+    events.notify(an_order())
+    assert told == ["first SF-00007", "second SF-00007"]
+
+
+def test_a_listener_subscribed_twice_is_told_once():
+    events = OrderEvents()
+    told: list[Order] = []
+    events.subscribe(told.append)
+    events.subscribe(told.append)
+    events.notify(an_order())
+    assert len(told) == 1
+
+
+def test_an_unsubscribed_listener_is_told_nothing_more():
+    events = OrderEvents()
+    told: list[Order] = []
+    events.subscribe(told.append)
+    events.notify(an_order(order_id="SF-00001"))
+    events.unsubscribe(told.append)
+    events.notify(an_order(order_id="SF-00002"))
+    assert [order.order_id for order in told] == ["SF-00001"]
+
+
+def test_unsubscribing_a_listener_that_is_not_on_the_list_is_fine():
+    events = OrderEvents()
+    events.unsubscribe(print)
+    events.notify(an_order())
+
+
+def test_a_listener_that_leaves_while_told_does_not_hide_the_next():
+    events = OrderEvents()
+    told: list[Order] = []
+
+    def leave(order: Order) -> None:
+        events.unsubscribe(leave)
+
+    events.subscribe(leave)
+    events.subscribe(told.append)
+    events.notify(an_order())
+    assert len(told) == 1
+
+
+def test_a_listener_that_joins_while_told_hears_from_the_next_order():
+    events = OrderEvents()
+    told: list[Order] = []
+    events.subscribe(lambda order: events.subscribe(told.append))
+    events.notify(an_order(order_id="SF-00001"))
+    events.notify(an_order(order_id="SF-00002"))
+    assert [order.order_id for order in told] == ["SF-00002"]

@@ -243,6 +243,31 @@ export function reset(): void {
 // function that is told the order and answers nothing.
 export type OrderListener = (order: Order) => void;
 
+// Who hears of a placed order: a list the subject keeps for as long as
+// the shop runs. Listeners join and leave it while the shop runs.
+export class OrderEvents {
+  readonly #listeners = new Set<OrderListener>();
+
+  // Tell this listener of every order from now on, once each.
+  subscribe(listener: OrderListener): void {
+    this.#listeners.add(listener);
+  }
+
+  // Tell this listener nothing more; one not on the list is fine.
+  unsubscribe(listener: OrderListener): void {
+    this.#listeners.delete(listener);
+  }
+
+  // Tell every listener of the order, in the order they joined.
+  notify(order: Order): void {
+    // A copy: a listener that joins or leaves while they are told
+    // changes the list for the next order, not for this one.
+    for (const listener of [...this.#listeners]) {
+      listener(order);
+    }
+  }
+}
+
 // Take the stock and keep the order, then tell every listener.
 export function placeOrder(
   order: Order,

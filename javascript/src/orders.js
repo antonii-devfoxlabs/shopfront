@@ -237,6 +237,43 @@ export function reset() {
  */
 
 /**
+ * Who hears of a placed order: a list the subject keeps for as long as
+ * the shop runs. Listeners join and leave it while the shop runs.
+ */
+export class OrderEvents {
+  /** @type {Set<OrderListener>} */
+  #listeners = new Set();
+
+  /**
+   * Tell this listener of every order from now on, once each.
+   * @param {OrderListener} listener
+   */
+  subscribe(listener) {
+    this.#listeners.add(listener);
+  }
+
+  /**
+   * Tell this listener nothing more; one not on the list is fine.
+   * @param {OrderListener} listener
+   */
+  unsubscribe(listener) {
+    this.#listeners.delete(listener);
+  }
+
+  /**
+   * Tell every listener of the order, in the order they joined.
+   * @param {Order} order
+   */
+  notify(order) {
+    // A copy: a listener that joins or leaves while they are told
+    // changes the list for the next order, not for this one.
+    for (const listener of [...this.#listeners]) {
+      listener(order);
+    }
+  }
+}
+
+/**
  * Take the stock and keep the order, then tell every listener.
  * @param {Order} order
  * @param {import('./catalog.js').Catalog} catalog

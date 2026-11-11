@@ -5,6 +5,7 @@ import { OutOfStockError, starterCatalog } from '../src/catalog.js';
 import {
   OrderBook,
   OrderBuilder,
+  OrderEvents,
   UnknownOrderError,
   formatMoney,
   nextOrderId,
@@ -201,4 +202,66 @@ test('money is shown in euros', () => {
   assert.equal(formatMoney(3_168, GERMAN_SHOP), '31.68 EUR');
   assert.equal(formatMoney(5, GERMAN_SHOP), '0.05 EUR');
   assert.equal(formatMoney(-205, GERMAN_SHOP), '-2.05 EUR');
+});
+
+test('every subscriber is told in the order they subscribed', () => {
+  const events = new OrderEvents();
+  const told = [];
+  events.subscribe((order) => told.push(`first ${order.orderId}`));
+  events.subscribe((order) => told.push(`second ${order.orderId}`));
+  events.notify(anOrder());
+  assert.deepEqual(told, ['first SF-00007', 'second SF-00007']);
+});
+
+test('a listener subscribed twice is told once', () => {
+  const events = new OrderEvents();
+  const told = [];
+  const listener = (order) => told.push(order);
+  events.subscribe(listener);
+  events.subscribe(listener);
+  events.notify(anOrder());
+  assert.equal(told.length, 1);
+});
+
+test('an unsubscribed listener is told nothing more', () => {
+  const events = new OrderEvents();
+  const told = [];
+  const listener = (order) => told.push(order);
+  events.subscribe(listener);
+  events.notify(anOrder(undefined, 'SF-00001'));
+  events.unsubscribe(listener);
+  events.notify(anOrder(undefined, 'SF-00002'));
+  assert.deepEqual(
+    told.map((order) => order.orderId),
+    ['SF-00001'],
+  );
+});
+
+test('unsubscribing a listener that is not on the list is fine', () => {
+  const events = new OrderEvents();
+  events.unsubscribe(console.log);
+  events.notify(anOrder());
+});
+
+test('a listener that leaves while told does not hide the next', () => {
+  const events = new OrderEvents();
+  const told = [];
+  const leave = () => events.unsubscribe(leave);
+  events.subscribe(leave);
+  events.subscribe((order) => told.push(order));
+  events.notify(anOrder());
+  assert.equal(told.length, 1);
+});
+
+test('a listener that joins while told hears from the next order', () => {
+  const events = new OrderEvents();
+  const told = [];
+  const late = (order) => told.push(order);
+  events.subscribe(() => events.subscribe(late));
+  events.notify(anOrder(undefined, 'SF-00001'));
+  events.notify(anOrder(undefined, 'SF-00002'));
+  assert.deepEqual(
+    told.map((order) => order.orderId),
+    ['SF-00002'],
+  );
 });

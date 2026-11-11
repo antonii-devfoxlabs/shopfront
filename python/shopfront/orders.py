@@ -221,6 +221,31 @@ def reset() -> None:
 OrderListener = Callable[[Order], None]
 
 
+class OrderEvents:
+    """Who hears of a placed order: a list the subject keeps for as long
+    as the shop runs. Listeners join and leave it while the shop runs."""
+
+    def __init__(self) -> None:
+        self._listeners: list[OrderListener] = []
+
+    def subscribe(self, listener: OrderListener) -> None:
+        """Tell this listener of every order from now on, once each."""
+        if listener not in self._listeners:
+            self._listeners.append(listener)
+
+    def unsubscribe(self, listener: OrderListener) -> None:
+        """Tell this listener nothing more; one not on the list is fine."""
+        if listener in self._listeners:
+            self._listeners.remove(listener)
+
+    def notify(self, order: Order) -> None:
+        """Tell every listener of the order, in the order they joined."""
+        # A copy: a listener that joins or leaves while they are told
+        # changes the list for the next order, not for this one.
+        for listener in list(self._listeners):
+            listener(order)
+
+
 def place_order(
     order: Order, catalog: Catalog, listeners: list[OrderListener]
 ) -> None:
