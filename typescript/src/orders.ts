@@ -242,6 +242,10 @@ export function reset(): void {
   OrderBook.reset();
 }
 
+// Every part that must hear of a placed order fills this slot: a
+// function that is told the order and answers nothing.
+export type OrderListener = (order: Order) => void;
+
 export function placeOrder(
   order: Order,
   catalog: Catalog,

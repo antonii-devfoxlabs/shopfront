@@ -1,6 +1,6 @@
 """An order, and what happens once it is placed."""
 
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from types import MappingProxyType
 from typing import ClassVar
 
@@ -217,6 +217,11 @@ def reset() -> None:
     global _last_order_number
     _last_order_number = 0
     OrderBook.reset()
+
+
+# Every part that must hear of a placed order fills this slot: a
+# function that is told the order and answers nothing.
+OrderListener = Callable[[Order], None]
 
 
 def place_order(

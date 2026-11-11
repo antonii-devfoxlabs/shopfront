@@ -228,6 +228,14 @@ export function reset() {
   OrderBook.reset();
 }
 
+/**
+ * Every part that must hear of a placed order fills this slot: a
+ * function that is told the order and answers nothing.
+ * @callback OrderListener
+ * @param {Order} order
+ * @returns {void}
+ */
+
 export function placeOrder(order, catalog, mailer, analytics, sms, shop) {
   catalog.takeAllFromStock(order.lines);
   OrderBook.instance().add(order);
