@@ -56,18 +56,18 @@ export function textWarehouse(sms, shop) {
 
 /**
  * The warehouse is closed: take its listener off the list.
- * @param {OrderListener[]} listeners
+ * @param {import('./orders.js').OrderEvents} events
  * @param {OrderListener} warehouse
  */
-export function closeWarehouse(listeners, warehouse) {
-  listeners.splice(listeners.indexOf(warehouse), 1);
+export function closeWarehouse(events, warehouse) {
+  events.unsubscribe(warehouse);
 }
 
 /**
  * The warehouse is open again: put its listener back.
- * @param {OrderListener[]} listeners
+ * @param {import('./orders.js').OrderEvents} events
  * @param {OrderListener} warehouse
  */
-export function openWarehouse(listeners, warehouse) {
-  listeners.push(warehouse);
+export function openWarehouse(events, warehouse) {
+  events.subscribe(warehouse);
 }

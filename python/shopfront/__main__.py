@@ -9,7 +9,7 @@ from shopfront.catalog_file import CatalogError, load_catalog
 from shopfront.checkout import Checkout
 from shopfront.gateways import TimedGateway
 from shopfront.listeners import email_shopper, text_warehouse, track_order
-from shopfront.orders import OrderListener, format_money
+from shopfront.orders import OrderEvents, format_money
 from shopfront.pricing import PriceCalculator
 from shopfront.providers import (
     boxroute_quote,
@@ -66,13 +66,12 @@ def main() -> None:
     # Kept by name: the staff page takes it off the list while the
     # warehouse is closed (24 to 26 December), and puts it back after.
     warehouse = text_warehouse(sms, shop)
-    # Everyone who must hear of a placed order, told in this order. One
-    # more is one more line here: placing an order does not change.
-    listeners: list[OrderListener] = [
-        email_shopper(mailer, shop),
-        track_order(Analytics()),
-        warehouse,
-    ]
+    # Everyone who hears of a placed order, told in the order they
+    # subscribe. One more is one more line here.
+    events = OrderEvents()
+    events.subscribe(email_shopper(mailer, shop))
+    events.subscribe(track_order(Analytics()))
+    events.subscribe(warehouse)
     # Every step of an order, in order, behind one call. main still
     # decides what is timed, and hands the checkout the timed parts.
     checkout = Checkout(
@@ -82,7 +81,7 @@ def main() -> None:
         shipping_cost=timed("shipping cost", shipping.cost, print),
         catalog=catalog,
         gateway=gateway,
-        listeners=listeners,
+        events=events,
     )
     order = checkout.buy(
         cart,

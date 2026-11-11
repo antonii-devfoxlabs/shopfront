@@ -6,7 +6,7 @@ from shopfront.listeners import (
     text_warehouse,
     track_order,
 )
-from shopfront.orders import Order, OrderBuilder, place_order
+from shopfront.orders import Order, OrderBuilder, OrderEvents, place_order
 from shopfront.settings import DUTCH_SHOP, GERMAN_SHOP
 from shopfront.vendor.analytics import Analytics
 from shopfront.vendor.mailer import Mailer
@@ -65,11 +65,12 @@ def test_the_warehouse_listener_texts_what_to_pack():
 def test_a_closed_warehouse_gets_no_text_until_it_opens_again():
     sms, catalog = Sms(), starter_catalog()
     warehouse = text_warehouse(sms, GERMAN_SHOP)
-    listeners = [warehouse]
-    close_warehouse(listeners, warehouse)
-    place_order(an_order("SF-00001"), catalog, listeners)
-    open_warehouse(listeners, warehouse)
-    place_order(an_order("SF-00002"), catalog, listeners)
+    events = OrderEvents()
+    events.subscribe(warehouse)
+    close_warehouse(events, warehouse)
+    place_order(an_order("SF-00001"), catalog, events)
+    open_warehouse(events, warehouse)
+    place_order(an_order("SF-00002"), catalog, events)
     assert [text["text"] for text in sms.outbox] == [
         "Pack SF-00002: 2 x MUG-01"
     ]

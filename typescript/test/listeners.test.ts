@@ -9,7 +9,7 @@ import {
   textWarehouse,
   trackOrder,
 } from '../src/listeners.ts';
-import { OrderBuilder, placeOrder } from '../src/orders.ts';
+import { OrderBuilder, OrderEvents, placeOrder } from '../src/orders.ts';
 import { DUTCH_SHOP, GERMAN_SHOP } from '../src/settings.ts';
 import { Analytics } from '../src/vendor/analytics.ts';
 import { Mailer } from '../src/vendor/mailer.ts';
@@ -68,11 +68,12 @@ test('a closed warehouse gets no text until it opens again', () => {
   const sms = new Sms();
   const catalog = starterCatalog();
   const warehouse = textWarehouse(sms, GERMAN_SHOP);
-  const listeners = [warehouse];
-  closeWarehouse(listeners, warehouse);
-  placeOrder(anOrder('SF-00001'), catalog, listeners);
-  openWarehouse(listeners, warehouse);
-  placeOrder(anOrder('SF-00002'), catalog, listeners);
+  const events = new OrderEvents();
+  events.subscribe(warehouse);
+  closeWarehouse(events, warehouse);
+  placeOrder(anOrder('SF-00001'), catalog, events);
+  openWarehouse(events, warehouse);
+  placeOrder(anOrder('SF-00002'), catalog, events);
   assert.deepEqual(
     sms.outbox.map((text) => text.text),
     ['Pack SF-00002: 2 x MUG-01'],

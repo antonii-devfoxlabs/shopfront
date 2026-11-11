@@ -5,7 +5,7 @@ import { CatalogError, loadCatalog } from './catalogFile.js';
 import { Checkout } from './checkout.js';
 import { TimedGateway } from './gateways.js';
 import { emailShopper, textWarehouse, trackOrder } from './listeners.js';
-import { formatMoney } from './orders.js';
+import { OrderEvents, formatMoney } from './orders.js';
 import { PriceCalculator } from './pricing.js';
 import {
   boxRouteQuote,
@@ -68,13 +68,12 @@ const sms = new Sms();
 // Kept by name: the staff page takes it off the list while the warehouse
 // is closed (24 to 26 December), and puts it back after.
 const warehouse = textWarehouse(sms, shop);
-// Everyone who must hear of a placed order, told in this order. One more
-// is one more line here: placing an order does not change.
-const listeners = [
-  emailShopper(mailer, shop),
-  trackOrder(new Analytics()),
-  warehouse,
-];
+// Everyone who hears of a placed order, told in the order they subscribe.
+// One more is one more line here.
+const events = new OrderEvents();
+events.subscribe(emailShopper(mailer, shop));
+events.subscribe(trackOrder(new Analytics()));
+events.subscribe(warehouse);
 // Every step of an order, in order, behind one call. main still
 // decides what is timed, and hands the checkout the timed parts.
 const checkout = new Checkout({
@@ -93,7 +92,7 @@ const checkout = new Checkout({
   ),
   catalog,
   gateway,
-  listeners,
+  events,
 });
 const order = checkout.buy(cart, 'DE', {
   email: 'ada@example.com',

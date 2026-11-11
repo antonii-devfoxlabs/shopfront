@@ -9,7 +9,7 @@ from shopfront.catalog import Catalog
 from shopfront.orders import (
     Order,
     OrderBuilder,
-    OrderListener,
+    OrderEvents,
     next_order_id,
     place_order,
 )
@@ -28,8 +28,9 @@ class Checkout:
     shipping_cost: Callable[..., int]
     catalog: Catalog
     gateway: Gateway
-    # Everyone who must hear of a placed order, picked by main.
-    listeners: list[OrderListener]
+    # Who hears of a placed order: main subscribes them, and they may
+    # leave and come back while the shop runs.
+    events: OrderEvents
 
     def buy(
         self,
@@ -69,7 +70,7 @@ class Checkout:
             .transaction(transaction_id)
             .build()
         )
-        place_order(order, self.catalog, self.listeners)
+        place_order(order, self.catalog, self.events)
         return order
 
 

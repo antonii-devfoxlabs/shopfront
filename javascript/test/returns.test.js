@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { starterCatalog } from '../src/catalog.js';
-import { OrderBuilder, placeOrder } from '../src/orders.js';
+import { OrderBuilder, OrderEvents, placeOrder } from '../src/orders.js';
 import { Card, GiftCard } from '../src/payments.js';
 import { GiftReturn, Refunds, Return } from '../src/returns.js';
 import { GERMAN_SHOP } from '../src/settings.js';
@@ -46,7 +46,7 @@ test('a return refunds the way the shopper paid', () => {
 test('a refund gives the money back and tells the shopper', () => {
   const gateway = aGateway();
   const order = aCardOrder();
-  placeOrder(order, starterCatalog(), []);
+  placeOrder(order, starterCatalog(), new OrderEvents());
   const mailer = new Mailer();
   const refunds = new Refunds({ gateway, mailer, shop: GERMAN_SHOP });
 

@@ -1,7 +1,12 @@
 // What the rest of the store does once an order is placed: each maker
 // gives back a listener, a function that is told the order.
 
-import { type OrderListener, formatMoney, packingSlip } from './orders.ts';
+import {
+  type OrderEvents,
+  type OrderListener,
+  formatMoney,
+  packingSlip,
+} from './orders.ts';
 import type { Settings } from './settings.ts';
 import type { Analytics } from './vendor/analytics.ts';
 import type { Mailer } from './vendor/mailer.ts';
@@ -44,16 +49,16 @@ export function textWarehouse(sms: Sms, shop: Settings): OrderListener {
 
 // The warehouse is closed: take its listener off the list.
 export function closeWarehouse(
-  listeners: OrderListener[],
+  events: OrderEvents,
   warehouse: OrderListener,
 ): void {
-  listeners.splice(listeners.indexOf(warehouse), 1);
+  events.unsubscribe(warehouse);
 }
 
 // The warehouse is open again: put its listener back.
 export function openWarehouse(
-  listeners: OrderListener[],
+  events: OrderEvents,
   warehouse: OrderListener,
 ): void {
-  listeners.push(warehouse);
+  events.subscribe(warehouse);
 }

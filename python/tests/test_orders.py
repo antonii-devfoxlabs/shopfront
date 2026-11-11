@@ -7,6 +7,7 @@ from shopfront.orders import (
     OrderBook,
     OrderBuilder,
     OrderEvents,
+    OrderListener,
     UnknownOrderError,
     format_money,
     next_order_id,
@@ -35,6 +36,14 @@ def an_order(
         .transaction("txn-0001")
         .build()
     )
+
+
+def events_of(*listeners: OrderListener) -> OrderEvents:
+    """The subject's list, with these listeners subscribed in turn."""
+    events = OrderEvents()
+    for listener in listeners:
+        events.subscribe(listener)
+    return events
 
 
 def test_the_builder_puts_every_part_in_its_place():
@@ -106,10 +115,10 @@ def test_placing_an_order_takes_stock_and_tells_every_listener_in_turn():
     place_order(
         an_order(),
         catalog,
-        [
+        events_of(
             lambda order: told.append(f"first {order.order_id}"),
             lambda order: told.append(f"second {order.order_id}"),
-        ],
+        ),
     )
     assert catalog.find("MUG-01").stock == 38
     assert told == ["first SF-00007", "second SF-00007"]
@@ -120,18 +129,18 @@ def test_a_listener_is_told_once_the_order_is_in_the_book():
     place_order(
         order,
         starter_catalog(),
-        [
+        events_of(
             lambda placed: found.append(
                 OrderBook.instance().find(placed.order_id)
             )
-        ],
+        ),
     )
     assert found == [order]
 
 
 def test_a_placed_order_is_in_the_order_book():
     order = an_order()
-    place_order(order, starter_catalog(), [])
+    place_order(order, starter_catalog(), OrderEvents())
     assert OrderBook.instance().find("SF-00007") is order
 
 
@@ -140,7 +149,7 @@ def test_the_book_lists_its_orders_in_the_order_placed():
     second = an_order(order_id="SF-00002")
     catalog = starter_catalog()
     for order in (first, second):
-        place_order(order, catalog, [])
+        place_order(order, catalog, OrderEvents())
     assert OrderBook.instance().orders() == [first, second]
 
 
@@ -169,7 +178,7 @@ def test_an_order_with_a_short_line_takes_nothing_and_tells_nobody():
     told: list[Order] = []
     order = an_order({"MUG-01": 2, "KTL-03": 9})
     with pytest.raises(OutOfStockError):
-        place_order(order, catalog, [told.append])
+        place_order(order, catalog, events_of(told.append))
     assert catalog.find("MUG-01").stock == 40
     assert told == []
 

@@ -8,7 +8,12 @@ import { Cart } from '../src/cart.js';
 import { OutOfStockError, starterCatalog } from '../src/catalog.js';
 import { Checkout, buyAgain } from '../src/checkout.js';
 import { emailShopper, textWarehouse, trackOrder } from '../src/listeners.js';
-import { OrderBuilder, nextOrderId, packingSlip } from '../src/orders.js';
+import {
+  OrderBuilder,
+  OrderEvents,
+  nextOrderId,
+  packingSlip,
+} from '../src/orders.js';
 import { PriceCalculator } from '../src/pricing.js';
 import {
   boxRouteQuote,
@@ -56,6 +61,10 @@ function aGateway() {
 function checkoutFor(shop, catalog, gateway, mailer) {
   const calculator = new PriceCalculator(catalog, new TaxService(), shop);
   const shipping = shippingFor(shop);
+  const events = new OrderEvents();
+  events.subscribe(emailShopper(mailer, shop));
+  events.subscribe(trackOrder(new Analytics()));
+  events.subscribe(textWarehouse(new Sms(), shop));
   return new Checkout({
     quote: (cart, country, options) =>
       calculator.quote(cart, country, options),
@@ -63,11 +72,7 @@ function checkoutFor(shop, catalog, gateway, mailer) {
       shipping.cost(cart, catalog, country, paidCents),
     catalog,
     gateway,
-    listeners: [
-      emailShopper(mailer, shop),
-      trackOrder(new Analytics()),
-      textWarehouse(new Sms(), shop),
-    ],
+    events,
   });
 }
 

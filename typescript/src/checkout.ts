@@ -5,7 +5,7 @@ import type { Catalog } from './catalog.ts';
 import {
   type Order,
   OrderBuilder,
-  type OrderListener,
+  OrderEvents,
   nextOrderId,
   placeOrder,
 } from './orders.ts';
@@ -24,8 +24,9 @@ export type CheckoutParts = {
   ) => number;
   catalog: Catalog;
   gateway: Gateway;
-  // Everyone who must hear of a placed order, picked by main.
-  listeners: OrderListener[];
+  // Who hears of a placed order: main subscribes them, and they may
+  // leave and come back while the shop runs.
+  events: OrderEvents;
 };
 
 // What a page knows about one purchase.
@@ -80,7 +81,7 @@ export class Checkout {
       .paidBy(paidBy)
       .transaction(transactionId)
       .build();
-    placeOrder(order, parts.catalog, parts.listeners);
+    placeOrder(order, parts.catalog, parts.events);
     return order;
   }
 }

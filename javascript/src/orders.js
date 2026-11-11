@@ -274,18 +274,16 @@ export class OrderEvents {
 }
 
 /**
- * Take the stock and keep the order, then tell every listener.
+ * Take the stock and keep the order, then announce it.
  * @param {Order} order
  * @param {import('./catalog.js').Catalog} catalog
- * @param {OrderListener[]} listeners
+ * @param {OrderEvents} events
  */
-export function placeOrder(order, catalog, listeners) {
+export function placeOrder(order, catalog, events) {
   catalog.takeAllFromStock(order.lines);
   OrderBook.instance().add(order);
-  // The order is placed: now tell everyone who listens, in turn.
-  for (const listener of listeners) {
-    listener(order);
-  }
+  // The order is placed: now tell everyone subscribed at this moment.
+  events.notify(order);
 }
 
 // The owner's Monday line: the orders kept, and what they took.

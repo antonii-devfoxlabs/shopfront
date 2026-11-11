@@ -12,7 +12,12 @@ import {
 } from '../src/catalog.ts';
 import { Checkout, buyAgain } from '../src/checkout.ts';
 import { emailShopper, textWarehouse, trackOrder } from '../src/listeners.ts';
-import { OrderBuilder, nextOrderId, packingSlip } from '../src/orders.ts';
+import {
+  OrderBuilder,
+  OrderEvents,
+  nextOrderId,
+  packingSlip,
+} from '../src/orders.ts';
 import type { Gateway } from '../src/payments.ts';
 import { PriceCalculator, type QuoteOptions } from '../src/pricing.ts';
 import {
@@ -66,6 +71,10 @@ function checkoutFor(
 ): Checkout {
   const calculator = new PriceCalculator(catalog, new TaxService(), shop);
   const shipping = shippingFor(shop);
+  const events = new OrderEvents();
+  events.subscribe(emailShopper(mailer, shop));
+  events.subscribe(trackOrder(new Analytics()));
+  events.subscribe(textWarehouse(new Sms(), shop));
   return new Checkout({
     quote: (cart: Cart, country: string, options: QuoteOptions) =>
       calculator.quote(cart, country, options),
@@ -77,11 +86,7 @@ function checkoutFor(
     ) => shipping.cost(cart, catalog, country, paidCents),
     catalog,
     gateway,
-    listeners: [
-      emailShopper(mailer, shop),
-      trackOrder(new Analytics()),
-      textWarehouse(new Sms(), shop),
-    ],
+    events,
   });
 }
 

@@ -246,15 +246,12 @@ class OrderEvents:
             listener(order)
 
 
-def place_order(
-    order: Order, catalog: Catalog, listeners: list[OrderListener]
-) -> None:
-    """Take the stock and keep the order, then tell every listener."""
+def place_order(order: Order, catalog: Catalog, events: OrderEvents) -> None:
+    """Take the stock and keep the order, then announce it."""
     catalog.take_all_from_stock(order.lines)
     OrderBook.instance().add(order)
-    # The order is placed: now tell everyone who listens, in turn.
-    for listener in listeners:
-        listener(order)
+    # The order is placed: now tell everyone subscribed at this moment.
+    events.notify(order)
 
 
 def sales_report(orders: Iterable[Order], shop: Settings) -> str:

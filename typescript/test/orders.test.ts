@@ -7,6 +7,7 @@ import {
   OrderBook,
   OrderBuilder,
   OrderEvents,
+  type OrderListener,
   UnknownOrderError,
   formatMoney,
   nextOrderId,
@@ -33,6 +34,13 @@ function anOrder(
     .paidBy('card')
     .transaction('txn-0001')
     .build();
+}
+
+// The subject's list, with these listeners subscribed in turn.
+function eventsOf(...listeners: OrderListener[]): OrderEvents {
+  const events = new OrderEvents();
+  for (const listener of listeners) events.subscribe(listener);
+  return events;
 }
 
 test('the builder puts every part in its place', () => {
@@ -106,10 +114,14 @@ test('order ids count up', () => {
 test('placing an order takes stock and tells every listener in turn', () => {
   const catalog = starterCatalog();
   const told: string[] = [];
-  placeOrder(anOrder(), catalog, [
-    (order) => told.push(`first ${order.orderId}`),
-    (order) => told.push(`second ${order.orderId}`),
-  ]);
+  placeOrder(
+    anOrder(),
+    catalog,
+    eventsOf(
+      (order) => told.push(`first ${order.orderId}`),
+      (order) => told.push(`second ${order.orderId}`),
+    ),
+  );
   assert.equal(catalog.find('MUG-01').stock, 38);
   assert.deepEqual(told, ['first SF-00007', 'second SF-00007']);
 });
@@ -117,15 +129,19 @@ test('placing an order takes stock and tells every listener in turn', () => {
 test('a listener is told once the order is in the book', () => {
   const order = anOrder();
   const found: Order[] = [];
-  placeOrder(order, starterCatalog(), [
-    (placed) => found.push(OrderBook.instance().find(placed.orderId)),
-  ]);
+  placeOrder(
+    order,
+    starterCatalog(),
+    eventsOf((placed) =>
+      found.push(OrderBook.instance().find(placed.orderId)),
+    ),
+  );
   assert.deepEqual(found, [order]);
 });
 
 test('a placed order is in the order book', () => {
   const order = anOrder();
-  placeOrder(order, starterCatalog(), []);
+  placeOrder(order, starterCatalog(), new OrderEvents());
   assert.equal(OrderBook.instance().find('SF-00007'), order);
 });
 
@@ -134,7 +150,7 @@ test('the book lists its orders in the order placed', () => {
   const second = anOrder(undefined, 'SF-00002');
   const catalog = starterCatalog();
   for (const order of [first, second]) {
-    placeOrder(order, catalog, []);
+    placeOrder(order, catalog, new OrderEvents());
   }
   assert.deepEqual(OrderBook.instance().orders(), [first, second]);
 });
@@ -168,7 +184,12 @@ test('an order with a short line takes nothing and tells nobody', () => {
     ['KTL-03', 9],
   ]);
   assert.throws(
-    () => placeOrder(order, catalog, [(placed) => told.push(placed)]),
+    () =>
+      placeOrder(
+        order,
+        catalog,
+        eventsOf((placed) => told.push(placed)),
+      ),
     OutOfStockError,
   );
   assert.equal(catalog.find('MUG-01').stock, 40);

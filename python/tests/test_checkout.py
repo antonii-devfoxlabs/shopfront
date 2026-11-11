@@ -10,7 +10,12 @@ from shopfront.cart import Cart
 from shopfront.catalog import Catalog, OutOfStockError, starter_catalog
 from shopfront.checkout import Checkout, buy_again
 from shopfront.listeners import email_shopper, text_warehouse, track_order
-from shopfront.orders import OrderBuilder, next_order_id, packing_slip
+from shopfront.orders import (
+    OrderBuilder,
+    OrderEvents,
+    next_order_id,
+    packing_slip,
+)
 from shopfront.payments import Gateway
 from shopfront.pricing import PriceCalculator
 from shopfront.providers import (
@@ -55,16 +60,16 @@ def checkout_for(
     shop: Settings, catalog: Catalog, gateway: Gateway, mailer: Mailer
 ) -> Checkout:
     """A checkout with the real parts, and the test's own to look into."""
+    events = OrderEvents()
+    events.subscribe(email_shopper(mailer, shop))
+    events.subscribe(track_order(Analytics()))
+    events.subscribe(text_warehouse(Sms(), shop))
     return Checkout(
         quote=PriceCalculator(catalog, TaxService(), shop).quote,
         shipping_cost=shipping_for(shop).cost,
         catalog=catalog,
         gateway=gateway,
-        listeners=[
-            email_shopper(mailer, shop),
-            track_order(Analytics()),
-            text_warehouse(Sms(), shop),
-        ],
+        events=events,
     )
 
 

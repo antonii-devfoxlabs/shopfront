@@ -268,18 +268,16 @@ export class OrderEvents {
   }
 }
 
-// Take the stock and keep the order, then tell every listener.
+// Take the stock and keep the order, then announce it.
 export function placeOrder(
   order: Order,
   catalog: Catalog,
-  listeners: OrderListener[],
+  events: OrderEvents,
 ): void {
   catalog.takeAllFromStock(order.lines);
   OrderBook.instance().add(order);
-  // The order is placed: now tell everyone who listens, in turn.
-  for (const listener of listeners) {
-    listener(order);
-  }
+  // The order is placed: now tell everyone subscribed at this moment.
+  events.notify(order);
 }
 
 // The owner's Monday line: the orders kept, and what they took.
