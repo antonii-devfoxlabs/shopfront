@@ -48,6 +48,15 @@ def only_in(month: int, rule: CouponRule) -> CouponRule:
     return cents_off
 
 
+# Every code a shopper can type, with the rule it stands for. A new
+# coupon is a new row: the discount does not change.
+COUPONS: dict[str, CouponRule] = {
+    "WELCOME10": percent_off(10),
+    "WINTER15": only_in(12, percent_off(15)),
+    "GIFT5": amount_off(500),
+}
+
+
 class TaxRates(Protocol):
     """The calculator's slot for tax rates; the tax service fills it."""
 
@@ -78,20 +87,15 @@ class PriceCalculator:
     def discount(
         self, subtotal_cents: int, coupon: str | None, today: date
     ) -> int:
-        rule: CouponRule
-        if coupon == "WELCOME10":
-            rule = percent_off(10)
-        elif coupon == "WINTER15":
-            rule = only_in(12, percent_off(15))
-        elif coupon == "GIFT5":
-            rule = amount_off(500)
-        elif coupon is not None:
-            raise UnknownCouponError(coupon)
-        elif subtotal_cents >= 10_000:
+        # A coupon replaces the discount for big orders: never both.
+        if coupon is not None:
+            rule = COUPONS.get(coupon)
+            if rule is None:
+                raise UnknownCouponError(coupon)
+            return rule(subtotal_cents, today)
+        if subtotal_cents >= 10_000:
             return subtotal_cents * 5 // 100
-        else:
-            return 0
-        return rule(subtotal_cents, today)
+        return 0
 
     def tax(self, amount_cents: int, country: str) -> int:
         rate = self.tax_service.rate_for(country)

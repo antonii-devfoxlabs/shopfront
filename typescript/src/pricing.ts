@@ -34,6 +34,14 @@ export function onlyIn(month: number, rule: CouponRule): CouponRule {
   };
 }
 
+// Every code a shopper can type, with the rule it stands for. A new
+// coupon is a new row: the discount does not change.
+const COUPONS = new Map<string, CouponRule>([
+  ['WELCOME10', percentOff(10)],
+  ['WINTER15', onlyIn(12, percentOff(15))],
+  ['GIFT5', amountOff(500)],
+]);
+
 // The calculator's slot for tax rates; the tax service fills it.
 export interface TaxRates {
   rateFor(country: string): number;
@@ -75,21 +83,18 @@ export class PriceCalculator {
     coupon: string | null,
     today: Date,
   ): number {
-    let rule: CouponRule;
-    if (coupon === 'WELCOME10') {
-      rule = percentOff(10);
-    } else if (coupon === 'WINTER15') {
-      rule = onlyIn(12, percentOff(15));
-    } else if (coupon === 'GIFT5') {
-      rule = amountOff(500);
-    } else if (coupon !== null) {
-      throw new UnknownCouponError(coupon);
-    } else if (subtotalCents >= 10_000) {
-      return Math.floor((subtotalCents * 5) / 100);
-    } else {
-      return 0;
+    // A coupon replaces the discount for big orders: never both.
+    if (coupon !== null) {
+      const rule = COUPONS.get(coupon);
+      if (rule === undefined) {
+        throw new UnknownCouponError(coupon);
+      }
+      return rule(subtotalCents, today);
     }
-    return rule(subtotalCents, today);
+    if (subtotalCents >= 10_000) {
+      return Math.floor((subtotalCents * 5) / 100);
+    }
+    return 0;
   }
 
   tax(amountCents: number, country: string): number {
