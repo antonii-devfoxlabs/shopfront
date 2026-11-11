@@ -1,11 +1,5 @@
 from shopfront.catalog import starter_catalog
-from shopfront.listeners import (
-    close_warehouse,
-    email_shopper,
-    open_warehouse,
-    text_warehouse,
-    track_order,
-)
+from shopfront.listeners import email_shopper, text_warehouse, track_order
 from shopfront.orders import Order, OrderBuilder, OrderEvents, place_order
 from shopfront.settings import DUTCH_SHOP, GERMAN_SHOP
 from shopfront.vendor.analytics import Analytics
@@ -67,9 +61,12 @@ def test_a_closed_warehouse_gets_no_text_until_it_opens_again():
     warehouse = text_warehouse(sms, GERMAN_SHOP)
     events = OrderEvents()
     events.subscribe(warehouse)
-    close_warehouse(events, warehouse)
+    # The staff page may press Close, or Open, twice: no harm either way.
+    events.unsubscribe(warehouse)
+    events.unsubscribe(warehouse)
     place_order(an_order("SF-00001"), catalog, events)
-    open_warehouse(events, warehouse)
+    events.subscribe(warehouse)
+    events.subscribe(warehouse)
     place_order(an_order("SF-00002"), catalog, events)
     assert [text["text"] for text in sms.outbox] == [
         "Pack SF-00002: 2 x MUG-01"

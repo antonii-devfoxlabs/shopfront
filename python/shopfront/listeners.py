@@ -1,13 +1,7 @@
 """What the rest of the store does once an order is placed: each maker
 gives back a listener, a function that is told the order."""
 
-from shopfront.orders import (
-    Order,
-    OrderEvents,
-    OrderListener,
-    format_money,
-    packing_slip,
-)
+from shopfront.orders import Order, OrderListener, format_money, packing_slip
 from shopfront.settings import Settings
 from shopfront.vendor.analytics import Analytics
 from shopfront.vendor.mailer import Mailer
@@ -54,13 +48,3 @@ def text_warehouse(sms: Sms, shop: Settings) -> OrderListener:
         )
 
     return send_text
-
-
-def close_warehouse(events: OrderEvents, warehouse: OrderListener) -> None:
-    """The warehouse is closed: take its listener off the list."""
-    events.unsubscribe(warehouse)
-
-
-def open_warehouse(events: OrderEvents, warehouse: OrderListener) -> None:
-    """The warehouse is open again: put its listener back."""
-    events.subscribe(warehouse)

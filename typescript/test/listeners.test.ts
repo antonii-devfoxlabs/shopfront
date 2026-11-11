@@ -2,13 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { starterCatalog } from '../src/catalog.ts';
-import {
-  closeWarehouse,
-  emailShopper,
-  openWarehouse,
-  textWarehouse,
-  trackOrder,
-} from '../src/listeners.ts';
+import { emailShopper, textWarehouse, trackOrder } from '../src/listeners.ts';
 import { OrderBuilder, OrderEvents, placeOrder } from '../src/orders.ts';
 import { DUTCH_SHOP, GERMAN_SHOP } from '../src/settings.ts';
 import { Analytics } from '../src/vendor/analytics.ts';
@@ -70,9 +64,12 @@ test('a closed warehouse gets no text until it opens again', () => {
   const warehouse = textWarehouse(sms, GERMAN_SHOP);
   const events = new OrderEvents();
   events.subscribe(warehouse);
-  closeWarehouse(events, warehouse);
+  // The staff page may press Close, or Open, twice: no harm either way.
+  events.unsubscribe(warehouse);
+  events.unsubscribe(warehouse);
   placeOrder(anOrder('SF-00001'), catalog, events);
-  openWarehouse(events, warehouse);
+  events.subscribe(warehouse);
+  events.subscribe(warehouse);
   placeOrder(anOrder('SF-00002'), catalog, events);
   assert.deepEqual(
     sms.outbox.map((text) => text.text),

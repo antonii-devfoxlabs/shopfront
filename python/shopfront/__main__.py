@@ -63,8 +63,8 @@ def main() -> None:
     calculator = PriceCalculator(catalog, taxes, shop)
     mailer = Mailer()
     sms = Sms()
-    # Kept by name: the staff page takes it off the list while the
-    # warehouse is closed (24 to 26 December), and puts it back after.
+    # Kept by name: the staff page unsubscribes it while the warehouse
+    # is closed (24 to 26 December), and subscribes it again after.
     warehouse = text_warehouse(sms, shop)
     # Everyone who hears of a placed order, told in the order they
     # subscribe. One more is one more line here.

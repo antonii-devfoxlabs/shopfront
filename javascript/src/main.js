@@ -65,8 +65,8 @@ const taxes = new CachedRates(new TimedRates(new TaxService(), console.log));
 const calculator = new PriceCalculator(catalog, taxes, shop);
 const mailer = new Mailer();
 const sms = new Sms();
-// Kept by name: the staff page takes it off the list while the warehouse
-// is closed (24 to 26 December), and puts it back after.
+// Kept by name: the staff page unsubscribes it while the warehouse is
+// closed (24 to 26 December), and subscribes it again after.
 const warehouse = textWarehouse(sms, shop);
 // Everyone who hears of a placed order, told in the order they subscribe.
 // One more is one more line here.
