@@ -13,7 +13,12 @@ import {
   swiftShipQuote,
 } from './providers.ts';
 import { GERMAN_SHOP } from './settings.ts';
-import { Shipping, freeFriday } from './shipping.ts';
+import {
+  Shipping,
+  freeFriday,
+  freeOn,
+  type ShippingOffer,
+} from './shipping.ts';
 import { CachedRates, TimedRates } from './taxes.ts';
 import { timed } from './timing.ts';
 import { Analytics } from './vendor/analytics.ts';
@@ -37,10 +42,17 @@ const providers = [
   timed('swiftship quote', swiftShipQuote(new SwiftShip()), console.log),
   timed('boxroute quote', boxRouteQuote, console.log),
 ];
-// The offer the shop runs, picked here with the shop: Free Friday, from
-// the shop's own line, on the real clock.
+// The offer the shop runs, picked here with the shop, on the real clock:
+// Black Friday in the German shop this November, Free Friday from its own
+// line in every other shop.
+let offer: ShippingOffer;
+if (shop.homeCountry === 'DE') {
+  offer = freeOn(new Date(2026, 10, 27), () => new Date());
+} else {
+  offer = freeFriday(shop.freeFridayFromCents, () => new Date());
+}
 const shipping = new Shipping({
-  offer: freeFriday(shop.freeFridayFromCents, () => new Date()),
+  offer,
   providers,
   shop,
 });
