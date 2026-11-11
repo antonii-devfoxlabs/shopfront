@@ -49,6 +49,9 @@ class PriceCalculator:
             if today.month != 12:
                 raise UnknownCouponError("WINTER15 is valid in December")
             return subtotal_cents * 15 // 100
+        elif coupon == "GIFT5":
+            # Five euros off, but never more than the goods cost.
+            return min(500, subtotal_cents)
         elif coupon is not None:
             raise UnknownCouponError(coupon)
         elif subtotal_cents >= 10_000:

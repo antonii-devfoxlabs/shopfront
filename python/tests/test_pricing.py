@@ -37,6 +37,11 @@ def test_winter_coupon_only_in_december():
         calculator().discount(10_000, "WINTER15", A_JUNE_DAY)
 
 
+def test_gift_coupon_takes_five_euros_off():
+    assert calculator().discount(3_390, "GIFT5", A_JUNE_DAY) == 500
+    assert calculator().discount(300, "GIFT5", A_JUNE_DAY) == 300
+
+
 def test_big_orders_get_five_percent_without_a_coupon():
     assert calculator().discount(10_000, None, A_JUNE_DAY) == 500
     assert calculator().discount(9_999, None, A_JUNE_DAY) == 0

@@ -56,6 +56,9 @@ export class PriceCalculator {
         throw new UnknownCouponError('WINTER15 is valid in December');
       }
       return Math.floor((subtotalCents * 15) / 100);
+    } else if (coupon === 'GIFT5') {
+      // Five euros off, but never more than the goods cost.
+      return Math.min(500, subtotalCents);
     } else if (coupon !== null) {
       throw new UnknownCouponError(coupon);
     } else if (subtotalCents >= 10_000) {

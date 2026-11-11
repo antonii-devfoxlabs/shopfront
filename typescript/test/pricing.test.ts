@@ -40,6 +40,11 @@ test('winter coupon only in December', () => {
   );
 });
 
+test('gift coupon takes five euros off', () => {
+  assert.equal(calculator().discount(3_390, 'GIFT5', A_JUNE_DAY), 500);
+  assert.equal(calculator().discount(300, 'GIFT5', A_JUNE_DAY), 300);
+});
+
 test('big orders get five percent without a coupon', () => {
   assert.equal(calculator().discount(10_000, null, A_JUNE_DAY), 500);
   assert.equal(calculator().discount(9_999, null, A_JUNE_DAY), 0);
