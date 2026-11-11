@@ -3,7 +3,12 @@ import { test } from 'node:test';
 
 import { Cart } from '../src/cart.js';
 import { starterCatalog } from '../src/catalog.js';
-import { PriceCalculator, UnknownCouponError } from '../src/pricing.js';
+import {
+  PriceCalculator,
+  UnknownCouponError,
+  onlyIn,
+  percentOff,
+} from '../src/pricing.js';
 import { GERMAN_SHOP } from '../src/settings.js';
 import { TaxService, TaxServiceError } from '../src/vendor/taxService.js';
 
@@ -43,6 +48,19 @@ test('winter coupon only in December', () => {
 test('gift coupon takes five euros off', () => {
   assert.equal(calculator().discount(3_390, 'GIFT5', A_JUNE_DAY), 500);
   assert.equal(calculator().discount(300, 'GIFT5', A_JUNE_DAY), 300);
+});
+
+test('a percent rule rounds down to the cent', () => {
+  assert.equal(percentOff(15)(999, A_JUNE_DAY), 149);
+});
+
+test('a rule kept to one month refuses the others', () => {
+  const decemberOnly = onlyIn(12, percentOff(15));
+  assert.equal(decemberOnly(10_000, A_DECEMBER_DAY), 1_500);
+  assert.throws(() => decemberOnly(10_000, A_JUNE_DAY), {
+    name: 'UnknownCouponError',
+    message: 'not valid this month',
+  });
 });
 
 test('big orders get five percent without a coupon', () => {

@@ -4,7 +4,12 @@ import pytest
 
 from shopfront.cart import Cart
 from shopfront.catalog import starter_catalog
-from shopfront.pricing import PriceCalculator, UnknownCouponError
+from shopfront.pricing import (
+    PriceCalculator,
+    UnknownCouponError,
+    only_in,
+    percent_off,
+)
 from shopfront.settings import GERMAN_SHOP
 from shopfront.vendor.tax_service import TaxService, TaxServiceError
 
@@ -40,6 +45,17 @@ def test_winter_coupon_only_in_december():
 def test_gift_coupon_takes_five_euros_off():
     assert calculator().discount(3_390, "GIFT5", A_JUNE_DAY) == 500
     assert calculator().discount(300, "GIFT5", A_JUNE_DAY) == 300
+
+
+def test_a_percent_rule_rounds_down_to_the_cent():
+    assert percent_off(15)(999, A_JUNE_DAY) == 149
+
+
+def test_a_rule_kept_to_one_month_refuses_the_others():
+    december_only = only_in(12, percent_off(15))
+    assert december_only(10_000, A_DECEMBER_DAY) == 1_500
+    with pytest.raises(UnknownCouponError, match="not valid this month"):
+        december_only(10_000, A_JUNE_DAY)
 
 
 def test_big_orders_get_five_percent_without_a_coupon():

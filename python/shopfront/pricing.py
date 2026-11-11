@@ -1,5 +1,6 @@
 """What a cart costs: the subtotal, the discount and the tax."""
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date
 from typing import Protocol
@@ -11,6 +12,40 @@ from shopfront.settings import Settings
 
 class UnknownCouponError(Exception):
     pass
+
+
+# Every coupon fills this slot: a function of the subtotal and the day
+# that answers how many cents the coupon takes off.
+CouponRule = Callable[[int, date], int]
+
+
+def percent_off(percent: int) -> CouponRule:
+    """A share of the goods, rounded down to the cent."""
+
+    def cents_off(subtotal_cents: int, today: date) -> int:
+        return subtotal_cents * percent // 100
+
+    return cents_off
+
+
+def amount_off(cents: int) -> CouponRule:
+    """A fixed sum, but never more than the goods cost."""
+
+    def cents_off(subtotal_cents: int, today: date) -> int:
+        return min(cents, subtotal_cents)
+
+    return cents_off
+
+
+def only_in(month: int, rule: CouponRule) -> CouponRule:
+    """The same rule, refused in every other month; 12 is December."""
+
+    def cents_off(subtotal_cents: int, today: date) -> int:
+        if today.month != month:
+            raise UnknownCouponError("not valid this month")
+        return rule(subtotal_cents, today)
+
+    return cents_off
 
 
 class TaxRates(Protocol):
@@ -43,20 +78,20 @@ class PriceCalculator:
     def discount(
         self, subtotal_cents: int, coupon: str | None, today: date
     ) -> int:
+        rule: CouponRule
         if coupon == "WELCOME10":
-            return subtotal_cents * 10 // 100
+            rule = percent_off(10)
         elif coupon == "WINTER15":
-            if today.month != 12:
-                raise UnknownCouponError("WINTER15 is valid in December")
-            return subtotal_cents * 15 // 100
+            rule = only_in(12, percent_off(15))
         elif coupon == "GIFT5":
-            # Five euros off, but never more than the goods cost.
-            return min(500, subtotal_cents)
+            rule = amount_off(500)
         elif coupon is not None:
             raise UnknownCouponError(coupon)
         elif subtotal_cents >= 10_000:
             return subtotal_cents * 5 // 100
-        return 0
+        else:
+            return 0
+        return rule(subtotal_cents, today)
 
     def tax(self, amount_cents: int, country: str) -> int:
         rate = self.tax_service.rate_for(country)

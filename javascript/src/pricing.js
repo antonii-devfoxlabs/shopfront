@@ -5,6 +5,50 @@ export class UnknownCouponError extends Error {
 }
 
 /**
+ * Every coupon fills this slot: a function of the subtotal and the day
+ * that answers how many cents the coupon takes off.
+ * @callback CouponRule
+ * @param {number} subtotalCents
+ * @param {Date} today
+ * @returns {number}
+ */
+
+/**
+ * A share of the goods, rounded down to the cent.
+ * @param {number} percent
+ * @returns {CouponRule}
+ */
+export function percentOff(percent) {
+  return (subtotalCents, today) =>
+    Math.floor((subtotalCents * percent) / 100);
+}
+
+/**
+ * A fixed sum, but never more than the goods cost.
+ * @param {number} cents
+ * @returns {CouponRule}
+ */
+export function amountOff(cents) {
+  return (subtotalCents, today) => Math.min(cents, subtotalCents);
+}
+
+/**
+ * The same rule, refused in every other month; 12 is December.
+ * @param {number} month
+ * @param {CouponRule} rule
+ * @returns {CouponRule}
+ */
+export function onlyIn(month, rule) {
+  return (subtotalCents, today) => {
+    // getMonth() counts from 0: December is 11.
+    if (today.getMonth() + 1 !== month) {
+      throw new UnknownCouponError('not valid this month');
+    }
+    return rule(subtotalCents, today);
+  };
+}
+
+/**
  * The calculator's slot for tax rates; the tax service fills it.
  * @typedef {object} TaxRates
  * @property {(country: string) => number} rateFor
@@ -29,22 +73,21 @@ export class PriceCalculator {
   }
 
   discount(subtotalCents, coupon, today) {
+    let rule;
     if (coupon === 'WELCOME10') {
-      return Math.floor((subtotalCents * 10) / 100);
+      rule = percentOff(10);
     } else if (coupon === 'WINTER15') {
-      if (today.getMonth() !== 11) {
-        throw new UnknownCouponError('WINTER15 is valid in December');
-      }
-      return Math.floor((subtotalCents * 15) / 100);
+      rule = onlyIn(12, percentOff(15));
     } else if (coupon === 'GIFT5') {
-      // Five euros off, but never more than the goods cost.
-      return Math.min(500, subtotalCents);
+      rule = amountOff(500);
     } else if (coupon != null) {
       throw new UnknownCouponError(coupon);
     } else if (subtotalCents >= 10_000) {
       return Math.floor((subtotalCents * 5) / 100);
+    } else {
+      return 0;
     }
-    return 0;
+    return rule(subtotalCents, today);
   }
 
   tax(amountCents, country) {
