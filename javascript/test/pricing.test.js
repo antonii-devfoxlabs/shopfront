@@ -54,6 +54,11 @@ test('leaving the coupon out is the same as no coupon', () => {
   assert.equal(calculator().discount(10_000, undefined, A_JUNE_DAY), 500);
 });
 
+test('a coupon replaces the big-order discount', () => {
+  assert.equal(calculator().discount(12_000, 'WELCOME10', A_JUNE_DAY), 1_200);
+  assert.equal(calculator().discount(12_000, 'GIFT5', A_JUNE_DAY), 500);
+});
+
 test('an unknown coupon is an error', () => {
   assert.throws(
     () => calculator().discount(3_390, 'FREE100', A_JUNE_DAY),

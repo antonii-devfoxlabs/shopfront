@@ -47,6 +47,11 @@ def test_big_orders_get_five_percent_without_a_coupon():
     assert calculator().discount(9_999, None, A_JUNE_DAY) == 0
 
 
+def test_a_coupon_replaces_the_big_order_discount():
+    assert calculator().discount(12_000, "WELCOME10", A_JUNE_DAY) == 1_200
+    assert calculator().discount(12_000, "GIFT5", A_JUNE_DAY) == 500
+
+
 def test_an_unknown_coupon_is_an_error():
     with pytest.raises(UnknownCouponError):
         calculator().discount(3_390, "FREE100", A_JUNE_DAY)
