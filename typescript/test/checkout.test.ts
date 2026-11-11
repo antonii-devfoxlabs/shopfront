@@ -20,7 +20,7 @@ import {
   swiftShipQuote,
 } from '../src/providers.ts';
 import { DUTCH_SHOP, GERMAN_SHOP, type Settings } from '../src/settings.ts';
-import { FreeFriday, Shipping, type ShippingQuote } from '../src/shipping.ts';
+import { Shipping, freeFriday, type ShippingQuote } from '../src/shipping.ts';
 import { Analytics } from '../src/vendor/analytics.ts';
 import { Mailer } from '../src/vendor/mailer.ts';
 import { ParcelNowClient } from '../src/vendor/parcelnow.ts';
@@ -44,7 +44,7 @@ const A_MONDAY = new Date(2026, 5, 15);
 // run.
 function shippingFor(shop: Settings): Shipping {
   return new Shipping({
-    offer: new FreeFriday(shop.freeFridayFromCents, () => A_MONDAY),
+    offer: freeFriday(shop.freeFridayFromCents, () => A_MONDAY),
     providers: providersFor(shop),
     shop,
   });

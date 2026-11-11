@@ -16,7 +16,7 @@ from shopfront.providers import (
     swiftship_quote,
 )
 from shopfront.settings import GERMAN_SHOP
-from shopfront.shipping import FreeFriday, Shipping, ShippingQuote
+from shopfront.shipping import Shipping, ShippingQuote, free_friday
 from shopfront.taxes import CachedRates, TimedRates
 from shopfront.timing import timed
 from shopfront.vendor.analytics import Analytics
@@ -42,7 +42,7 @@ def main() -> None:
     # The offer the shop runs, picked here with the shop: Free Friday,
     # from the shop's own line, on the real clock.
     shipping = Shipping(
-        offer=FreeFriday(shop.free_friday_from_cents, today=date.today),
+        offer=free_friday(shop.free_friday_from_cents, today=date.today),
         providers=providers,
         shop=shop,
     )

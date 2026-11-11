@@ -12,13 +12,13 @@ import { DUTCH_SHOP, GERMAN_SHOP, type Settings } from '../src/settings.ts';
 import {
   Cheapest,
   Flat,
-  FreeFriday,
-  FreeOn,
   NoShippingError,
   Shipping,
   type ShippingOffer,
   type ShippingQuote,
   cartWeightGrams,
+  freeFriday,
+  freeOn,
 } from '../src/shipping.ts';
 import { ParcelNowClient } from '../src/vendor/parcelnow.ts';
 import { SwiftShip } from '../src/vendor/swiftship.ts';
@@ -44,7 +44,7 @@ function providersFor(shop: Settings): ShippingQuote[] {
 
 // A stand-in offer for the tests about everything else: it never lets an
 // order ship free.
-const NO_OFFER: ShippingOffer = { shipsFree: (paidCents: number) => false };
+const NO_OFFER: ShippingOffer = (paidCents) => false;
 
 // The shop's shipping, with the shop's providers and the offer the test
 // hands in.
@@ -260,8 +260,8 @@ test('heavy parcels abroad go as freight', () => {
 test('on Fridays home orders from 40 EUR ship free', () => {
   const cart = cartOf('MUG-01', 4);
   const line = GERMAN_SHOP.freeFridayFromCents;
-  const onFriday = new FreeFriday(line, () => A_FRIDAY);
-  const onWednesday = new FreeFriday(line, () => A_WEDNESDAY);
+  const onFriday = freeFriday(line, () => A_FRIDAY);
+  const onWednesday = freeFriday(line, () => A_WEDNESDAY);
   assert.equal(
     shippingFor(GERMAN_SHOP, onFriday).cost(
       cart,
@@ -285,10 +285,7 @@ test('on Fridays home orders from 40 EUR ship free', () => {
 
 test('the Dutch Free Friday starts at 50 EUR', () => {
   const cart = cartOf('MUG-01', 5);
-  const onFriday = new FreeFriday(
-    DUTCH_SHOP.freeFridayFromCents,
-    () => A_FRIDAY,
-  );
+  const onFriday = freeFriday(DUTCH_SHOP.freeFridayFromCents, () => A_FRIDAY);
   const dutch = shippingFor(DUTCH_SHOP, onFriday);
   assert.equal(dutch.cost(cart, starterCatalog(), 'NL', 5_000), 0);
   // 45.00 EUR is over the German Friday line, not the Dutch one.
@@ -297,8 +294,7 @@ test('the Dutch Free Friday starts at 50 EUR', () => {
 
 test('an offer frees only orders at home', () => {
   // A stand-in offer that lets every order ship free.
-  const always: ShippingOffer = { shipsFree: (paidCents: number) => true };
-  const german = shippingFor(GERMAN_SHOP, always);
+  const german = shippingFor(GERMAN_SHOP, (paidCents) => true);
   const cart = cartOf('MUG-01', 2);
   assert.equal(german.cost(cart, starterCatalog(), 'DE', 2_500), 0);
   assert.equal(german.cost(cart, starterCatalog(), 'FR', 2_500), 490);
@@ -363,27 +359,27 @@ test('the cheapest rule says no when nobody ships there', () => {
 });
 
 test('free Friday ships free on Fridays from its line', () => {
-  const offer = new FreeFriday(4_000, () => A_FRIDAY);
-  assert.equal(offer.shipsFree(4_000), true);
-  assert.equal(offer.shipsFree(3_999), false);
+  const offer = freeFriday(4_000, () => A_FRIDAY);
+  assert.equal(offer(4_000), true);
+  assert.equal(offer(3_999), false);
 });
 
 test('free Friday reads its clock every time', () => {
   let today = A_WEDNESDAY;
-  const offer = new FreeFriday(4_000, () => today);
-  assert.equal(offer.shipsFree(4_000), false);
+  const offer = freeFriday(4_000, () => today);
+  assert.equal(offer(4_000), false);
   today = A_FRIDAY;
-  assert.equal(offer.shipsFree(4_000), true);
+  assert.equal(offer(4_000), true);
 });
 
 test('Black Friday ships every order free on its day', () => {
-  const offer = new FreeOn(BLACK_FRIDAY, () => BLACK_FRIDAY);
-  assert.equal(offer.shipsFree(100), true);
+  const offer = freeOn(BLACK_FRIDAY, () => BLACK_FRIDAY);
+  assert.equal(offer(100), true);
 });
 
 test('Black Friday says no on any other day', () => {
-  const offer = new FreeOn(BLACK_FRIDAY, () => A_FRIDAY);
-  assert.equal(offer.shipsFree(9_000), false);
+  const offer = freeOn(BLACK_FRIDAY, () => A_FRIDAY);
+  assert.equal(offer(9_000), false);
 });
 
 test('the cheapest provider wins', () => {

@@ -67,41 +67,33 @@ export class Cheapest {
 }
 
 /**
- * An offer that lets an order at home ship free: the amount paid in, yes
- * or no out.
- * @typedef {object} ShippingOffer
- * @property {(paidCents: number) => boolean} shipsFree
+ * Every offer fills this slot: a function of the amount paid that says
+ * whether an order at home ships free.
+ * @callback ShippingOffer
+ * @param {number} paidCents
+ * @returns {boolean}
  */
 
-// On Fridays, orders from fromCents ship free. today is the clock the
-// offer reads: main hands in () => new Date(), a test a fixed day.
-export class FreeFriday {
-  /** @param {() => Date} today */
-  constructor(fromCents, today) {
-    this.fromCents = fromCents;
-    this.today = today;
-  }
-
-  shipsFree(paidCents) {
-    return this.today().getDay() === FRIDAY && paidCents >= this.fromCents;
-  }
+/**
+ * On Fridays, orders from fromCents ship free. today is the clock the
+ * offer reads: main hands in () => new Date(), a test a fixed day.
+ * @param {number} fromCents
+ * @param {() => Date} today
+ * @returns {ShippingOffer}
+ */
+export function freeFriday(fromCents, today) {
+  return (paidCents) => today().getDay() === FRIDAY && paidCents >= fromCents;
 }
 
-// On one day, every order at home ships free, whatever it costs: Black
-// Friday. today is the clock the offer reads, as in FreeFriday.
-export class FreeOn {
-  /**
-   * @param {Date} day
-   * @param {() => Date} today
-   */
-  constructor(day, today) {
-    this.day = day;
-    this.today = today;
-  }
-
-  shipsFree(paidCents) {
-    return this.today().toDateString() === this.day.toDateString();
-  }
+/**
+ * On one day, every order at home ships free, whatever it costs: Black
+ * Friday. today is the clock the offer reads, as in freeFriday.
+ * @param {Date} day
+ * @param {() => Date} today
+ * @returns {ShippingOffer}
+ */
+export function freeOn(day, today) {
+  return (paidCents) => today().toDateString() === day.toDateString();
 }
 
 // What one shop charges to ship an order. main hands it the shop, the
@@ -128,7 +120,7 @@ export class Shipping {
     let rule;
     if (atHome && paidCents >= this.shop.freeShippingFromCents) {
       rule = new Flat(0);
-    } else if (atHome && this.offer.shipsFree(paidCents)) {
+    } else if (atHome && this.offer(paidCents)) {
       // The shop's offer, whichever one main handed in.
       rule = new Flat(0);
     } else if (country === 'CH') {

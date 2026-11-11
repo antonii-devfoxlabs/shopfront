@@ -64,37 +64,29 @@ class Cheapest:
         return min(costs)
 
 
-class ShippingOffer(Protocol):
-    """An offer that lets an order at home ship free: the amount paid in,
-    yes or no out."""
-
-    def ships_free(self, paid_cents: int) -> bool: ...
+# Every offer fills this slot: a function of the amount paid that says
+# whether an order at home ships free.
+ShippingOffer = Callable[[int], bool]
 
 
-@dataclass(frozen=True)
-class FreeFriday:
+def free_friday(from_cents: int, today: Callable[[], date]) -> ShippingOffer:
     """On Fridays, orders from from_cents ship free. today is the clock
     the offer reads: main hands in date.today, a test a fixed day."""
 
-    from_cents: int
-    today: Callable[[], date]
+    def ships_free(paid_cents: int) -> bool:
+        return today().weekday() == FRIDAY and paid_cents >= from_cents
 
-    def ships_free(self, paid_cents: int) -> bool:
-        return (
-            self.today().weekday() == FRIDAY and paid_cents >= self.from_cents
-        )
+    return ships_free
 
 
-@dataclass(frozen=True)
-class FreeOn:
+def free_on(day: date, today: Callable[[], date]) -> ShippingOffer:
     """On one day, every order at home ships free, whatever it costs:
-    Black Friday. today is the clock the offer reads, as in FreeFriday."""
+    Black Friday. today is the clock the offer reads, as in free_friday."""
 
-    day: date
-    today: Callable[[], date]
+    def ships_free(paid_cents: int) -> bool:
+        return today() == day
 
-    def ships_free(self, paid_cents: int) -> bool:
-        return self.today() == self.day
+    return ships_free
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -117,7 +109,7 @@ class Shipping:
         rule: ShippingRule
         if at_home and paid_cents >= self.shop.free_shipping_from_cents:
             rule = Flat(0)
-        elif at_home and self.offer.ships_free(paid_cents):
+        elif at_home and self.offer(paid_cents):
             # The shop's offer, whichever one main handed in.
             rule = Flat(0)
         elif country == "CH":

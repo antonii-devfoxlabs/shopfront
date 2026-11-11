@@ -13,7 +13,7 @@ import {
   swiftShipQuote,
 } from './providers.ts';
 import { GERMAN_SHOP } from './settings.ts';
-import { FreeFriday, Shipping } from './shipping.ts';
+import { Shipping, freeFriday } from './shipping.ts';
 import { CachedRates, TimedRates } from './taxes.ts';
 import { timed } from './timing.ts';
 import { Analytics } from './vendor/analytics.ts';
@@ -40,7 +40,7 @@ const providers = [
 // The offer the shop runs, picked here with the shop: Free Friday, from
 // the shop's own line, on the real clock.
 const shipping = new Shipping({
-  offer: new FreeFriday(shop.freeFridayFromCents, () => new Date()),
+  offer: freeFriday(shop.freeFridayFromCents, () => new Date()),
   providers,
   shop,
 });

@@ -18,7 +18,7 @@ from shopfront.providers import (
     swiftship_quote,
 )
 from shopfront.settings import DUTCH_SHOP, GERMAN_SHOP, Settings
-from shopfront.shipping import FreeFriday, Shipping, ShippingQuote
+from shopfront.shipping import Shipping, ShippingQuote, free_friday
 from shopfront.vendor.analytics import Analytics
 from shopfront.vendor.mailer import Mailer
 from shopfront.vendor.parcelnow import ParcelNowClient
@@ -43,7 +43,9 @@ def shipping_for(shop: Settings) -> Shipping:
     the offer reads its own clock, so these tests never depend on the day
     they run."""
     return Shipping(
-        offer=FreeFriday(shop.free_friday_from_cents, today=lambda: A_MONDAY),
+        offer=free_friday(
+            shop.free_friday_from_cents, today=lambda: A_MONDAY
+        ),
         providers=providers_for(shop),
         shop=shop,
     )

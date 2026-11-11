@@ -67,42 +67,23 @@ export class Cheapest implements ShippingRule {
   }
 }
 
-// An offer that lets an order at home ship free: the amount paid in, yes
-// or no out.
-export interface ShippingOffer {
-  shipsFree(paidCents: number): boolean;
-}
+// Every offer fills this slot: a function of the amount paid that says
+// whether an order at home ships free.
+export type ShippingOffer = (paidCents: number) => boolean;
 
 // On Fridays, orders from fromCents ship free. today is the clock the
 // offer reads: main hands in () => new Date(), a test a fixed day.
-export class FreeFriday implements ShippingOffer {
-  readonly fromCents: number;
-  readonly today: () => Date;
-
-  constructor(fromCents: number, today: () => Date) {
-    this.fromCents = fromCents;
-    this.today = today;
-  }
-
-  shipsFree(paidCents: number): boolean {
-    return this.today().getDay() === FRIDAY && paidCents >= this.fromCents;
-  }
+export function freeFriday(
+  fromCents: number,
+  today: () => Date,
+): ShippingOffer {
+  return (paidCents) => today().getDay() === FRIDAY && paidCents >= fromCents;
 }
 
 // On one day, every order at home ships free, whatever it costs: Black
-// Friday. today is the clock the offer reads, as in FreeFriday.
-export class FreeOn implements ShippingOffer {
-  readonly day: Date;
-  readonly today: () => Date;
-
-  constructor(day: Date, today: () => Date) {
-    this.day = day;
-    this.today = today;
-  }
-
-  shipsFree(paidCents: number): boolean {
-    return this.today().toDateString() === this.day.toDateString();
-  }
+// Friday. today is the clock the offer reads, as in freeFriday.
+export function freeOn(day: Date, today: () => Date): ShippingOffer {
+  return (paidCents) => today().toDateString() === day.toDateString();
 }
 
 // What main hands the shipping once.
@@ -138,7 +119,7 @@ export class Shipping {
     let rule: ShippingRule;
     if (atHome && paidCents >= this.shop.freeShippingFromCents) {
       rule = new Flat(0);
-    } else if (atHome && this.offer.shipsFree(paidCents)) {
+    } else if (atHome && this.offer(paidCents)) {
       // The shop's offer, whichever one main handed in.
       rule = new Flat(0);
     } else if (country === 'CH') {
