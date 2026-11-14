@@ -119,3 +119,10 @@ export class EmptyCart implements Edit {
     return 'Emptied the cart';
   }
 }
+
+// The minus button's edit: a removal at one, one fewer above it.
+export function minus(cart: Cart, sku: string): Edit {
+  const quantity = cart.lines.get(sku) ?? 0;
+  if (quantity === 1) return new RemoveLine(cart, sku);
+  return new ChangeQuantity(cart, sku, quantity - 1);
+}

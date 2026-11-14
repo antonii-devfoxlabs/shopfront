@@ -105,3 +105,11 @@ class EmptyCart:
 
     def label(self) -> str:
         return "Emptied the cart"
+
+
+def minus(cart: Cart, sku: str) -> Edit:
+    """The minus button's edit: a removal at one, one fewer above it."""
+    quantity = cart.lines.get(sku, 0)
+    if quantity == 1:
+        return RemoveLine(cart, sku)
+    return ChangeQuantity(cart, sku, quantity - 1)
