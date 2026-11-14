@@ -1,6 +1,6 @@
 // The wholesaler's range on the shop's pages, twenty to a page.
 
-import { takeAsync } from './cursors.js';
+import { filterAsync, mapAsync, takeAsync } from './cursors.js';
 
 // The products the wholesaler sells, as the shop shows them.
 export class WholesaleCatalog {
@@ -29,23 +29,22 @@ export class WholesaleCatalog {
   // The `size` products after the SKU `after`, the last one the shopper
   // saw (the More link carries it), or the first page without one.
   async page(size, after) {
-    return takeAsync(this.cursor(after), size);
+    return Array.fromAsync(takeAsync(this.cursor(after), size));
   }
 
   // The box "Teas under 10 euros": the first `count` teas cheaper than
   // `under` cents, one line each.
   async teas(under, count) {
-    const cursor = this.cursor();
-    const lines = [];
-    while (lines.length < count) {
-      const step = await cursor.next();
-      if (step.done) break;
-      const product = step.value;
-      const name = product.name.toLowerCase();
-      if (name.includes('tea') && product.priceCents < under) {
-        lines.push(`${product.sku}  ${product.name}`);
-      }
-    }
-    return lines;
+    const cheapTeas = filterAsync(
+      this.cursor(),
+      (product) =>
+        product.name.toLowerCase().includes('tea') &&
+        product.priceCents < under,
+    );
+    const lines = mapAsync(
+      cheapTeas,
+      (product) => `${product.sku}  ${product.name}`,
+    );
+    return Array.fromAsync(takeAsync(lines, count));
   }
 }
