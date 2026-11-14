@@ -20,7 +20,7 @@ anywhere. The one file the store reads is `catalog.json` in each
 language folder: the products the owner sells, with their prices and
 stock, which the owner edits by hand. The services a real store would call (a shipping
 provider, a payment gateway, a tax service, a mailer, a text
-message provider, analytics)
+message provider, analytics, a wholesaler)
 are small stand-ins in each language's `vendor/` folder, and
 Shopfront's own code treats them exactly as it would the real
 SDKs.
