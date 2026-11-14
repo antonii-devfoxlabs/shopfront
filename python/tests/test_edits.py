@@ -90,3 +90,12 @@ def test_undoing_an_emptying_puts_every_line_back_in_order():
         ("KTL-03", 1),
         ("TEA-02", 3),
     ]
+
+
+def test_every_edit_names_itself_for_the_page():
+    cart = Cart()
+    assert AddLine(cart, "KTL-03").label() == "Added KTL-03"
+    assert ChangeQuantity(cart, "KTL-03", 3).label() == "KTL-03 set to 3"
+    assert ChangeQuantity(cart, "KTL-03", 0).label() == "Removed KTL-03"
+    assert RemoveLine(cart, "KTL-03").label() == "Removed KTL-03"
+    assert EmptyCart(cart).label() == "Emptied the cart"

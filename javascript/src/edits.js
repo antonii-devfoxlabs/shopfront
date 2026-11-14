@@ -1,5 +1,13 @@
 // What a shopper asks the cart page to do, kept so it can be undone.
 
+/**
+ * The slot every cart edit fills, so the page can run any of them.
+ * @typedef {object} Edit
+ * @property {() => void} run
+ * @property {() => void} undo
+ * @property {() => string} label
+ */
+
 // Adds to a line, and can take the addition back.
 export class AddLine {
   #cart;
@@ -22,6 +30,10 @@ export class AddLine {
   undo() {
     if (this.#before === 0) this.#cart.remove(this.#sku);
     else this.#cart.changeQuantity(this.#sku, this.#before);
+  }
+
+  label() {
+    return `Added ${this.#sku}`;
   }
 }
 
@@ -49,6 +61,11 @@ export class ChangeQuantity {
     if (this.#quantity < 1) this.#cart.add(this.#sku, this.#before);
     else this.#cart.changeQuantity(this.#sku, this.#before);
   }
+
+  label() {
+    if (this.#quantity < 1) return `Removed ${this.#sku}`;
+    return `${this.#sku} set to ${this.#quantity}`;
+  }
 }
 
 // Takes one line out of the cart, and can put it back.
@@ -71,6 +88,10 @@ export class RemoveLine {
   undo() {
     this.#cart.add(this.#sku, this.#quantity);
   }
+
+  label() {
+    return `Removed ${this.#sku}`;
+  }
 }
 
 // Takes every line out of the cart, and can put them all back.
@@ -92,5 +113,8 @@ export class EmptyCart {
     for (const [sku, quantity] of this.#lines) {
       this.#cart.add(sku, quantity);
     }
+  }
+  label() {
+    return 'Emptied the cart';
   }
 }

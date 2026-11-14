@@ -1,6 +1,18 @@
 """What a shopper asks the cart page to do, kept so it can be undone."""
 
+from typing import Protocol
+
 from shopfront.cart import Cart
+
+
+class Edit(Protocol):
+    """The slot every cart edit fills, so the page can run any of them."""
+
+    def run(self) -> None: ...
+
+    def undo(self) -> None: ...
+
+    def label(self) -> str: ...
 
 
 class AddLine:
@@ -22,6 +34,9 @@ class AddLine:
             self._cart.remove(self._sku)
         else:
             self._cart.change_quantity(self._sku, self._before)
+
+    def label(self) -> str:
+        return f"Added {self._sku}"
 
 
 class ChangeQuantity:
@@ -45,6 +60,11 @@ class ChangeQuantity:
         else:
             self._cart.change_quantity(self._sku, self._before)
 
+    def label(self) -> str:
+        if self._quantity < 1:
+            return f"Removed {self._sku}"
+        return f"{self._sku} set to {self._quantity}"
+
 
 class RemoveLine:
     """Takes one line out of the cart, and can put it back."""
@@ -61,6 +81,9 @@ class RemoveLine:
 
     def undo(self) -> None:
         self._cart.add(self._sku, self._quantity)
+
+    def label(self) -> str:
+        return f"Removed {self._sku}"
 
 
 class EmptyCart:
@@ -79,3 +102,6 @@ class EmptyCart:
     def undo(self) -> None:
         for sku, quantity in self._lines.items():
             self._cart.add(sku, quantity)
+
+    def label(self) -> str:
+        return "Emptied the cart"

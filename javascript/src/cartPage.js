@@ -2,6 +2,8 @@
 
 import { AddLine, ChangeQuantity, EmptyCart, RemoveLine } from './edits.js';
 
+/** @typedef {import('./edits.js').Edit} Edit */
+
 export class NothingToUndoError extends Error {
   name = 'NothingToUndoError';
 }
@@ -9,6 +11,7 @@ export class NothingToUndoError extends Error {
 export class CartPage {
   // The message under the buttons, with its Undo link.
   message = '';
+  /** @type {Edit | undefined} */
   #last = undefined;
 
   constructor(cart) {
@@ -19,7 +22,7 @@ export class CartPage {
     const addition = new AddLine(this.cart, sku);
     addition.run();
     this.#last = addition;
-    this.message = `Added ${sku}`;
+    this.message = addition.label();
   }
 
   minus(sku) {
@@ -28,12 +31,12 @@ export class CartPage {
       const removal = new RemoveLine(this.cart, sku);
       removal.run();
       this.#last = removal;
-      this.message = `Removed ${sku}`;
+      this.message = removal.label();
     } else {
       const change = new ChangeQuantity(this.cart, sku, quantity - 1);
       change.run();
       this.#last = change;
-      this.message = `${sku} set to ${quantity - 1}`;
+      this.message = change.label();
     }
   }
 
@@ -41,21 +44,20 @@ export class CartPage {
     const change = new ChangeQuantity(this.cart, sku, quantity);
     change.run();
     this.#last = change;
-    if (quantity < 1) this.message = `Removed ${sku}`;
-    else this.message = `${sku} set to ${quantity}`;
+    this.message = change.label();
   }
 
   remove(sku) {
     const removal = new RemoveLine(this.cart, sku);
     removal.run();
     this.#last = removal;
-    this.message = `Removed ${sku}`;
+    this.message = removal.label();
   }
 
   empty() {
     const emptying = new EmptyCart(this.cart);
     emptying.run();
-    this.message = 'Emptied the cart';
+    this.message = emptying.label();
   }
 
   undo() {

@@ -107,3 +107,18 @@ test('undoing an emptying puts every line back in order', () => {
     ],
   );
 });
+
+test('every edit names itself for the page', () => {
+  const cart = new Cart();
+  assert.equal(new AddLine(cart, 'KTL-03').label(), 'Added KTL-03');
+  assert.equal(
+    new ChangeQuantity(cart, 'KTL-03', 3).label(),
+    'KTL-03 set to 3',
+  );
+  assert.equal(
+    new ChangeQuantity(cart, 'KTL-03', 0).label(),
+    'Removed KTL-03',
+  );
+  assert.equal(new RemoveLine(cart, 'KTL-03').label(), 'Removed KTL-03');
+  assert.equal(new EmptyCart(cart).label(), 'Emptied the cart');
+});
