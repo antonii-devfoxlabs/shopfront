@@ -13,12 +13,20 @@ class ReturnRefusedError(Exception):
 
 
 class Return:
-    """The shopper who paid sends the order back."""
+    """An order sent back. Its money goes back to the way to pay named
+    to: the way the order was paid, unless the caller names another."""
 
-    def __init__(self, order: Order, details: dict, gateway: Gateway) -> None:
+    def __init__(
+        self,
+        order: Order,
+        details: dict,
+        gateway: Gateway,
+        to: str | None = None,
+    ) -> None:
         self.order = order
         self.details = details
         self.gateway = gateway
+        self.to = order.payment_method if to is None else to
 
     def process(self) -> str:
         """Give the money back once, and mark the order returned."""
@@ -32,14 +40,7 @@ class Return:
 
     def destination(self) -> PaymentMethod:
         """Create the way to pay that the money goes back to."""
-        return payment(self.order.payment_method, self.details, self.gateway)
-
-
-class GiftReturn(Return):
-    """The person who got the order as a gift sends it back."""
-
-    def destination(self) -> PaymentMethod:
-        return payment("gift_card", self.details, self.gateway)
+        return payment(self.to, self.details, self.gateway)
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -55,12 +56,13 @@ class Refunds:
     # Who hears of a refund: main subscribes them.
     events: OrderEvents
 
-    def refund(self, order_id: str, details: dict, gift: bool = False) -> str:
+    def refund(
+        self, order_id: str, details: dict, to: str | None = None
+    ) -> str:
         """Give an order's money back, tell the shopper, then announce it.
-        gift: the person who got the order as a gift sent it back."""
+        to: the way to pay the money goes back to, as Return takes it."""
         order = OrderBook.instance().find(order_id)
-        kind = GiftReturn if gift else Return
-        refund_id = kind(order, details, self.gateway).process()
+        refund_id = Return(order, details, self.gateway, to).process()
         self.mailer.send(
             sender=self.shop.store_email,
             to=order.customer_email,

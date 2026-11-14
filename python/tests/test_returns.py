@@ -3,7 +3,7 @@ import pytest
 from shopfront.catalog import starter_catalog
 from shopfront.orders import Order, OrderBuilder, OrderEvents, place_order
 from shopfront.payments import Card, GiftCard
-from shopfront.returns import GiftReturn, Refunds, Return, ReturnRefusedError
+from shopfront.returns import Refunds, Return, ReturnRefusedError
 from shopfront.settings import GERMAN_SHOP
 from shopfront.vendor.mailer import Mailer
 
@@ -63,7 +63,7 @@ def test_a_refund_gives_the_money_back_and_tells_the_shopper(gateway):
 def test_a_gift_return_refunds_onto_a_gift_card(gateway):
     order = a_card_order()
     details = {"code": "GIFT-2026-0001"}
-    refund_id = GiftReturn(order, details, gateway).process()
+    refund_id = Return(order, details, gateway, to="gift_card").process()
     assert gateway.refunds[-1] == {
         "id": refund_id,
         "kind": "gift_card",
@@ -83,41 +83,39 @@ def test_a_gift_sent_back_to_the_desk_is_refunded_onto_a_gift_card(gateway):
         events=OrderEvents(),
     )
 
-    refunds.refund("SF-00007", {"code": "GIFT-2026-0001"}, gift=True)
+    refunds.refund("SF-00007", {"code": "GIFT-2026-0001"}, to="gift_card")
 
     assert gateway.refunds[-1]["kind"] == "gift_card"
     assert gateway.refunds[-1]["detail"] == "GIFT-2026-0001"
 
 
 @pytest.mark.parametrize(
-    ("return_class", "details", "expected"),
+    ("to", "details", "expected"),
     [
-        (Return, {"card_token": "tok-4242"}, Card),
-        (GiftReturn, {"code": "GIFT-2026-0001"}, GiftCard),
+        (None, {"card_token": "tok-4242"}, Card),
+        ("gift_card", {"code": "GIFT-2026-0001"}, GiftCard),
     ],
 )
-def test_each_return_creates_its_destination(
-    return_class, details, expected, gateway
-):
+def test_each_return_creates_its_destination(to, details, expected, gateway):
     refunds_before = len(gateway.refunds)
-    destination = return_class(a_card_order(), details, gateway).destination()
+    destination = Return(a_card_order(), details, gateway, to).destination()
     assert isinstance(destination, expected)
     assert len(gateway.refunds) == refunds_before
 
 
 @pytest.mark.parametrize(
-    ("return_class", "details"),
+    ("to", "details"),
     [
-        (Return, {"card_token": "tok-4242"}),
-        (GiftReturn, {"code": "GIFT-2026-0001"}),
+        (None, {"card_token": "tok-4242"}),
+        ("gift_card", {"code": "GIFT-2026-0001"}),
     ],
 )
-def test_an_order_is_returned_once(return_class, details, gateway):
+def test_an_order_is_returned_once(to, details, gateway):
     order = a_card_order()
-    return_class(order, details, gateway).process()
+    Return(order, details, gateway, to).process()
     refunds_before = len(gateway.refunds)
     with pytest.raises(ReturnRefusedError, match="SF-00007 is returned"):
-        return_class(order, details, gateway).process()
+        Return(order, details, gateway, to).process()
     assert len(gateway.refunds) == refunds_before
 
 

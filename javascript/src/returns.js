@@ -7,12 +7,14 @@ export class ReturnRefusedError extends Error {
   name = 'ReturnRefusedError';
 }
 
-// The shopper who paid sends the order back.
+// An order sent back. Its money goes back to the way to pay named to:
+// the way the order was paid, unless the caller names another.
 export class Return {
-  constructor(order, details, gateway) {
+  constructor(order, details, gateway, to = order.paymentMethod) {
     this.order = order;
     this.details = details;
     this.gateway = gateway;
+    this.to = to;
   }
 
   // Give the money back once, and mark the order returned.
@@ -29,14 +31,7 @@ export class Return {
 
   // Create the way to pay that the money goes back to.
   destination() {
-    return payment(this.order.paymentMethod, this.details, this.gateway);
-  }
-}
-
-// The person who got the order as a gift sends it back.
-export class GiftReturn extends Return {
-  destination() {
-    return payment('gift_card', this.details, this.gateway);
+    return payment(this.to, this.details, this.gateway);
   }
 }
 
@@ -52,12 +47,11 @@ export class Refunds {
   }
 
   // Give an order's money back, tell the shopper, then announce it.
-  // gift: the person who got the order as a gift sent it back.
-  refund(orderId, details, gift = false) {
+  // to, if given: the way to pay the money goes back to, as Return takes it.
+  refund(orderId, details, to) {
     const { gateway, mailer, shop, events } = this.#parts;
     const order = OrderBook.instance().find(orderId);
-    const Kind = gift ? GiftReturn : Return;
-    const refundId = new Kind(order, details, gateway).process();
+    const refundId = new Return(order, details, gateway, to).process();
     mailer.send({
       from: shop.storeEmail,
       to: order.customerEmail,

@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import { starterCatalog } from '../src/catalog.ts';
 import { OrderBuilder, OrderEvents, placeOrder } from '../src/orders.ts';
 import { Card, GiftCard } from '../src/payments.ts';
-import { GiftReturn, Refunds, Return } from '../src/returns.ts';
+import { Refunds, Return } from '../src/returns.ts';
 import { GERMAN_SHOP } from '../src/settings.ts';
 import { Mailer } from '../src/vendor/mailer.ts';
 import { PaymentGateway } from '../src/vendor/paymentGateway.ts';
@@ -74,7 +74,7 @@ test('a gift return refunds onto a gift card', () => {
   const gateway = aGateway();
   const order = aCardOrder();
   const details = { code: 'GIFT-2026-0001' };
-  const refundId = new GiftReturn(order, details, gateway).process();
+  const refundId = new Return(order, details, gateway, 'gift_card').process();
   assert.deepEqual(gateway.refunds.at(-1), {
     id: refundId,
     kind: 'gift_card',
@@ -95,38 +95,39 @@ test('a gift sent back to the desk is refunded onto a gift card', () => {
     events: new OrderEvents(),
   });
 
-  refunds.refund('SF-00007', { code: 'GIFT-2026-0001' }, true);
+  refunds.refund('SF-00007', { code: 'GIFT-2026-0001' }, 'gift_card');
 
   assert.equal(gateway.refunds.at(-1)?.kind, 'gift_card');
   assert.equal(gateway.refunds.at(-1)?.detail, 'GIFT-2026-0001');
 });
 
 const EVERY_RETURN = [
-  [Return, { cardToken: 'tok-4242' }, Card],
-  [GiftReturn, { code: 'GIFT-2026-0001' }, GiftCard],
+  [undefined, { cardToken: 'tok-4242' }, Card],
+  ['gift_card', { code: 'GIFT-2026-0001' }, GiftCard],
 ] as const;
 
-for (const [ReturnClass, details, expected] of EVERY_RETURN) {
-  test(`${ReturnClass.name} creates its destination`, () => {
+for (const [to, details, expected] of EVERY_RETURN) {
+  test(`a return onto ${expected.name} creates its destination`, () => {
     const gateway = aGateway();
     const refundsBefore = gateway.refunds.length;
-    const destination = new ReturnClass(
+    const destination = new Return(
       aCardOrder(),
       details,
       gateway,
+      to,
     ).destination();
     assert.ok(destination instanceof expected);
     assert.equal(gateway.refunds.length, refundsBefore);
   });
 }
 
-for (const [ReturnClass, details] of EVERY_RETURN) {
-  test(`${ReturnClass.name} returns an order once`, () => {
+for (const [to, details, expected] of EVERY_RETURN) {
+  test(`a return onto ${expected.name} returns an order once`, () => {
     const gateway = aGateway();
     const order = aCardOrder();
-    new ReturnClass(order, details, gateway).process();
+    new Return(order, details, gateway, to).process();
     const refundsBefore = gateway.refunds.length;
-    assert.throws(() => new ReturnClass(order, details, gateway).process(), {
+    assert.throws(() => new Return(order, details, gateway, to).process(), {
       name: 'ReturnRefusedError',
       message: 'SF-00007 is returned',
     });
