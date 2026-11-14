@@ -177,7 +177,7 @@ class OrderCursor:
         self._orders = orders
         self._place = len(orders)
 
-    def next_order(self) -> Order | None:
+    def next(self) -> Order | None:
         """The next older order, or None once every one is handed over."""
         if self._place == 0:
             return None
@@ -229,17 +229,6 @@ class OrderBook:
     def cursor(self) -> OrderCursor:
         """A new walk over every order, from the newest."""
         return OrderCursor(self._orders)
-
-
-def take(cursor: OrderCursor, count: int) -> list[Order]:
-    """The next `count` orders from the cursor, or fewer at the end."""
-    taken: list[Order] = []
-    while len(taken) < count:
-        order = cursor.next_order()
-        if order is None:
-            break
-        taken.append(order)
-    return taken
 
 
 def reset() -> None:

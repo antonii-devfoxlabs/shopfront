@@ -197,7 +197,7 @@ export class OrderCursor {
   }
 
   // The next older order, or undefined once every one is handed over.
-  nextOrder() {
+  next() {
     if (this.#place === 0) return undefined;
     this.#place -= 1;
     return this.#orders[this.#place];
@@ -249,18 +249,6 @@ export class OrderBook {
     return new OrderCursor(this.#orders);
   }
 }
-
-// The next `count` orders from the cursor, or fewer at the end.
-export function take(cursor, count) {
-  const taken = [];
-  while (taken.length < count) {
-    const order = cursor.nextOrder();
-    if (order === undefined) break;
-    taken.push(order);
-  }
-  return taken;
-}
-
 // For tests only: no orders, and numbers from SF-00001 again.
 export function reset() {
   lastOrderNumber = 0;

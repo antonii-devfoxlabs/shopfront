@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { OutOfStockError, starterCatalog } from '../src/catalog.js';
+import { take } from '../src/cursors.js';
 import {
   OrderBook,
   OrderBuilder,
@@ -14,7 +15,6 @@ import {
   placeOrder,
   reorder,
   salesReport,
-  take,
 } from '../src/orders.js';
 import { GERMAN_SHOP } from '../src/settings.js';
 

@@ -3,6 +3,7 @@
 import { EventEmitter } from 'node:events';
 
 import type { Catalog } from './catalog.ts';
+import type { Cursor } from './cursors.ts';
 import type { Settings } from './settings.ts';
 
 export type OrderStatus = 'placed' | 'cancelled' | 'returned';
@@ -202,7 +203,7 @@ export class UnknownOrderError extends Error {
 
 // Hands over the book's orders one at a time, the newest first. It keeps
 // its own place, so each walk has a cursor of its own.
-export class OrderCursor {
+export class OrderCursor implements Cursor<Order> {
   readonly #orders: readonly Order[];
   #place: number;
 
@@ -212,7 +213,7 @@ export class OrderCursor {
   }
 
   // The next older order, or undefined once every one is handed over.
-  nextOrder(): Order | undefined {
+  next(): Order | undefined {
     if (this.#place === 0) return undefined;
     this.#place -= 1;
     return this.#orders[this.#place];
@@ -260,18 +261,6 @@ export class OrderBook {
     return new OrderCursor(this.#orders);
   }
 }
-
-// The next `count` orders from the cursor, or fewer at the end.
-export function take(cursor: OrderCursor, count: number): Order[] {
-  const taken: Order[] = [];
-  while (taken.length < count) {
-    const order = cursor.nextOrder();
-    if (order === undefined) break;
-    taken.push(order);
-  }
-  return taken;
-}
-
 // For tests only: no orders, and numbers from SF-00001 again.
 export function reset(): void {
   lastOrderNumber = 0;

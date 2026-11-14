@@ -1,6 +1,7 @@
 import pytest
 
 from shopfront.catalog import OutOfStockError, starter_catalog
+from shopfront.cursors import take
 from shopfront.orders import (
     IncompleteOrderError,
     Listeners,
@@ -16,7 +17,6 @@ from shopfront.orders import (
     place_order,
     reorder,
     sales_report,
-    take,
 )
 from shopfront.settings import GERMAN_SHOP
 
