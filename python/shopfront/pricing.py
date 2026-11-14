@@ -65,7 +65,7 @@ COUPONS: dict[str, CouponRule] = {
     "WELCOME10": percent_off(10),
     "WINTER15": only_in(12, percent_off(15)),
     "GIFT5": amount_off(500),
-    "SAVE10": amount_off(1_000),
+    "SAVE10": at_least(8_000, amount_off(1_000)),
 }
 
 
@@ -104,9 +104,6 @@ class PriceCalculator:
             rule = COUPONS.get(coupon)
             if rule is None:
                 raise UnknownCouponError(coupon)
-            # SAVE10 is only for orders of 80.00 or more.
-            if coupon == "SAVE10" and subtotal_cents < 8_000:
-                raise UnknownCouponError("needs a bigger order")
             return rule(subtotal_cents, today)
         if subtotal_cents >= 10_000:
             return subtotal_cents * 5 // 100
