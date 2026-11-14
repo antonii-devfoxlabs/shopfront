@@ -49,6 +49,21 @@ export function onlyIn(month, rule) {
 }
 
 /**
+ * The same rule, refused when the goods cost less than cents.
+ * @param {number} cents
+ * @param {CouponRule} rule
+ * @returns {CouponRule}
+ */
+export function atLeast(cents, rule) {
+  return (subtotalCents, today) => {
+    if (subtotalCents < cents) {
+      throw new UnknownCouponError('needs a bigger order');
+    }
+    return rule(subtotalCents, today);
+  };
+}
+
+/**
  * Every code a shopper can type, with the rule it stands for. A new
  * coupon is a new row: the discount does not change.
  * @type {Map<string, CouponRule>}

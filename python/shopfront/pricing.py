@@ -48,6 +48,17 @@ def only_in(month: int, rule: CouponRule) -> CouponRule:
     return cents_off
 
 
+def at_least(cents: int, rule: CouponRule) -> CouponRule:
+    """The same rule, refused when the goods cost less than cents."""
+
+    def cents_off(subtotal_cents: int, today: date) -> int:
+        if subtotal_cents < cents:
+            raise UnknownCouponError("needs a bigger order")
+        return rule(subtotal_cents, today)
+
+    return cents_off
+
+
 # Every code a shopper can type, with the rule it stands for. A new
 # coupon is a new row: the discount does not change.
 COUPONS: dict[str, CouponRule] = {

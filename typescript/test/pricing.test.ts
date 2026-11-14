@@ -6,6 +6,8 @@ import { starterCatalog } from '../src/catalog.ts';
 import {
   PriceCalculator,
   UnknownCouponError,
+  amountOff,
+  atLeast,
   onlyIn,
   percentOff,
 } from '../src/pricing.ts';
@@ -69,6 +71,15 @@ test('a rule kept to one month refuses the others', () => {
   assert.throws(() => decemberOnly(10_000, A_JUNE_DAY), {
     name: 'UnknownCouponError',
     message: 'not valid this month',
+  });
+});
+
+test('a rule kept to big orders refuses smaller ones', () => {
+  const bigOrdersOnly = atLeast(8_000, amountOff(1_000));
+  assert.equal(bigOrdersOnly(8_000, A_JUNE_DAY), 1_000);
+  assert.throws(() => bigOrdersOnly(7_999, A_JUNE_DAY), {
+    name: 'UnknownCouponError',
+    message: 'needs a bigger order',
   });
 });
 

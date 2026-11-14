@@ -7,6 +7,8 @@ from shopfront.catalog import starter_catalog
 from shopfront.pricing import (
     PriceCalculator,
     UnknownCouponError,
+    amount_off,
+    at_least,
     only_in,
     percent_off,
 )
@@ -62,6 +64,13 @@ def test_a_rule_kept_to_one_month_refuses_the_others():
     assert december_only(10_000, A_DECEMBER_DAY) == 1_500
     with pytest.raises(UnknownCouponError, match="not valid this month"):
         december_only(10_000, A_JUNE_DAY)
+
+
+def test_a_rule_kept_to_big_orders_refuses_smaller_ones():
+    big_orders_only = at_least(8_000, amount_off(1_000))
+    assert big_orders_only(8_000, A_JUNE_DAY) == 1_000
+    with pytest.raises(UnknownCouponError, match="needs a bigger order"):
+        big_orders_only(7_999, A_JUNE_DAY)
 
 
 def test_big_orders_get_five_percent_without_a_coupon():
