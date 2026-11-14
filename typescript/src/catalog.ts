@@ -16,31 +16,6 @@ export class OutOfStockError extends Error {
   override name = 'OutOfStockError';
 }
 
-// Hands over the catalog's products one at a time, in order. It keeps
-// its own place, so each walk has a cursor of its own. It speaks the
-// iterator protocol, so a for...of loop can walk it.
-export class ProductCursor implements IterableIterator<Product, undefined> {
-  readonly #products: readonly Product[];
-  #place = 0;
-
-  constructor(products: readonly Product[]) {
-    this.#products = products;
-  }
-
-  // A walk goes on from where the cursor stands: it is its own.
-  [Symbol.iterator](): this {
-    return this;
-  }
-
-  // The next product, or done once every one is handed over.
-  next(): IteratorResult<Product, undefined> {
-    const product = this.#products[this.#place];
-    if (product === undefined) return { value: undefined, done: true };
-    this.#place += 1;
-    return { value: product, done: false };
-  }
-}
-
 export class Catalog {
   readonly #products: Product[];
   readonly #bySku: Map<string, Product>;
@@ -55,12 +30,12 @@ export class Catalog {
   }
 
   // A new walk over every product, from the first.
-  cursor(): ProductCursor {
-    return new ProductCursor(this.#products);
+  *cursor(): Generator<Product> {
+    yield* this.#products;
   }
 
   // What a for...of loop asks for: a new cursor, from the first.
-  [Symbol.iterator](): ProductCursor {
+  [Symbol.iterator](): Generator<Product> {
     return this.cursor();
   }
 

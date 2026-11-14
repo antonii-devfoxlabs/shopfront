@@ -185,31 +185,6 @@ export class UnknownOrderError extends Error {
   name = 'UnknownOrderError';
 }
 
-// Hands over the book's orders one at a time, the newest first. It keeps
-// its own place, so each walk has a cursor of its own. It speaks the
-// iterator protocol, so a for...of loop can walk it.
-export class OrderCursor {
-  #orders;
-  #place;
-
-  constructor(orders) {
-    this.#orders = orders;
-    this.#place = orders.length;
-  }
-
-  // A walk goes on from where the cursor stands: it is its own.
-  [Symbol.iterator]() {
-    return this;
-  }
-
-  // The next older order, or done once every one is handed over.
-  next() {
-    if (this.#place === 0) return { value: undefined, done: true };
-    this.#place -= 1;
-    return { value: this.#orders[this.#place], done: false };
-  }
-}
-
 // Every order the store has placed, found by its number. The store has
 // one: get it with OrderBook.instance().
 export class OrderBook {
@@ -251,8 +226,12 @@ export class OrderBook {
   }
 
   // A new walk over every order, from the newest.
-  cursor() {
-    return new OrderCursor(this.#orders);
+  *cursor() {
+    let place = this.#orders.length;
+    while (place > 0) {
+      place -= 1;
+      yield this.#orders[place];
+    }
   }
 
   // What a for...of loop asks for: a new cursor, from the newest.

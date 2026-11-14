@@ -1,6 +1,6 @@
 """The products Shopfront sells, and how many of each are left."""
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
 
 
@@ -21,28 +21,6 @@ class OutOfStockError(Exception):
     pass
 
 
-class ProductCursor:
-    """Hands over the catalog's products one at a time, in order. It
-    keeps its own place, so each walk has a cursor of its own. It speaks
-    Python's iterator protocol, so a for loop can walk it."""
-
-    def __init__(self, products: Sequence[Product]) -> None:
-        self._products = products
-        self._place = 0
-
-    def __iter__(self) -> ProductCursor:
-        """A walk goes on from where the cursor stands: it is its own."""
-        return self
-
-    def __next__(self) -> Product:
-        """The next product; StopIteration once every one is handed over."""
-        if self._place == len(self._products):
-            raise StopIteration
-        product = self._products[self._place]
-        self._place += 1
-        return product
-
-
 class Catalog:
     def __init__(self, products: list[Product]) -> None:
         self._products = list(products)
@@ -51,11 +29,11 @@ class Catalog:
     def all_products(self) -> list[Product]:
         return list(self._products)
 
-    def cursor(self) -> ProductCursor:
+    def cursor(self) -> Iterator[Product]:
         """A new walk over every product, from the first."""
-        return ProductCursor(self._products)
+        yield from self._products
 
-    def __iter__(self) -> ProductCursor:
+    def __iter__(self) -> Iterator[Product]:
         """What a for loop asks for: a new cursor, from the first."""
         return self.cursor()
 

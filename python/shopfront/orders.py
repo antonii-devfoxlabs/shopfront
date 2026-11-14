@@ -1,6 +1,6 @@
 """An order, and what happens once it is placed."""
 
-from collections.abc import Callable, Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Iterator, Mapping
 from types import MappingProxyType
 from typing import ClassVar
 
@@ -169,28 +169,6 @@ class UnknownOrderError(Exception):
     pass
 
 
-class OrderCursor:
-    """Hands over the book's orders one at a time, the newest first. It
-    keeps its own place, so each walk has a cursor of its own. It speaks
-    Python's iterator protocol, so a for loop can walk it."""
-
-    def __init__(self, orders: Sequence[Order]) -> None:
-        self._orders = orders
-        self._place = len(orders)
-
-    def __iter__(self) -> OrderCursor:
-        """A walk goes on from where the cursor stands: it is its own."""
-        return self
-
-    def __next__(self) -> Order:
-        """The next older order; StopIteration once every one is handed
-        over."""
-        if self._place == 0:
-            raise StopIteration
-        self._place -= 1
-        return self._orders[self._place]
-
-
 class OrderBook:
     """Every order the store has placed, found by its number.
 
@@ -232,11 +210,14 @@ class OrderBook:
         """Every order in the book, in the order they were placed."""
         return list(self._orders)
 
-    def cursor(self) -> OrderCursor:
+    def cursor(self) -> Iterator[Order]:
         """A new walk over every order, from the newest."""
-        return OrderCursor(self._orders)
+        place = len(self._orders)
+        while place > 0:
+            place -= 1
+            yield self._orders[place]
 
-    def __iter__(self) -> OrderCursor:
+    def __iter__(self) -> Iterator[Order]:
         """What a for loop asks for: a new cursor, from the newest."""
         return self.cursor()
 

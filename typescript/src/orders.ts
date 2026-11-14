@@ -200,32 +200,6 @@ export class UnknownOrderError extends Error {
   override name = 'UnknownOrderError';
 }
 
-// Hands over the book's orders one at a time, the newest first. It keeps
-// its own place, so each walk has a cursor of its own. It speaks the
-// iterator protocol, so a for...of loop can walk it.
-export class OrderCursor implements IterableIterator<Order, undefined> {
-  readonly #orders: readonly Order[];
-  #place: number;
-
-  constructor(orders: readonly Order[]) {
-    this.#orders = orders;
-    this.#place = orders.length;
-  }
-
-  // A walk goes on from where the cursor stands: it is its own.
-  [Symbol.iterator](): this {
-    return this;
-  }
-
-  // The next older order, or done once every one is handed over.
-  next(): IteratorResult<Order, undefined> {
-    const order = this.#orders[this.#place - 1];
-    if (order === undefined) return { value: undefined, done: true };
-    this.#place -= 1;
-    return { value: order, done: false };
-  }
-}
-
 // Every order the store has placed, found by its number. The store has
 // one: get it with OrderBook.instance().
 export class OrderBook {
@@ -263,12 +237,17 @@ export class OrderBook {
   }
 
   // A new walk over every order, from the newest.
-  cursor(): OrderCursor {
-    return new OrderCursor(this.#orders);
+  *cursor(): Generator<Order> {
+    let place = this.#orders.length;
+    while (place > 0) {
+      place -= 1;
+      const order = this.#orders[place];
+      if (order !== undefined) yield order;
+    }
   }
 
   // What a for...of loop asks for: a new cursor, from the newest.
-  [Symbol.iterator](): OrderCursor {
+  [Symbol.iterator](): Generator<Order> {
     return this.cursor();
   }
 }
