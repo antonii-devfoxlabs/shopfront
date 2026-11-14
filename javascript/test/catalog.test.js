@@ -4,6 +4,7 @@ import { test } from 'node:test';
 import {
   OutOfStockError,
   UnknownProductError,
+  reorderList,
   starterCatalog,
 } from '../src/catalog.js';
 import { loadCatalog } from '../src/catalogFile.js';
@@ -78,6 +79,14 @@ test('search shows no more than its limit', () => {
   assert.deepEqual(
     found.map((product) => product.sku),
     ['MUG-01', 'TEA-02'],
+  );
+});
+
+test('the reorder list holds every product under the line', () => {
+  const short = reorderList(starterCatalog(), 30);
+  assert.deepEqual(
+    short.map((product) => product.sku),
+    ['KTL-03', 'CUP-04'],
   );
 });
 

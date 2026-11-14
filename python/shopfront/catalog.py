@@ -93,6 +93,18 @@ class Catalog:
         return found
 
 
+def reorder_list(catalog: Catalog, under: int) -> list[Product]:
+    """Every product with fewer than `under` left, for the weekly order."""
+    short: list[Product] = []
+    cursor = catalog.cursor()
+    product = cursor.next()
+    while product is not None:
+        if product.stock < under:
+            short.append(product)
+        product = cursor.next()
+    return short
+
+
 def starter_catalog() -> Catalog:
     return Catalog(
         [

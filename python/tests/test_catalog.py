@@ -5,6 +5,7 @@ import pytest
 from shopfront.catalog import (
     OutOfStockError,
     UnknownProductError,
+    reorder_list,
     starter_catalog,
 )
 from shopfront.catalog_file import load_catalog
@@ -80,6 +81,11 @@ def test_search_finds_names_whatever_the_case():
 def test_search_shows_no_more_than_its_limit():
     found = starter_catalog().search("E", limit=2)
     assert [product.sku for product in found] == ["MUG-01", "TEA-02"]
+
+
+def test_the_reorder_list_holds_every_product_under_the_line():
+    short = reorder_list(starter_catalog(), under=30)
+    assert [product.sku for product in short] == ["KTL-03", "CUP-04"]
 
 
 def test_taking_several_lines_takes_none_if_one_is_short():

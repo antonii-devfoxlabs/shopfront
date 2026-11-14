@@ -105,6 +105,18 @@ export class Catalog {
   }
 }
 
+// Every product with fewer than `under` left, for the weekly order.
+export function reorderList(catalog: Catalog, under: number): Product[] {
+  const short: Product[] = [];
+  const cursor = catalog.cursor();
+  let product = cursor.next();
+  while (product !== undefined) {
+    if (product.stock < under) short.push(product);
+    product = cursor.next();
+  }
+  return short;
+}
+
 export function starterCatalog(): Catalog {
   return new Catalog([
     product('MUG-01', 'Enamel mug', 1_250, 350, 40),
