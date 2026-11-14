@@ -2,7 +2,12 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { Cart, NotInCartError } from '../src/cart.ts';
-import { RemoveLine } from '../src/edits.ts';
+import {
+  AddLine,
+  ChangeQuantity,
+  EmptyCart,
+  RemoveLine,
+} from '../src/edits.ts';
 
 test('a removal takes its line away', () => {
   const cart = new Cart();
@@ -44,4 +49,61 @@ test('undo puts back the line its own removal took', () => {
   last.run();
   last.undo();
   assert.deepEqual([...cart.lines], [['MUG-01', 1]]);
+});
+
+test('undoing an add takes a new line away', () => {
+  const cart = new Cart();
+  cart.add('TEA-02');
+  const addition = new AddLine(cart, 'KTL-03');
+  addition.run();
+  addition.undo();
+  assert.deepEqual([...cart.lines], [['TEA-02', 1]]);
+});
+
+test('undoing an add puts back the quantity before it', () => {
+  const cart = new Cart();
+  cart.add('MUG-01', 2);
+  const addition = new AddLine(cart, 'MUG-01');
+  addition.run();
+  assert.deepEqual([...cart.lines], [['MUG-01', 3]]);
+  addition.undo();
+  assert.deepEqual([...cart.lines], [['MUG-01', 2]]);
+});
+
+test('undoing a quantity change sets the old one back', () => {
+  const cart = new Cart();
+  cart.add('MUG-01', 2);
+  const change = new ChangeQuantity(cart, 'MUG-01', 5);
+  change.run();
+  change.undo();
+  assert.deepEqual([...cart.lines], [['MUG-01', 2]]);
+});
+
+test('undoing a change to zero puts the line back', () => {
+  const cart = new Cart();
+  cart.add('MUG-01', 2);
+  const change = new ChangeQuantity(cart, 'MUG-01', 0);
+  change.run();
+  assert.equal(cart.isEmpty(), true);
+  change.undo();
+  assert.deepEqual([...cart.lines], [['MUG-01', 2]]);
+});
+
+test('undoing an emptying puts every line back in order', () => {
+  const cart = new Cart();
+  cart.add('MUG-01', 2);
+  cart.add('KTL-03');
+  cart.add('TEA-02', 3);
+  const emptying = new EmptyCart(cart);
+  emptying.run();
+  assert.equal(cart.isEmpty(), true);
+  emptying.undo();
+  assert.deepEqual(
+    [...cart.lines],
+    [
+      ['MUG-01', 2],
+      ['KTL-03', 1],
+      ['TEA-02', 3],
+    ],
+  );
 });
