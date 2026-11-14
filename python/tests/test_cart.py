@@ -1,6 +1,6 @@
 import pytest
 
-from shopfront.cart import Cart, NotInCartError
+from shopfront.cart import Cart, NothingToUndoError, NotInCartError
 
 
 def test_adding_the_same_product_twice_adds_up():
@@ -42,3 +42,19 @@ def test_removing_a_line():
     cart.add("TEA-02")
     cart.remove("MUG-01")
     assert cart.lines == {"TEA-02": 1}
+
+
+def test_undo_puts_back_the_line_just_removed():
+    cart = Cart()
+    cart.add("KTL-03", 2)
+    cart.add("TEA-02")
+    cart.remove("KTL-03")
+    cart.undo_remove()
+    assert cart.lines == {"TEA-02": 1, "KTL-03": 2}
+
+
+def test_there_is_nothing_to_undo_before_a_removal():
+    cart = Cart()
+    cart.add("KTL-03")
+    with pytest.raises(NothingToUndoError):
+        cart.undo_remove()

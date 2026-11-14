@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { Cart, NotInCartError } from '../src/cart.js';
+import { Cart, NotInCartError, NothingToUndoError } from '../src/cart.js';
 
 test('adding the same product twice adds up', () => {
   const cart = new Cart();
@@ -39,4 +39,25 @@ test('removing a line', () => {
   cart.add('TEA-02');
   cart.remove('MUG-01');
   assert.deepEqual([...cart.lines], [['TEA-02', 1]]);
+});
+
+test('undo puts back the line just removed', () => {
+  const cart = new Cart();
+  cart.add('KTL-03', 2);
+  cart.add('TEA-02');
+  cart.remove('KTL-03');
+  cart.undoRemove();
+  assert.deepEqual(
+    [...cart.lines],
+    [
+      ['TEA-02', 1],
+      ['KTL-03', 2],
+    ],
+  );
+});
+
+test('there is nothing to undo before a removal', () => {
+  const cart = new Cart();
+  cart.add('KTL-03');
+  assert.throws(() => cart.undoRemove(), NothingToUndoError);
 });

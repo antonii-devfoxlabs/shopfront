@@ -4,8 +4,16 @@ export class NotInCartError extends Error {
   override name = 'NotInCartError';
 }
 
+export class NothingToUndoError extends Error {
+  override name = 'NothingToUndoError';
+}
+
+export type RemovedLine = { readonly sku: string; readonly quantity: number };
+
 export class Cart {
   readonly lines = new Map<string, number>();
+  // The line the last removal took away, for the cart page's Undo.
+  removed: RemovedLine | undefined = undefined;
 
   add(sku: string, quantity = 1): void {
     if (quantity < 1) throw new RangeError('Add at least one');
@@ -19,7 +27,18 @@ export class Cart {
   }
 
   remove(sku: string): void {
-    if (!this.lines.delete(sku)) throw new NotInCartError(sku);
+    const quantity = this.lines.get(sku);
+    if (quantity === undefined) throw new NotInCartError(sku);
+    this.lines.delete(sku);
+    this.removed = { sku, quantity };
+  }
+
+  // Put back the line the last removal took away.
+  undoRemove(): void {
+    if (this.removed === undefined) throw new NothingToUndoError();
+    const { sku, quantity } = this.removed;
+    this.removed = undefined;
+    this.add(sku, quantity);
   }
 
   isEmpty(): boolean {

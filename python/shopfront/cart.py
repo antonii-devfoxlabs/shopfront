@@ -5,9 +5,15 @@ class NotInCartError(Exception):
     pass
 
 
+class NothingToUndoError(Exception):
+    pass
+
+
 class Cart:
     def __init__(self) -> None:
         self.lines: dict[str, int] = {}
+        # The line the last removal took away, for the cart page's Undo.
+        self.removed: tuple[str, int] | None = None
 
     def add(self, sku: str, quantity: int = 1) -> None:
         if quantity < 1:
@@ -25,7 +31,15 @@ class Cart:
     def remove(self, sku: str) -> None:
         if sku not in self.lines:
             raise NotInCartError(sku)
-        del self.lines[sku]
+        self.removed = (sku, self.lines.pop(sku))
+
+    def undo_remove(self) -> None:
+        """Put back the line the last removal took away."""
+        if self.removed is None:
+            raise NothingToUndoError()
+        sku, quantity = self.removed
+        self.removed = None
+        self.add(sku, quantity)
 
     def is_empty(self) -> bool:
         return not self.lines
