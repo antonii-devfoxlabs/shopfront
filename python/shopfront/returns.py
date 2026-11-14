@@ -55,10 +55,12 @@ class Refunds:
     # Who hears of a refund: main subscribes them.
     events: OrderEvents
 
-    def refund(self, order_id: str, details: dict) -> str:
-        """Give an order's money back, tell the shopper, then announce it."""
+    def refund(self, order_id: str, details: dict, gift: bool = False) -> str:
+        """Give an order's money back, tell the shopper, then announce it.
+        gift: the person who got the order as a gift sent it back."""
         order = OrderBook.instance().find(order_id)
-        refund_id = Return(order, details, self.gateway).process()
+        kind = GiftReturn if gift else Return
+        refund_id = kind(order, details, self.gateway).process()
         self.mailer.send(
             sender=self.shop.store_email,
             to=order.customer_email,

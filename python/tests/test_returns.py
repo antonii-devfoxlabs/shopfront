@@ -73,6 +73,22 @@ def test_a_gift_return_refunds_onto_a_gift_card(gateway):
     assert order.status == "returned"
 
 
+def test_a_gift_sent_back_to_the_desk_is_refunded_onto_a_gift_card(gateway):
+    order = a_card_order()
+    place_order(order, starter_catalog(), OrderEvents())
+    refunds = Refunds(
+        gateway=gateway,
+        mailer=Mailer(),
+        shop=GERMAN_SHOP,
+        events=OrderEvents(),
+    )
+
+    refunds.refund("SF-00007", {"code": "GIFT-2026-0001"}, gift=True)
+
+    assert gateway.refunds[-1]["kind"] == "gift_card"
+    assert gateway.refunds[-1]["detail"] == "GIFT-2026-0001"
+
+
 @pytest.mark.parametrize(
     ("return_class", "details", "expected"),
     [

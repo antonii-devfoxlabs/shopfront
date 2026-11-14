@@ -84,6 +84,23 @@ test('a gift return refunds onto a gift card', () => {
   assert.equal(order.status, 'returned');
 });
 
+test('a gift sent back to the desk is refunded onto a gift card', () => {
+  const gateway = aGateway();
+  const order = aCardOrder();
+  placeOrder(order, starterCatalog(), new OrderEvents());
+  const refunds = new Refunds({
+    gateway,
+    mailer: new Mailer(),
+    shop: GERMAN_SHOP,
+    events: new OrderEvents(),
+  });
+
+  refunds.refund('SF-00007', { code: 'GIFT-2026-0001' }, true);
+
+  assert.equal(gateway.refunds.at(-1)?.kind, 'gift_card');
+  assert.equal(gateway.refunds.at(-1)?.detail, 'GIFT-2026-0001');
+});
+
 const EVERY_RETURN = [
   [Return, { cardToken: 'tok-4242' }, Card],
   [GiftReturn, { code: 'GIFT-2026-0001' }, GiftCard],

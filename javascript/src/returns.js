@@ -52,10 +52,12 @@ export class Refunds {
   }
 
   // Give an order's money back, tell the shopper, then announce it.
-  refund(orderId, details) {
+  // gift: the person who got the order as a gift sent it back.
+  refund(orderId, details, gift = false) {
     const { gateway, mailer, shop, events } = this.#parts;
     const order = OrderBook.instance().find(orderId);
-    const refundId = new Return(order, details, gateway).process();
+    const Kind = gift ? GiftReturn : Return;
+    const refundId = new Kind(order, details, gateway).process();
     mailer.send({
       from: shop.storeEmail,
       to: order.customerEmail,
