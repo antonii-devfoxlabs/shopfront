@@ -130,3 +130,14 @@ test('there is nothing to redo before an undo', () => {
   page.press(new AddLine(new Cart(), 'KTL-03'));
   assert.throws(() => page.redo(), NothingToRedoError);
 });
+
+test('redo after empty cart has nothing to redo', () => {
+  const cart = new Cart();
+  const page = new CartPage();
+  page.press(new AddLine(cart, 'KTL-03'));
+  page.press(new RemoveLine(cart, 'KTL-03'));
+  page.undo();
+  page.press(new EmptyCart(cart));
+  assert.throws(() => page.redo(), NothingToRedoError);
+  assert.equal(cart.isEmpty(), true);
+});

@@ -34,3 +34,13 @@ test('an empty history has nothing to undo or redo', () => {
   assert.throws(() => history.undo(), NothingToUndoError);
   assert.throws(() => history.redo(), NothingToRedoError);
 });
+
+test('a new edit lets go of the undone ones', () => {
+  const cart = new Cart();
+  const history = new History();
+  history.run(new AddLine(cart, 'KTL-03'));
+  history.undo();
+  history.run(new AddLine(cart, 'MUG-01'));
+  assert.throws(() => history.redo(), NothingToRedoError);
+  assert.deepEqual([...cart.lines], [['MUG-01', 1]]);
+});

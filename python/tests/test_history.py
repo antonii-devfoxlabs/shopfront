@@ -31,3 +31,14 @@ def test_an_empty_history_has_nothing_to_undo_or_redo():
         history.undo()
     with pytest.raises(NothingToRedoError):
         history.redo()
+
+
+def test_a_new_edit_lets_go_of_the_undone_ones():
+    cart = Cart()
+    history = History()
+    history.run(AddLine(cart, "KTL-03"))
+    history.undo()
+    history.run(AddLine(cart, "MUG-01"))
+    with pytest.raises(NothingToRedoError):
+        history.redo()
+    assert cart.lines == {"MUG-01": 1}

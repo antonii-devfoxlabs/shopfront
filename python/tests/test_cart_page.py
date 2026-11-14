@@ -123,3 +123,15 @@ def test_there_is_nothing_to_redo_before_an_undo():
     page.press(AddLine(Cart(), "KTL-03"))
     with pytest.raises(NothingToRedoError):
         page.redo()
+
+
+def test_redo_after_empty_cart_has_nothing_to_redo():
+    cart = Cart()
+    page = CartPage()
+    page.press(AddLine(cart, "KTL-03"))
+    page.press(RemoveLine(cart, "KTL-03"))
+    page.undo()
+    page.press(EmptyCart(cart))
+    with pytest.raises(NothingToRedoError):
+        page.redo()
+    assert cart.is_empty()

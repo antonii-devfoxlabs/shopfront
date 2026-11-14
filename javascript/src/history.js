@@ -21,6 +21,9 @@ export class History {
   run(edit) {
     edit.run();
     this.#done.push(edit);
+    // The undone edits were undone on a cart that has moved on since:
+    // let go of them, so Redo cannot run one on the wrong cart.
+    this.#undone.length = 0;
   }
 
   undo() {

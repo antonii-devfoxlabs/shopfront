@@ -21,6 +21,9 @@ class History:
     def run(self, edit: Edit) -> None:
         edit.run()
         self._done.append(edit)
+        # The undone edits were undone on a cart that has moved on since:
+        # let go of them, so Redo cannot run one on the wrong cart.
+        self._undone.clear()
 
     def undo(self) -> None:
         if not self._done:
