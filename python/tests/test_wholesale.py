@@ -28,3 +28,17 @@ def test_an_async_for_walks_every_wholesale_product():
 
     catalog = WholesaleCatalog(Wholesaler(250))
     assert asyncio.run(walk(catalog)) == skus(range(1, 251))
+
+
+def test_a_late_wholesale_page_sends_one_request():
+    wholesaler = Wholesaler(50_000)
+    page = asyncio.run(WholesaleCatalog(wholesaler).page(20, "W-40000"))
+    assert [product.sku for product in page] == skus(range(40_001, 40_021))
+    assert wholesaler.requests == 1
+
+
+def test_the_more_link_still_works_once_its_product_is_gone():
+    wholesaler = Wholesaler(250)
+    wholesaler.stop_selling("W-00020")
+    page = asyncio.run(WholesaleCatalog(wholesaler).page(20, "W-00020"))
+    assert page[0].sku == "W-00021"

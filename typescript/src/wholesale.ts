@@ -12,10 +12,11 @@ export class WholesaleCatalog {
     this.#wholesaler = wholesaler;
   }
 
-  // A new walk over the wholesaler's products, from the first. It asks
-  // for the next hundred only once it has handed over the last.
-  async *cursor(): AsyncGenerator<Product> {
-    let rows = await this.#wholesaler.productsAfter(undefined);
+  // A new walk over the wholesaler's products after the SKU `after`, or
+  // from the first without one. It asks for the next hundred only once
+  // it has handed over the last.
+  async *cursor(after?: string): AsyncGenerator<Product> {
+    let rows = await this.#wholesaler.productsAfter(after);
     let last = rows.at(-1);
     while (last !== undefined) {
       yield* rows;
@@ -32,13 +33,6 @@ export class WholesaleCatalog {
   // The `size` products after the SKU `after`, the last one the shopper
   // saw (the More link carries it), or the first page without one.
   async page(size: number, after?: string): Promise<Product[]> {
-    const cursor = this.cursor();
-    if (after !== undefined) {
-      let step = await cursor.next();
-      while (!step.done && step.value.sku !== after) {
-        step = await cursor.next();
-      }
-    }
-    return takeAsync(cursor, size);
+    return takeAsync(this.cursor(after), size);
   }
 }

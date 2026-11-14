@@ -13,10 +13,13 @@ class WholesaleCatalog:
     def __init__(self, wholesaler: Wholesaler) -> None:
         self._wholesaler = wholesaler
 
-    async def cursor(self) -> AsyncIterator[Product]:
-        """A new walk over the wholesaler's products, from the first. It
-        asks for the next hundred only once it has handed over the last."""
-        rows = await self._wholesaler.products_after(None)
+    async def cursor(
+        self, after: str | None = None
+    ) -> AsyncIterator[Product]:
+        """A new walk over the wholesaler's products after the SKU `after`,
+        or from the first without one. It asks for the next hundred only
+        once it has handed over the last."""
+        rows = await self._wholesaler.products_after(after)
         while rows:
             for row in rows:
                 yield Product(**row)
@@ -31,9 +34,4 @@ class WholesaleCatalog:
     ) -> list[Product]:
         """The `size` products after the SKU `after`, the last one the
         shopper saw (the More link carries it), or the first page."""
-        cursor = self.cursor()
-        if after is not None:
-            async for product in cursor:
-                if product.sku == after:
-                    break
-        return await take_async(cursor, size)
+        return await take_async(self.cursor(after), size)

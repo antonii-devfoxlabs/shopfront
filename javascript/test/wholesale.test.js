@@ -38,3 +38,20 @@ test('a for await loop walks every wholesale product', async () => {
   }
   assert.deepEqual(walked, skus(1, 250));
 });
+
+test('a late wholesale page sends one request', async () => {
+  const wholesaler = new Wholesaler(50_000);
+  const page = await new WholesaleCatalog(wholesaler).page(20, 'W-40000');
+  assert.deepEqual(
+    page.map((product) => product.sku),
+    skus(40_001, 40_020),
+  );
+  assert.equal(wholesaler.requests, 1);
+});
+
+test('the more link still works once its product is gone', async () => {
+  const wholesaler = new Wholesaler(250);
+  wholesaler.stopSelling('W-00020');
+  const page = await new WholesaleCatalog(wholesaler).page(20, 'W-00020');
+  assert.equal(page[0].sku, 'W-00021');
+});
