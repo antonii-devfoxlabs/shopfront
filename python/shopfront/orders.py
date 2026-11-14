@@ -293,9 +293,13 @@ def place_order(order: Order, catalog: Catalog, events: OrderEvents) -> None:
 
 def sales_report(orders: Iterable[Order], shop: Settings) -> str:
     """The owner's Monday line: the orders kept, and what they took."""
-    kept = [order for order in orders if order.status == "placed"]
-    takings = sum(order.total_cents for order in kept)
-    return f"Orders: {len(kept)}, takings: {format_money(takings, shop)}"
+    count = 0
+    takings = 0
+    for order in orders:
+        if order.status == "placed":
+            count += 1
+            takings += order.total_cents
+    return f"Orders: {count}, takings: {format_money(takings, shop)}"
 
 
 def format_money(cents: int, shop: Settings) -> str:

@@ -300,10 +300,14 @@ export function placeOrder(
 
 // The owner's Monday line: the orders kept, and what they took.
 export function salesReport(orders: Iterable<Order>, shop: Settings): string {
-  const kept = [...orders].filter((order) => order.status === 'placed');
+  let count = 0;
   let takings = 0;
-  for (const order of kept) takings += order.totalCents;
-  return `Orders: ${kept.length}, takings: ${formatMoney(takings, shop)}`;
+  for (const order of orders) {
+    if (order.status !== 'placed') continue;
+    count += 1;
+    takings += order.totalCents;
+  }
+  return `Orders: ${count}, takings: ${formatMoney(takings, shop)}`;
 }
 
 export function formatMoney(cents: number, shop: Settings): string {
