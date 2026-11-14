@@ -1,11 +1,7 @@
 import pytest
 
 from shopfront.cart import Cart
-from shopfront.cart_page import (
-    CartPage,
-    NothingToRedoError,
-    NothingToUndoError,
-)
+from shopfront.cart_page import CartPage
 from shopfront.edits import (
     AddLine,
     ChangeQuantity,
@@ -13,6 +9,7 @@ from shopfront.edits import (
     RemoveLine,
     minus,
 )
+from shopfront.history import NothingToRedoError, NothingToUndoError
 
 
 def test_the_message_says_what_the_last_edit_did():

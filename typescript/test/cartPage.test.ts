@@ -2,11 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { Cart } from '../src/cart.ts';
-import {
-  CartPage,
-  NothingToRedoError,
-  NothingToUndoError,
-} from '../src/cartPage.ts';
+import { CartPage } from '../src/cartPage.ts';
 import {
   AddLine,
   ChangeQuantity,
@@ -15,6 +11,7 @@ import {
   minus,
   type Edit,
 } from '../src/edits.ts';
+import { NothingToRedoError, NothingToUndoError } from '../src/history.ts';
 
 test('the message says what the last edit did', () => {
   const cart = new Cart();
