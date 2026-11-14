@@ -1,14 +1,8 @@
 import assert from 'node:assert/strict';
-import {
-  existsSync,
-  mkdtempSync,
-  readdirSync,
-  readFileSync,
-  rmSync,
-} from 'node:fs';
+import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { test } from 'node:test';
+import { afterEach, beforeEach, describe, test } from 'node:test';
 
 import {
   CsvExport,
@@ -159,30 +153,20 @@ test('euros keeps two digits of cents', () => {
   );
 });
 
-// Runs check in a new, empty folder, and deletes the folder after,
-// whether check passed or failed.
-function inNewFolder(check) {
-  const folder = mkdtempSync(join(tmpdir(), 'shopfront-'));
-  try {
-    check(folder);
-  } finally {
+// The tests of save write real files: each gets a new, empty folder,
+// deleted after the test, whether it passed or failed.
+describe('save', () => {
+  let folder;
+
+  beforeEach(() => {
+    folder = mkdtempSync(join(tmpdir(), 'shopfront-'));
+  });
+
+  afterEach(() => {
     rmSync(folder, { recursive: true });
-  }
-}
+  });
 
-test('a new folder is deleted when its check fails', () => {
-  const used = [];
-  assert.throws(() =>
-    inNewFolder((folder) => {
-      used.push(folder);
-      throw new Error('a check that fails');
-    }),
-  );
-  assert.equal(existsSync(used[0]), false);
-});
-
-test('the month is saved as four files', () => {
-  inNewFolder((folder) => {
+  test('the month is saved as four files', () => {
     save(folder, ORDERS);
     assert.deepEqual(readdirSync(folder).sort(), [
       'returns.csv',
@@ -191,18 +175,14 @@ test('the month is saved as four files', () => {
       'sales.json',
     ]);
   });
-});
 
-test("the saved sales CSV is the accountant's file", () => {
-  inNewFolder((folder) => {
+  test("the saved sales CSV is the accountant's file", () => {
     save(folder, ORDERS);
     const text = readFileSync(join(folder, 'sales.csv'), 'utf8');
     assert.equal(text, new CsvExport(sales).export(ORDERS));
   });
-});
 
-test("save never writes over a month's files", () => {
-  inNewFolder((folder) => {
+  test("save never writes over a month's files", () => {
     save(folder, ORDERS);
     assert.throws(() => save(folder, []), { code: 'EEXIST' });
   });

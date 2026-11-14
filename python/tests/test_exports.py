@@ -1,7 +1,7 @@
 import json
 import shutil
 import tempfile
-from collections.abc import Callable
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
@@ -145,55 +145,28 @@ def test_euros_keeps_two_digits_of_cents():
     ]
 
 
-def in_new_folder(check: Callable[[Path], None]) -> None:
-    """Runs check in a new, empty folder, and deletes the folder after,
-    whether check passed or failed."""
-    folder = Path(tempfile.mkdtemp(prefix="shopfront-"))
-    try:
-        check(folder)
-    finally:
-        shutil.rmtree(folder)
+@pytest.fixture
+def folder() -> Iterator[Path]:
+    """A new, empty folder for one test, deleted after the test, whether
+    it passed or failed."""
+    made = Path(tempfile.mkdtemp(prefix="shopfront-"))
+    yield made
+    shutil.rmtree(made)
 
 
-def test_a_new_folder_is_deleted_when_its_check_fails():
-    used: list[Path] = []
-
-    def check(folder: Path) -> None:
-        used.append(folder)
-        raise AssertionError("a check that fails")
-
-    with pytest.raises(AssertionError):
-        in_new_folder(check)
-    assert not used[0].exists()
+def test_the_month_is_saved_as_four_files(folder):
+    save(folder, ORDERS)
+    names = sorted(path.name for path in folder.iterdir())
+    assert names == ["returns.csv", "returns.json", "sales.csv", "sales.json"]
 
 
-def test_the_month_is_saved_as_four_files():
-    def check(folder: Path) -> None:
-        save(folder, ORDERS)
-        names = sorted(path.name for path in folder.iterdir())
-        assert names == [
-            "returns.csv",
-            "returns.json",
-            "sales.csv",
-            "sales.json",
-        ]
-
-    in_new_folder(check)
+def test_the_saved_sales_csv_is_the_accountants_file(folder):
+    save(folder, ORDERS)
+    text = (folder / "sales.csv").read_text(encoding="utf-8")
+    assert text == CsvExport(sales).export(ORDERS)
 
 
-def test_the_saved_sales_csv_is_the_accountants_file():
-    def check(folder: Path) -> None:
-        save(folder, ORDERS)
-        text = (folder / "sales.csv").read_text(encoding="utf-8")
-        assert text == CsvExport(sales).export(ORDERS)
-
-    in_new_folder(check)
-
-
-def test_save_never_writes_over_a_months_files():
-    def check(folder: Path) -> None:
-        save(folder, ORDERS)
-        with pytest.raises(FileExistsError):
-            save(folder, [])
-
-    in_new_folder(check)
+def test_save_never_writes_over_a_months_files(folder):
+    save(folder, ORDERS)
+    with pytest.raises(FileExistsError):
+        save(folder, [])
