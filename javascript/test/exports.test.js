@@ -1,5 +1,11 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import {
+  existsSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
@@ -153,28 +159,51 @@ test('euros keeps two digits of cents', () => {
   );
 });
 
-test('the month is saved as four files', () => {
+// Runs check in a new, empty folder, and deletes the folder after,
+// whether check passed or failed.
+function inNewFolder(check) {
   const folder = mkdtempSync(join(tmpdir(), 'shopfront-'));
-  save(folder, ORDERS);
-  assert.deepEqual(readdirSync(folder).sort(), [
-    'returns.csv',
-    'returns.json',
-    'sales.csv',
-    'sales.json',
-  ]);
-  rmSync(folder, { recursive: true });
+  try {
+    check(folder);
+  } finally {
+    rmSync(folder, { recursive: true });
+  }
+}
+
+test('a new folder is deleted when its check fails', () => {
+  const used = [];
+  assert.throws(() =>
+    inNewFolder((folder) => {
+      used.push(folder);
+      throw new Error('a check that fails');
+    }),
+  );
+  assert.equal(existsSync(used[0]), false);
+});
+
+test('the month is saved as four files', () => {
+  inNewFolder((folder) => {
+    save(folder, ORDERS);
+    assert.deepEqual(readdirSync(folder).sort(), [
+      'returns.csv',
+      'returns.json',
+      'sales.csv',
+      'sales.json',
+    ]);
+  });
 });
 
 test("the saved sales CSV is the accountant's file", () => {
-  const folder = mkdtempSync(join(tmpdir(), 'shopfront-'));
-  save(folder, ORDERS);
-  const text = readFileSync(join(folder, 'sales.csv'), 'utf8');
-  assert.equal(text, new CsvExport(sales).export(ORDERS));
-  rmSync(folder, { recursive: true });
+  inNewFolder((folder) => {
+    save(folder, ORDERS);
+    const text = readFileSync(join(folder, 'sales.csv'), 'utf8');
+    assert.equal(text, new CsvExport(sales).export(ORDERS));
+  });
 });
 
 test("save never writes over a month's files", () => {
-  const folder = mkdtempSync(join(tmpdir(), 'shopfront-'));
-  save(folder, ORDERS);
-  assert.throws(() => save(folder, []), { code: 'EEXIST' });
+  inNewFolder((folder) => {
+    save(folder, ORDERS);
+    assert.throws(() => save(folder, []), { code: 'EEXIST' });
+  });
 });
