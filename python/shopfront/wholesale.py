@@ -1,7 +1,9 @@
 """The wholesaler's range on the shop's pages, twenty to a page."""
 
+from collections.abc import AsyncIterator
+
 from shopfront.catalog import Product
-from shopfront.cursors import take
+from shopfront.cursors import take_async
 from shopfront.vendor.wholesaler import Wholesaler
 
 
@@ -11,23 +13,27 @@ class WholesaleCatalog:
     def __init__(self, wholesaler: Wholesaler) -> None:
         self._wholesaler = wholesaler
 
-    async def all_products(self) -> list[Product]:
-        """Every product the wholesaler sells, a hundred per request."""
-        products: list[Product] = []
+    async def cursor(self) -> AsyncIterator[Product]:
+        """A new walk over the wholesaler's products, from the first. It
+        asks for the next hundred only once it has handed over the last."""
         rows = await self._wholesaler.products_after(None)
         while rows:
-            products.extend(Product(**row) for row in rows)
+            for row in rows:
+                yield Product(**row)
             rows = await self._wholesaler.products_after(rows[-1]["sku"])
-        return products
+
+    def __aiter__(self) -> AsyncIterator[Product]:
+        """What an async for loop asks for: a new cursor, from the first."""
+        return self.cursor()
 
     async def page(
         self, size: int, after: str | None = None
     ) -> list[Product]:
         """The `size` products after the SKU `after`, the last one the
         shopper saw (the More link carries it), or the first page."""
-        cursor = iter(await self.all_products())
+        cursor = self.cursor()
         if after is not None:
-            for product in cursor:
+            async for product in cursor:
                 if product.sku == after:
                     break
-        return take(cursor, size)
+        return await take_async(cursor, size)

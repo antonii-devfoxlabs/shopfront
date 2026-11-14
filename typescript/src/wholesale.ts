@@ -1,7 +1,7 @@
 // The wholesaler's range on the shop's pages, twenty to a page.
 
 import type { Product } from './catalog.ts';
-import { take } from './cursors.ts';
+import { takeAsync } from './cursors.ts';
 import type { Wholesaler } from './vendor/wholesaler.ts';
 
 // The products the wholesaler sells, as the shop shows them.
@@ -12,27 +12,33 @@ export class WholesaleCatalog {
     this.#wholesaler = wholesaler;
   }
 
-  // Every product the wholesaler sells, a hundred per request.
-  async allProducts(): Promise<Product[]> {
-    const products: Product[] = [];
+  // A new walk over the wholesaler's products, from the first. It asks
+  // for the next hundred only once it has handed over the last.
+  async *cursor(): AsyncGenerator<Product> {
     let rows = await this.#wholesaler.productsAfter(undefined);
     let last = rows.at(-1);
     while (last !== undefined) {
-      products.push(...rows);
+      yield* rows;
       rows = await this.#wholesaler.productsAfter(last.sku);
       last = rows.at(-1);
     }
-    return products;
+  }
+
+  // What a for await...of loop asks for: a new cursor, from the first.
+  [Symbol.asyncIterator](): AsyncGenerator<Product> {
+    return this.cursor();
   }
 
   // The `size` products after the SKU `after`, the last one the shopper
   // saw (the More link carries it), or the first page without one.
   async page(size: number, after?: string): Promise<Product[]> {
-    const cursor = (await this.allProducts()).values();
+    const cursor = this.cursor();
     if (after !== undefined) {
-      let step = cursor.next();
-      while (!step.done && step.value.sku !== after) step = cursor.next();
+      let step = await cursor.next();
+      while (!step.done && step.value.sku !== after) {
+        step = await cursor.next();
+      }
     }
-    return take(cursor, size);
+    return takeAsync(cursor, size);
   }
 }

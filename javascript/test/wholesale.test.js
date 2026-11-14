@@ -24,3 +24,17 @@ test('a wholesale page holds the products after the sku in its link', async () =
     skus(121, 140),
   );
 });
+
+test('the first wholesale page sends one request', async () => {
+  const wholesaler = new Wholesaler(50_000);
+  await new WholesaleCatalog(wholesaler).page(20);
+  assert.equal(wholesaler.requests, 1);
+});
+
+test('a for await loop walks every wholesale product', async () => {
+  const walked = [];
+  for await (const product of new WholesaleCatalog(new Wholesaler(250))) {
+    walked.push(product.sku);
+  }
+  assert.deepEqual(walked, skus(1, 250));
+});
