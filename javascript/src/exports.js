@@ -22,8 +22,9 @@ export function record(order) {
 }
 
 // The accountant's export: every sale, in one format. export is the
-// routine, the same for every format. A subclass defines only write, the
-// one step in which the formats differ.
+// routine, the same for every format. A subclass must define write, the
+// step in which the formats differ, and may define closing, a hook that
+// adds nothing unless a format has a closing line.
 export class OrderExport {
   export(orders) {
     const records = sales(orders).map(record);
@@ -35,9 +36,9 @@ export class OrderExport {
     throw new Error('A subclass of OrderExport must define write()');
   }
 
-  // The text after the records.
+  // The text after the records: none, unless a format adds some.
   closing(records) {
-    throw new Error('A subclass of OrderExport must define closing()');
+    return '';
   }
 }
 
@@ -66,10 +67,6 @@ export class CsvExport extends OrderExport {
 export class JsonExport extends OrderExport {
   write(records) {
     return JSON.stringify(records, null, 2) + '\n';
-  }
-
-  closing() {
-    return '';
   }
 }
 

@@ -71,6 +71,10 @@ def test_json_lists_the_same_orders():
     assert records[0]["total"] == "19.05"
 
 
+def test_json_ends_with_its_records():
+    assert JsonExport().export(ORDERS).endswith("  }\n]\n")
+
+
 def test_json_keeps_letters_outside_ascii():
     text = JsonExport().export([order("SF-00001", email="zoë@example.com")])
     assert '"zoë@example.com"' in text
@@ -80,8 +84,5 @@ def test_a_new_format_defines_only_its_own_step():
     class OrderIds(OrderExport):
         def write(self, records: list[dict[str, str]]) -> str:
             return " ".join(sale["order_id"] for sale in records)
-
-        def closing(self, records: list[dict[str, str]]) -> str:
-            return ""
 
     assert OrderIds().export(ORDERS) == "SF-00001 SF-00002"

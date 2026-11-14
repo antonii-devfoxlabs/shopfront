@@ -31,8 +31,9 @@ def record(order: Order) -> dict[str, str]:
 class OrderExport(ABC):
     """The accountant's export: every sale, in one format.
 
-    export is the routine, the same for every format. A subclass defines
-    only write, the one step in which the formats differ.
+    export is the routine, the same for every format. A subclass must
+    define write, the step in which the formats differ, and may define
+    closing, a hook that adds nothing unless a format has a closing line.
     """
 
     @final
@@ -44,9 +45,9 @@ class OrderExport(ABC):
     def write(self, records: list[dict[str, str]]) -> str:
         """The records as this format's text."""
 
-    @abstractmethod
     def closing(self, records: list[dict[str, str]]) -> str:
-        """The text after the records."""
+        """The text after the records: none, unless a format adds some."""
+        return ""
 
 
 class CsvExport(OrderExport):
@@ -70,6 +71,3 @@ class JsonExport(OrderExport):
 
     def write(self, records: list[dict[str, str]]) -> str:
         return json.dumps(records, indent=2, ensure_ascii=False) + "\n"
-
-    def closing(self, records: list[dict[str, str]]) -> str:
-        return ""

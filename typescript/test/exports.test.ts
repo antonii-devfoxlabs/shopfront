@@ -75,6 +75,10 @@ test('JSON lists the same orders', () => {
   assert.equal(records[0].total, '19.05');
 });
 
+test('JSON ends with its records', () => {
+  assert.ok(new JsonExport().export(ORDERS).endsWith('  }\n]\n'));
+});
+
 test('JSON keeps letters outside ASCII', () => {
   const text = new JsonExport().export([
     order('SF-00001', 'placed', 'zoë@example.com'),
@@ -86,10 +90,6 @@ test('a new format defines only its own step', () => {
   class OrderIds extends OrderExport {
     protected override write(records: Record<string, string>[]): string {
       return records.map((sale) => sale['order_id']).join(' ');
-    }
-
-    protected override closing(): string {
-      return '';
     }
   }
   assert.equal(new OrderIds().export(ORDERS), 'SF-00001 SF-00002');
