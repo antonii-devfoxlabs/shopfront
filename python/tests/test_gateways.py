@@ -51,7 +51,7 @@ def test_every_way_to_pay_charges_and_refunds_through_it(gateway):
         pay(method, 1_000, EVERY_DETAIL, timed)
         refund(method, 1_000, EVERY_DETAIL, timed)
     calls = {line.split()[1] for line in lines}
-    assert len(lines) == 14
+    assert len(lines) == 16
     assert calls == {
         "charge_card",
         "charge_paypal",

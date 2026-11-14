@@ -191,6 +191,15 @@ const PAYMENT_METHODS = new Map<
       ),
   ],
   [
+    'wero',
+    (details, gateway) =>
+      new Wallet(
+        'wero',
+        required(details.walletToken, 'walletToken'),
+        gateway,
+      ),
+  ],
+  [
     'bank_transfer',
     (details, gateway) =>
       new BankTransfer(required(details.orderId, 'orderId'), gateway),

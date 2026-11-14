@@ -161,6 +161,11 @@ const PAYMENT_METHODS = new Map([
       new Wallet('samsung_pay', required(details, 'walletToken'), gateway),
   ],
   [
+    'wero',
+    (details, gateway) =>
+      new Wallet('wero', required(details, 'walletToken'), gateway),
+  ],
+  [
     'bank_transfer',
     (details, gateway) =>
       new BankTransfer(required(details, 'orderId'), gateway),

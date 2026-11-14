@@ -47,6 +47,12 @@ def test_gift_coupon_takes_five_euros_off():
     assert calculator().discount(300, "GIFT5", A_JUNE_DAY) == 300
 
 
+def test_save_coupon_takes_ten_euros_from_eighty():
+    assert calculator().discount(8_000, "SAVE10", A_JUNE_DAY) == 1_000
+    with pytest.raises(UnknownCouponError, match="needs a bigger order"):
+        calculator().discount(7_999, "SAVE10", A_JUNE_DAY)
+
+
 def test_a_percent_rule_rounds_down_to_the_cent():
     assert percent_off(15)(999, A_JUNE_DAY) == 149
 

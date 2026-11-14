@@ -40,6 +40,7 @@ const COUPONS = new Map<string, CouponRule>([
   ['WELCOME10', percentOff(10)],
   ['WINTER15', onlyIn(12, percentOff(15))],
   ['GIFT5', amountOff(500)],
+  ['SAVE10', amountOff(1_000)],
 ]);
 
 // The calculator's slot for tax rates; the tax service fills it.
@@ -88,6 +89,10 @@ export class PriceCalculator {
       const rule = COUPONS.get(coupon);
       if (rule === undefined) {
         throw new UnknownCouponError(coupon);
+      }
+      // SAVE10 is only for orders of 80.00 or more.
+      if (coupon === 'SAVE10' && subtotalCents < 8_000) {
+        throw new UnknownCouponError('needs a bigger order');
       }
       return rule(subtotalCents, today);
     }

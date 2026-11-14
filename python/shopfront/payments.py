@@ -131,6 +131,9 @@ PAYMENT_METHODS: dict[str, Callable[[dict, Gateway], PaymentMethod]] = {
     "samsung_pay": lambda details, gateway: Wallet(
         "samsung_pay", required(details, "wallet_token"), gateway
     ),
+    "wero": lambda details, gateway: Wallet(
+        "wero", required(details, "wallet_token"), gateway
+    ),
     "bank_transfer": lambda details, gateway: BankTransfer(
         required(details, "order_id"), gateway
     ),

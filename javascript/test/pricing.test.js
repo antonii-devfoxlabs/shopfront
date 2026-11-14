@@ -50,6 +50,15 @@ test('gift coupon takes five euros off', () => {
   assert.equal(calculator().discount(300, 'GIFT5', A_JUNE_DAY), 300);
 });
 
+test('save coupon takes ten euros from eighty', () => {
+  const prices = calculator();
+  assert.equal(prices.discount(8_000, 'SAVE10', A_JUNE_DAY), 1_000);
+  assert.throws(() => prices.discount(7_999, 'SAVE10', A_JUNE_DAY), {
+    name: 'UnknownCouponError',
+    message: 'needs a bigger order',
+  });
+});
+
 test('a percent rule rounds down to the cent', () => {
   assert.equal(percentOff(15)(999, A_JUNE_DAY), 149);
 });

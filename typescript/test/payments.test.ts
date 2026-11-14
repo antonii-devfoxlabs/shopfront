@@ -33,6 +33,7 @@ const EVERY_METHOD: [string, PaymentDetails, string | null][] = [
   ['apple_pay', { walletToken: 'wallet-1' }, null],
   ['google_pay', { walletToken: 'wallet-2' }, null],
   ['samsung_pay', { walletToken: 'wallet-3' }, null],
+  ['wero', { walletToken: 'wallet-4' }, null],
   ['bank_transfer', { orderId: 'SF-00042' }, 'SHOPFRONT-SF-00042'],
   ['gift_card', { code: 'GIFT-2026-0001' }, 'GIFT-2026-0001'],
 ];
@@ -89,6 +90,7 @@ const EVERY_CLASS: [string, PaymentDetails, Function][] = [
   ['apple_pay', { walletToken: 'wallet-1' }, Wallet],
   ['google_pay', { walletToken: 'wallet-2' }, Wallet],
   ['samsung_pay', { walletToken: 'wallet-3' }, Wallet],
+  ['wero', { walletToken: 'wallet-4' }, Wallet],
   ['bank_transfer', { orderId: 'SF-00042' }, BankTransfer],
   ['gift_card', { code: 'GIFT-2026-0001' }, GiftCard],
 ];

@@ -25,6 +25,7 @@ EVERY_METHOD = [
     ("apple_pay", {"wallet_token": "wallet-1"}, None),
     ("google_pay", {"wallet_token": "wallet-2"}, None),
     ("samsung_pay", {"wallet_token": "wallet-3"}, None),
+    ("wero", {"wallet_token": "wallet-4"}, None),
     ("bank_transfer", {"order_id": "SF-00042"}, "SHOPFRONT-SF-00042"),
     ("gift_card", {"code": "GIFT-2026-0001"}, "GIFT-2026-0001"),
 ]
@@ -81,6 +82,7 @@ def test_each_way_to_pay_charges_on_its_own(create, kind, gateway):
         ("apple_pay", {"wallet_token": "wallet-1"}, Wallet),
         ("google_pay", {"wallet_token": "wallet-2"}, Wallet),
         ("samsung_pay", {"wallet_token": "wallet-3"}, Wallet),
+        ("wero", {"wallet_token": "wallet-4"}, Wallet),
         ("bank_transfer", {"order_id": "SF-00042"}, BankTransfer),
         ("gift_card", {"code": "GIFT-2026-0001"}, GiftCard),
     ],
