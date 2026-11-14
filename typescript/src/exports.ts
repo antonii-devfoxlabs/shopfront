@@ -29,11 +29,14 @@ export function record(order: Order): Record<string, string> {
 export abstract class OrderExport {
   export(orders: Order[]): string {
     const records = sales(orders).map(record);
-    return this.write(records);
+    return this.write(records) + this.closing(records);
   }
 
   // The records as this format's text.
   protected abstract write(records: Record<string, string>[]): string;
+
+  // The text after the records.
+  protected abstract closing(records: Record<string, string>[]): string;
 }
 
 // A header row, then a row per sale: what a spreadsheet opens.
@@ -45,12 +48,26 @@ export class CsvExport extends OrderExport {
     }
     return rows.join('\n') + '\n';
   }
+
+  protected override closing(records: Record<string, string>[]): string {
+    // The bank checks the file: the number of sales and their sum.
+    const cents = records
+      .map((sale) => Number(String(sale['total']).replace('.', '')))
+      .reduce((sum, saleCents) => sum + saleCents, 0);
+    const euros = Math.floor(cents / 100);
+    const rest = String(cents % 100).padStart(2, '0');
+    return `total,${records.length},,,${euros}.${rest}\n`;
+  }
 }
 
 // A list of records: what the bookkeeping app reads.
 export class JsonExport extends OrderExport {
   protected override write(records: Record<string, string>[]): string {
     return JSON.stringify(records, null, 2) + '\n';
+  }
+
+  protected override closing(): string {
+    return '';
   }
 }
 

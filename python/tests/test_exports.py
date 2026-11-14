@@ -37,6 +37,14 @@ def test_csv_lists_placed_orders_in_order():
         "order_id,email,country,payment,total\n"
         "SF-00001,ada@example.com,DE,card,19.05\n"
         "SF-00002,ada@example.com,DE,card,19.05\n"
+        "total,2,,,38.10\n"
+    )
+
+
+def test_csv_ends_with_the_count_and_the_sum_of_the_sales():
+    text = CsvExport().export([order("SF-00001")])
+    assert text.endswith(
+        "SF-00001,ada@example.com,DE,card,19.05\ntotal,1,,,19.05\n"
     )
 
 
@@ -72,5 +80,8 @@ def test_a_new_format_defines_only_its_own_step():
     class OrderIds(OrderExport):
         def write(self, records: list[dict[str, str]]) -> str:
             return " ".join(sale["order_id"] for sale in records)
+
+        def closing(self, records: list[dict[str, str]]) -> str:
+            return ""
 
     assert OrderIds().export(ORDERS) == "SF-00001 SF-00002"

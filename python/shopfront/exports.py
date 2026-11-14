@@ -38,11 +38,15 @@ class OrderExport(ABC):
     @final
     def export(self, orders: list[Order]) -> str:
         records = [record(order) for order in sales(orders)]
-        return self.write(records)
+        return self.write(records) + self.closing(records)
 
     @abstractmethod
     def write(self, records: list[dict[str, str]]) -> str:
         """The records as this format's text."""
+
+    @abstractmethod
+    def closing(self, records: list[dict[str, str]]) -> str:
+        """The text after the records."""
 
 
 class CsvExport(OrderExport):
@@ -54,9 +58,18 @@ class CsvExport(OrderExport):
             rows.append(",".join(sale[column] for column in COLUMNS))
         return "\n".join(rows) + "\n"
 
+    def closing(self, records: list[dict[str, str]]) -> str:
+        # The bank checks the file: the number of sales and their sum.
+        cents = sum(int(sale["total"].replace(".", "")) for sale in records)
+        total = f"{cents // 100}.{cents % 100:02d}"
+        return f"total,{len(records)},,,{total}\n"
+
 
 class JsonExport(OrderExport):
     """A list of records: what the bookkeeping app reads."""
 
     def write(self, records: list[dict[str, str]]) -> str:
         return json.dumps(records, indent=2, ensure_ascii=False) + "\n"
+
+    def closing(self, records: list[dict[str, str]]) -> str:
+        return ""

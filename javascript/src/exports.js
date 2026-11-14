@@ -27,12 +27,17 @@ export function record(order) {
 export class OrderExport {
   export(orders) {
     const records = sales(orders).map(record);
-    return this.write(records);
+    return this.write(records) + this.closing(records);
   }
 
   // The records as this format's text.
   write(records) {
     throw new Error('A subclass of OrderExport must define write()');
+  }
+
+  // The text after the records.
+  closing(records) {
+    throw new Error('A subclass of OrderExport must define closing()');
   }
 }
 
@@ -45,12 +50,26 @@ export class CsvExport extends OrderExport {
     }
     return rows.join('\n') + '\n';
   }
+
+  closing(records) {
+    // The bank checks the file: the number of sales and their sum.
+    const cents = records
+      .map((sale) => Number(sale.total.replace('.', '')))
+      .reduce((sum, saleCents) => sum + saleCents, 0);
+    const euros = Math.floor(cents / 100);
+    const rest = String(cents % 100).padStart(2, '0');
+    return `total,${records.length},,,${euros}.${rest}\n`;
+  }
 }
 
 // A list of records: what the bookkeeping app reads.
 export class JsonExport extends OrderExport {
   write(records) {
     return JSON.stringify(records, null, 2) + '\n';
+  }
+
+  closing() {
+    return '';
   }
 }
 

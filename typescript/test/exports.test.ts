@@ -36,7 +36,17 @@ test('CSV lists placed orders in order', () => {
     new CsvExport().export(ORDERS),
     'order_id,email,country,payment,total\n' +
       'SF-00001,ada@example.com,DE,card,19.05\n' +
-      'SF-00002,ada@example.com,DE,card,19.05\n',
+      'SF-00002,ada@example.com,DE,card,19.05\n' +
+      'total,2,,,38.10\n',
+  );
+});
+
+test('CSV ends with the count and the sum of the sales', () => {
+  const text = new CsvExport().export([order('SF-00001')]);
+  assert.ok(
+    text.endsWith(
+      'SF-00001,ada@example.com,DE,card,19.05\ntotal,1,,,19.05\n',
+    ),
   );
 });
 
@@ -76,6 +86,10 @@ test('a new format defines only its own step', () => {
   class OrderIds extends OrderExport {
     protected override write(records: Record<string, string>[]): string {
       return records.map((sale) => sale['order_id']).join(' ');
+    }
+
+    protected override closing(): string {
+      return '';
     }
   }
   assert.equal(new OrderIds().export(ORDERS), 'SF-00001 SF-00002');
