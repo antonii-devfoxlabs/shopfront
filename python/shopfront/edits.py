@@ -4,7 +4,7 @@ down, and the one function that runs it."""
 import json
 from dataclasses import asdict, dataclass
 from functools import partial
-from typing import assert_never
+from typing import assert_never, get_args
 
 from shopfront.cart import Cart
 from shopfront.history import Undo
@@ -90,9 +90,10 @@ def label(edit: Edit) -> str:
             assert_never(edit)
 
 
+# Every kind of edit by its name, read from Edit itself: a kind added to
+# Edit can be read back from the log with no other line to change.
 _KINDS: dict[str, type[Edit]] = {
-    kind.__name__: kind
-    for kind in (AddLine, ChangeQuantity, RemoveLine, EmptyCart)
+    kind.__name__: kind for kind in get_args(Edit.__value__)
 }
 
 
