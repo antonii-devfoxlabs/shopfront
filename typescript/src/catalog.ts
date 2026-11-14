@@ -1,7 +1,5 @@
 // The products Shopfront sells, and how many of each are left.
 
-import type { Cursor } from './cursors.ts';
-
 export type Product = {
   readonly sku: string;
   readonly name: string;
@@ -19,8 +17,9 @@ export class OutOfStockError extends Error {
 }
 
 // Hands over the catalog's products one at a time, in order. It keeps
-// its own place, so each walk has a cursor of its own.
-export class ProductCursor implements Cursor<Product> {
+// its own place, so each walk has a cursor of its own. It speaks the
+// iterator protocol, so a for...of loop can walk it.
+export class ProductCursor implements IterableIterator<Product, undefined> {
   readonly #products: readonly Product[];
   #place = 0;
 
@@ -28,12 +27,17 @@ export class ProductCursor implements Cursor<Product> {
     this.#products = products;
   }
 
-  // The next product, or undefined once every one is handed over.
-  next(): Product | undefined {
-    if (this.#place === this.#products.length) return undefined;
+  // A walk goes on from where the cursor stands: it is its own.
+  [Symbol.iterator](): this {
+    return this;
+  }
+
+  // The next product, or done once every one is handed over.
+  next(): IteratorResult<Product, undefined> {
     const product = this.#products[this.#place];
+    if (product === undefined) return { value: undefined, done: true };
     this.#place += 1;
-    return product;
+    return { value: product, done: false };
   }
 }
 
@@ -53,6 +57,11 @@ export class Catalog {
   // A new walk over every product, from the first.
   cursor(): ProductCursor {
     return new ProductCursor(this.#products);
+  }
+
+  // What a for...of loop asks for: a new cursor, from the first.
+  [Symbol.iterator](): ProductCursor {
+    return this.cursor();
   }
 
   find(sku: string): Product {
@@ -95,10 +104,8 @@ export class Catalog {
   search(text: string, limit: number): Product[] {
     const wanted = text.toLowerCase();
     const found: Product[] = [];
-    const cursor = this.cursor();
-    while (found.length < limit) {
-      const product = cursor.next();
-      if (product === undefined) break;
+    for (const product of this) {
+      if (found.length === limit) break;
       if (product.name.toLowerCase().includes(wanted)) found.push(product);
     }
     return found;
@@ -108,11 +115,8 @@ export class Catalog {
 // Every product with fewer than `under` left, for the weekly order.
 export function reorderList(catalog: Catalog, under: number): Product[] {
   const short: Product[] = [];
-  const cursor = catalog.cursor();
-  let product = cursor.next();
-  while (product !== undefined) {
+  for (const product of catalog) {
     if (product.stock < under) short.push(product);
-    product = cursor.next();
   }
   return short;
 }

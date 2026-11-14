@@ -37,14 +37,19 @@ test('lists every product', () => {
 
 test('a cursor hands over every product in order', () => {
   const cursor = starterCatalog().cursor();
-  const skus = [];
-  let product = cursor.next();
-  while (product !== undefined) {
-    skus.push(product.sku);
-    product = cursor.next();
-  }
+  const skus = [...cursor].map((product) => product.sku);
   assert.deepEqual(skus, ['MUG-01', 'TEA-02', 'KTL-03', 'CUP-04', 'FLT-05']);
-  assert.equal(cursor.next(), undefined);
+  assert.equal(cursor.next().done, true);
+});
+
+test('every for...of loop walks the catalog from the first', () => {
+  const catalog = starterCatalog();
+  const first = [...catalog].map((product) => product.sku);
+  assert.deepEqual(
+    [...catalog].map((product) => product.sku),
+    first,
+  );
+  assert.equal(first[0], 'MUG-01');
 });
 
 test('each cursor keeps its own place', () => {
@@ -53,8 +58,8 @@ test('each cursor keeps its own place', () => {
   first.next();
   first.next();
   const second = catalog.cursor();
-  assert.equal(second.next(), catalog.find('MUG-01'));
-  assert.equal(first.next(), catalog.find('KTL-03'));
+  assert.equal(second.next().value, catalog.find('MUG-01'));
+  assert.equal(first.next().value, catalog.find('KTL-03'));
 });
 
 test('a page takes the next products from its cursor', () => {

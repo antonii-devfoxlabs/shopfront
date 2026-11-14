@@ -23,16 +23,21 @@ class OutOfStockError(Exception):
 
 class ProductCursor:
     """Hands over the catalog's products one at a time, in order. It
-    keeps its own place, so each walk has a cursor of its own."""
+    keeps its own place, so each walk has a cursor of its own. It speaks
+    Python's iterator protocol, so a for loop can walk it."""
 
     def __init__(self, products: Sequence[Product]) -> None:
         self._products = products
         self._place = 0
 
-    def next(self) -> Product | None:
-        """The next product, or None once every one is handed over."""
+    def __iter__(self) -> ProductCursor:
+        """A walk goes on from where the cursor stands: it is its own."""
+        return self
+
+    def __next__(self) -> Product:
+        """The next product; StopIteration once every one is handed over."""
         if self._place == len(self._products):
-            return None
+            raise StopIteration
         product = self._products[self._place]
         self._place += 1
         return product
@@ -49,6 +54,10 @@ class Catalog:
     def cursor(self) -> ProductCursor:
         """A new walk over every product, from the first."""
         return ProductCursor(self._products)
+
+    def __iter__(self) -> ProductCursor:
+        """What a for loop asks for: a new cursor, from the first."""
+        return self.cursor()
 
     def find(self, sku: str) -> Product:
         try:
@@ -83,10 +92,8 @@ class Catalog:
         """The first `limit` products whose names hold `text`, any case."""
         wanted = text.lower()
         found: list[Product] = []
-        cursor = self.cursor()
-        while len(found) < limit:
-            product = cursor.next()
-            if product is None:
+        for product in self:
+            if len(found) == limit:
                 break
             if wanted in product.name.lower():
                 found.append(product)
@@ -95,14 +102,7 @@ class Catalog:
 
 def reorder_list(catalog: Catalog, under: int) -> list[Product]:
     """Every product with fewer than `under` left, for the weekly order."""
-    short: list[Product] = []
-    cursor = catalog.cursor()
-    product = cursor.next()
-    while product is not None:
-        if product.stock < under:
-            short.append(product)
-        product = cursor.next()
-    return short
+    return [product for product in catalog if product.stock < under]
 
 
 def starter_catalog() -> Catalog:

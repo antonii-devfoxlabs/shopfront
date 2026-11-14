@@ -226,6 +226,14 @@ def test_the_sales_report_counts_only_the_orders_kept():
     assert report == "Orders: 1, takings: 31.68 EUR"
 
 
+def test_the_sales_report_walks_the_order_book_itself():
+    catalog = starter_catalog()
+    for order_id in ("SF-00001", "SF-00002"):
+        place_order(an_order(order_id=order_id), catalog, OrderEvents())
+    report = sales_report(OrderBook.instance(), GERMAN_SHOP)
+    assert report == "Orders: 2, takings: 63.36 EUR"
+
+
 def test_money_is_shown_in_euros():
     assert format_money(3_168, GERMAN_SHOP) == "31.68 EUR"
     assert format_money(5, GERMAN_SHOP) == "0.05 EUR"

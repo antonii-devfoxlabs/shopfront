@@ -40,23 +40,26 @@ def test_lists_every_product():
 
 def test_a_cursor_hands_over_every_product_in_order():
     cursor = starter_catalog().cursor()
-    skus = []
-    product = cursor.next()
-    while product is not None:
-        skus.append(product.sku)
-        product = cursor.next()
+    skus = [product.sku for product in cursor]
     assert skus == ["MUG-01", "TEA-02", "KTL-03", "CUP-04", "FLT-05"]
-    assert cursor.next() is None
+    assert next(cursor, None) is None
+
+
+def test_every_for_loop_walks_the_catalog_from_the_first():
+    catalog = starter_catalog()
+    first = [product.sku for product in catalog]
+    assert [product.sku for product in catalog] == first
+    assert first[0] == "MUG-01"
 
 
 def test_each_cursor_keeps_its_own_place():
     catalog = starter_catalog()
     first = catalog.cursor()
-    first.next()
-    first.next()
+    next(first)
+    next(first)
     second = catalog.cursor()
-    assert second.next() == catalog.find("MUG-01")
-    assert first.next() == catalog.find("KTL-03")
+    assert next(second) == catalog.find("MUG-01")
+    assert next(first) == catalog.find("KTL-03")
 
 
 def test_a_page_takes_the_next_products_from_its_cursor():

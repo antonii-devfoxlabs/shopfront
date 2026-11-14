@@ -3,7 +3,6 @@
 import { EventEmitter } from 'node:events';
 
 import type { Catalog } from './catalog.ts';
-import type { Cursor } from './cursors.ts';
 import type { Settings } from './settings.ts';
 
 export type OrderStatus = 'placed' | 'cancelled' | 'returned';
@@ -202,8 +201,9 @@ export class UnknownOrderError extends Error {
 }
 
 // Hands over the book's orders one at a time, the newest first. It keeps
-// its own place, so each walk has a cursor of its own.
-export class OrderCursor implements Cursor<Order> {
+// its own place, so each walk has a cursor of its own. It speaks the
+// iterator protocol, so a for...of loop can walk it.
+export class OrderCursor implements IterableIterator<Order, undefined> {
   readonly #orders: readonly Order[];
   #place: number;
 
@@ -212,11 +212,17 @@ export class OrderCursor implements Cursor<Order> {
     this.#place = orders.length;
   }
 
-  // The next older order, or undefined once every one is handed over.
-  next(): Order | undefined {
-    if (this.#place === 0) return undefined;
+  // A walk goes on from where the cursor stands: it is its own.
+  [Symbol.iterator](): this {
+    return this;
+  }
+
+  // The next older order, or done once every one is handed over.
+  next(): IteratorResult<Order, undefined> {
+    const order = this.#orders[this.#place - 1];
+    if (order === undefined) return { value: undefined, done: true };
     this.#place -= 1;
-    return this.#orders[this.#place];
+    return { value: order, done: false };
   }
 }
 
@@ -259,6 +265,11 @@ export class OrderBook {
   // A new walk over every order, from the newest.
   cursor(): OrderCursor {
     return new OrderCursor(this.#orders);
+  }
+
+  // What a for...of loop asks for: a new cursor, from the newest.
+  [Symbol.iterator](): OrderCursor {
+    return this.cursor();
   }
 }
 
