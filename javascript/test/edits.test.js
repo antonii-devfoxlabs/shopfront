@@ -140,3 +140,16 @@ test('an edit holds only plain values', () => {
     '{"kind":"AddLine","sku":"KTL-03","quantity":2}',
   );
 });
+
+test('every edit reads back as it was written', () => {
+  const edits = [
+    { kind: 'AddLine', sku: 'KTL-03', quantity: 2 },
+    { kind: 'ChangeQuantity', sku: 'MUG-01', quantity: 0 },
+    { kind: 'RemoveLine', sku: 'TEA-02' },
+    { kind: 'EmptyCart' },
+  ];
+  assert.deepEqual(
+    edits.map((edit) => JSON.parse(JSON.stringify(edit))),
+    edits,
+  );
+});

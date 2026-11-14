@@ -19,7 +19,7 @@ export class CartPage {
 
   press(edit: Edit): void {
     this.#history.run(edit);
-    this.log.push(label(edit));
+    this.log.push(JSON.stringify(edit));
     this.message = label(edit);
   }
 
@@ -42,21 +42,12 @@ export function restore(cart: Cart, log: readonly string[]): CartPage {
   for (const line of log) {
     if (line === 'Undo') page.undo();
     else if (line === 'Redo') page.redo();
-    else page.press(editFromLabel(line));
+    else {
+      // JSON.parse answers any: the log is Shopfront's own, written by
+      // press from an Edit, so it is read back as one unchecked.
+      const edit: Edit = JSON.parse(line);
+      page.press(edit);
+    }
   }
   return page;
-}
-
-// A label is all the log keeps of an edit: read the edit back from its
-// words.
-function editFromLabel(text: string): Edit {
-  if (text === 'Emptied the cart') return { kind: 'EmptyCart' };
-  if (text.startsWith('Added ')) {
-    return { kind: 'AddLine', sku: text.slice('Added '.length), quantity: 1 };
-  }
-  if (text.startsWith('Removed ')) {
-    return { kind: 'RemoveLine', sku: text.slice('Removed '.length) };
-  }
-  const [sku = '', quantity = ''] = text.split(' set to ');
-  return { kind: 'ChangeQuantity', sku, quantity: Number(quantity) };
 }

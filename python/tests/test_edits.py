@@ -7,10 +7,13 @@ from shopfront.cart import Cart, NotInCartError
 from shopfront.edits import (
     AddLine,
     ChangeQuantity,
+    Edit,
     EmptyCart,
     RemoveLine,
     apply,
     label,
+    read,
+    write,
 )
 
 
@@ -117,3 +120,13 @@ def test_an_edit_holds_only_plain_values():
     assert json.dumps(asdict(AddLine("KTL-03", 2))) == (
         '{"sku": "KTL-03", "quantity": 2}'
     )
+
+
+def test_every_edit_reads_back_as_it_was_written():
+    edits: list[Edit] = [
+        AddLine("KTL-03", 2),
+        ChangeQuantity("MUG-01", 0),
+        RemoveLine("TEA-02"),
+        EmptyCart(),
+    ]
+    assert [read(write(edit)) for edit in edits] == edits

@@ -25,7 +25,7 @@ export class CartPage {
   /** @param {Edit} edit */
   press(edit) {
     this.#history.run(edit);
-    this.log.push(label(edit));
+    this.log.push(JSON.stringify(edit));
     this.message = label(edit);
   }
 
@@ -53,25 +53,7 @@ export function restore(cart, log) {
   for (const line of log) {
     if (line === 'Undo') page.undo();
     else if (line === 'Redo') page.redo();
-    else page.press(editFromLabel(line));
+    else page.press(JSON.parse(line));
   }
   return page;
-}
-
-// A label is all the log keeps of an edit: read the edit back from its
-// words.
-/**
- * @param {string} text
- * @returns {Edit}
- */
-function editFromLabel(text) {
-  if (text === 'Emptied the cart') return { kind: 'EmptyCart' };
-  if (text.startsWith('Added ')) {
-    return { kind: 'AddLine', sku: text.slice('Added '.length), quantity: 1 };
-  }
-  if (text.startsWith('Removed ')) {
-    return { kind: 'RemoveLine', sku: text.slice('Removed '.length) };
-  }
-  const [sku, quantity] = text.split(' set to ');
-  return { kind: 'ChangeQuantity', sku, quantity: Number(quantity) };
 }

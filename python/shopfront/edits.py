@@ -1,7 +1,8 @@
 """What a shopper asks the cart page to do, as data that can be written
 down, and the one function that runs it."""
 
-from dataclasses import dataclass
+import json
+from dataclasses import asdict, dataclass
 from functools import partial
 from typing import assert_never
 
@@ -87,6 +88,24 @@ def label(edit: Edit) -> str:
             return "Emptied the cart"
         case _:
             assert_never(edit)
+
+
+_KINDS: dict[str, type[Edit]] = {
+    kind.__name__: kind
+    for kind in (AddLine, ChangeQuantity, RemoveLine, EmptyCart)
+}
+
+
+def write(edit: Edit) -> str:
+    """The edit as one line of JSON, for the log."""
+    return json.dumps({"kind": type(edit).__name__, **asdict(edit)})
+
+
+def read(line: str) -> Edit:
+    """The edit a line of the log was written from."""
+    fields = json.loads(line)
+    kind = _KINDS[fields.pop("kind")]
+    return kind(**fields)
 
 
 def minus(cart: Cart, sku: str) -> Edit:

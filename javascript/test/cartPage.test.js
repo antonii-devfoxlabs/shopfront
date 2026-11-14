@@ -126,8 +126,8 @@ test('the log holds every press, undo and redo in order', () => {
   page.undo();
   page.redo();
   assert.deepEqual(page.log, [
-    'Added KTL-03',
-    'KTL-03 set to 3',
+    '{"kind":"AddLine","sku":"KTL-03","quantity":1}',
+    '{"kind":"ChangeQuantity","sku":"KTL-03","quantity":3}',
     'Undo',
     'Redo',
   ]);
@@ -155,4 +155,13 @@ test('undo still works after a restart', () => {
   const restored = restore(restoredCart, page.log);
   restored.undo();
   assert.deepEqual([...restoredCart.lines], [['KTL-03', 1]]);
+});
+
+test('a restart brings back an addition of two', () => {
+  const cart = new Cart();
+  const page = new CartPage(cart);
+  page.press({ kind: 'AddLine', sku: 'KTL-03', quantity: 2 });
+  const restoredCart = new Cart();
+  restore(restoredCart, page.log);
+  assert.deepEqual([...restoredCart.lines], [['KTL-03', 2]]);
 });

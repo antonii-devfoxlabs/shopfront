@@ -123,7 +123,12 @@ def test_the_log_holds_every_press_undo_and_redo_in_order():
     page.press(ChangeQuantity("KTL-03", 3))
     page.undo()
     page.redo()
-    assert page.log == ["Added KTL-03", "KTL-03 set to 3", "Undo", "Redo"]
+    assert page.log == [
+        '{"kind": "AddLine", "sku": "KTL-03", "quantity": 1}',
+        '{"kind": "ChangeQuantity", "sku": "KTL-03", "quantity": 3}',
+        "Undo",
+        "Redo",
+    ]
 
 
 def test_a_restart_brings_back_the_cart_from_the_log():
@@ -148,3 +153,12 @@ def test_undo_still_works_after_a_restart():
     restored = restore(restored_cart, page.log)
     restored.undo()
     assert restored_cart.lines == {"KTL-03": 1}
+
+
+def test_a_restart_brings_back_an_addition_of_two():
+    cart = Cart()
+    page = CartPage(cart)
+    page.press(AddLine("KTL-03", 2))
+    restored_cart = Cart()
+    restore(restored_cart, page.log)
+    assert restored_cart.lines == {"KTL-03": 2}

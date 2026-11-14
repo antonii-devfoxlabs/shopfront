@@ -3,15 +3,7 @@
 from functools import partial
 
 from shopfront.cart import Cart
-from shopfront.edits import (
-    AddLine,
-    ChangeQuantity,
-    Edit,
-    EmptyCart,
-    RemoveLine,
-    apply,
-    label,
-)
+from shopfront.edits import Edit, apply, label, read, write
 from shopfront.history import History
 
 
@@ -28,7 +20,7 @@ class CartPage:
 
     def press(self, edit: Edit) -> None:
         self._history.run(edit)
-        self.log.append(label(edit))
+        self.log.append(write(edit))
         self.message = label(edit)
 
     def undo(self) -> None:
@@ -51,18 +43,5 @@ def restore(cart: Cart, log: list[str]) -> CartPage:
         elif line == "Redo":
             page.redo()
         else:
-            page.press(_edit_from_label(line))
+            page.press(read(line))
     return page
-
-
-def _edit_from_label(text: str) -> Edit:
-    # A label is all the log keeps of an edit: read the edit back from
-    # its words.
-    if text == "Emptied the cart":
-        return EmptyCart()
-    if text.startswith("Added "):
-        return AddLine(text.removeprefix("Added "))
-    if text.startswith("Removed "):
-        return RemoveLine(text.removeprefix("Removed "))
-    sku, quantity = text.split(" set to ")
-    return ChangeQuantity(sku, int(quantity))
