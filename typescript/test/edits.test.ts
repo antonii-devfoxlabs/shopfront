@@ -34,3 +34,14 @@ test('a product not in the cart cannot be removed', () => {
     NotInCartError,
   );
 });
+
+test('undo puts back the line its own removal took', () => {
+  const cart = new Cart();
+  cart.add('MUG-01');
+  cart.add('KTL-03');
+  new RemoveLine(cart, 'KTL-03').run();
+  const last = new RemoveLine(cart, 'MUG-01');
+  last.run();
+  last.undo();
+  assert.deepEqual([...cart.lines], [['MUG-01', 1]]);
+});

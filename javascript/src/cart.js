@@ -4,14 +4,8 @@ export class NotInCartError extends Error {
   name = 'NotInCartError';
 }
 
-export class NothingToUndoError extends Error {
-  name = 'NothingToUndoError';
-}
-
 export class Cart {
   lines = new Map();
-  // The line the last removal took away, for the cart page's Undo.
-  removed = undefined;
 
   add(sku, quantity = 1) {
     if (quantity < 1) throw new RangeError('Add at least one');
@@ -25,17 +19,7 @@ export class Cart {
   }
 
   remove(sku) {
-    const quantity = this.lines.get(sku);
     if (!this.lines.delete(sku)) throw new NotInCartError(sku);
-    this.removed = { sku, quantity };
-  }
-
-  // Put back the line the last removal took away.
-  undoRemove() {
-    if (this.removed === undefined) throw new NothingToUndoError();
-    const { sku, quantity } = this.removed;
-    this.removed = undefined;
-    this.add(sku, quantity);
   }
 
   isEmpty() {
