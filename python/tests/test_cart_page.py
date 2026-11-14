@@ -1,7 +1,11 @@
 import pytest
 
 from shopfront.cart import Cart
-from shopfront.cart_page import CartPage, NothingToUndoError
+from shopfront.cart_page import (
+    CartPage,
+    NothingToRedoError,
+    NothingToUndoError,
+)
 from shopfront.edits import (
     AddLine,
     ChangeQuantity,
@@ -88,3 +92,37 @@ def test_the_page_runs_any_edit_that_fills_the_slot():
 def test_there_is_nothing_to_undo_before_an_edit():
     with pytest.raises(NothingToUndoError):
         CartPage().undo()
+
+
+def test_undo_twice_takes_both_edits_back():
+    cart = Cart()
+    page = CartPage()
+    page.press(AddLine(cart, "KTL-03"))
+    page.press(AddLine(cart, "MUG-01"))
+    page.undo()
+    assert cart.lines == {"KTL-03": 1}
+    page.undo()
+    assert cart.is_empty()
+    with pytest.raises(NothingToUndoError):
+        page.undo()
+
+
+def test_redo_runs_the_undone_edits_again_newest_first():
+    cart = Cart()
+    page = CartPage()
+    page.press(AddLine(cart, "KTL-03"))
+    page.press(AddLine(cart, "MUG-01"))
+    page.undo()
+    page.undo()
+    page.redo()
+    assert cart.lines == {"KTL-03": 1}
+    assert page.message == "Added KTL-03"
+    page.redo()
+    assert cart.lines == {"KTL-03": 1, "MUG-01": 1}
+
+
+def test_there_is_nothing_to_redo_before_an_undo():
+    page = CartPage()
+    page.press(AddLine(Cart(), "KTL-03"))
+    with pytest.raises(NothingToRedoError):
+        page.redo()

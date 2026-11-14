@@ -2,7 +2,11 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { Cart } from '../src/cart.ts';
-import { CartPage, NothingToUndoError } from '../src/cartPage.ts';
+import {
+  CartPage,
+  NothingToRedoError,
+  NothingToUndoError,
+} from '../src/cartPage.ts';
 import {
   AddLine,
   ChangeQuantity,
@@ -90,4 +94,42 @@ test('the page runs any edit that fills the slot', () => {
 
 test('there is nothing to undo before an edit', () => {
   assert.throws(() => new CartPage().undo(), NothingToUndoError);
+});
+
+test('undo twice takes both edits back', () => {
+  const cart = new Cart();
+  const page = new CartPage();
+  page.press(new AddLine(cart, 'KTL-03'));
+  page.press(new AddLine(cart, 'MUG-01'));
+  page.undo();
+  assert.deepEqual([...cart.lines], [['KTL-03', 1]]);
+  page.undo();
+  assert.equal(cart.isEmpty(), true);
+  assert.throws(() => page.undo(), NothingToUndoError);
+});
+
+test('redo runs the undone edits again, newest first', () => {
+  const cart = new Cart();
+  const page = new CartPage();
+  page.press(new AddLine(cart, 'KTL-03'));
+  page.press(new AddLine(cart, 'MUG-01'));
+  page.undo();
+  page.undo();
+  page.redo();
+  assert.deepEqual([...cart.lines], [['KTL-03', 1]]);
+  assert.equal(page.message, 'Added KTL-03');
+  page.redo();
+  assert.deepEqual(
+    [...cart.lines],
+    [
+      ['KTL-03', 1],
+      ['MUG-01', 1],
+    ],
+  );
+});
+
+test('there is nothing to redo before an undo', () => {
+  const page = new CartPage();
+  page.press(new AddLine(new Cart(), 'KTL-03'));
+  assert.throws(() => page.redo(), NothingToRedoError);
 });
