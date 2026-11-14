@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { Cart } from '../src/cart.js';
+import { Cart, NotInCartError } from '../src/cart.js';
 import { CartPage, restore } from '../src/cartPage.js';
 import { minus } from '../src/edits.js';
 import { NothingToRedoError, NothingToUndoError } from '../src/history.js';
@@ -164,4 +164,15 @@ test('a restart brings back an addition of two', () => {
   const restoredCart = new Cart();
   restore(restoredCart, page.log);
   assert.deepEqual([...restoredCart.lines], [['KTL-03', 2]]);
+});
+
+test('a refused press is not written down', () => {
+  const cart = new Cart();
+  const page = new CartPage(cart);
+  assert.throws(
+    () => page.press({ kind: 'RemoveLine', sku: 'KTL-03' }),
+    NotInCartError,
+  );
+  assert.deepEqual(page.log, []);
+  restore(new Cart(), page.log);
 });

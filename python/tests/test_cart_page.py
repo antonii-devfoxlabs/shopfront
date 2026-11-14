@@ -1,6 +1,6 @@
 import pytest
 
-from shopfront.cart import Cart
+from shopfront.cart import Cart, NotInCartError
 from shopfront.cart_page import CartPage, restore
 from shopfront.edits import (
     AddLine,
@@ -162,3 +162,12 @@ def test_a_restart_brings_back_an_addition_of_two():
     restored_cart = Cart()
     restore(restored_cart, page.log)
     assert restored_cart.lines == {"KTL-03": 2}
+
+
+def test_a_refused_press_is_not_written_down():
+    cart = Cart()
+    page = CartPage(cart)
+    with pytest.raises(NotInCartError):
+        page.press(RemoveLine("KTL-03"))
+    assert page.log == []
+    restore(Cart(), page.log)
