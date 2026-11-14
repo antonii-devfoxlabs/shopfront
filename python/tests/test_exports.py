@@ -1,6 +1,6 @@
 import json
 
-from shopfront.exports import CsvExport, JsonExport, OrderExport
+from shopfront.exports import CsvExport, JsonExport, OrderExport, euros
 from shopfront.orders import Order, OrderBuilder
 
 
@@ -86,3 +86,11 @@ def test_a_new_format_defines_only_its_own_step():
             return " ".join(sale["order_id"] for sale in records)
 
     assert OrderIds().export(ORDERS) == "SF-00001 SF-00002"
+
+
+def test_euros_keeps_two_digits_of_cents():
+    assert [euros(5), euros(1_905), euros(100_000)] == [
+        "0.05",
+        "19.05",
+        "1000.00",
+    ]

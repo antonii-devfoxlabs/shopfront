@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { CsvExport, JsonExport, OrderExport } from '../src/exports.js';
+import { CsvExport, euros, JsonExport, OrderExport } from '../src/exports.js';
 import { OrderBuilder } from '../src/orders.js';
 
 function order(orderId, status = 'placed', email = 'ada@example.com') {
@@ -95,4 +95,11 @@ test('an export without its own write says what is missing', () => {
   assert.throws(() => new OrderExport().export(ORDERS), {
     message: 'A subclass of OrderExport must define write()',
   });
+});
+
+test('euros keeps two digits of cents', () => {
+  assert.deepEqual(
+    [euros(5), euros(1_905), euros(100_000)],
+    ['0.05', '19.05', '1000.00'],
+  );
 });

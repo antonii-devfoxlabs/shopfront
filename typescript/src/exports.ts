@@ -10,16 +10,21 @@ export function sales(orders: Order[]): Order[] {
   return orders.filter((order) => order.status === 'placed').sort(byOrderId);
 }
 
+// An amount in cents as euros, the way the files write it: 19.05.
+export function euros(cents: number): string {
+  const whole = Math.floor(cents / 100);
+  const rest = String(cents % 100).padStart(2, '0');
+  return `${whole}.${rest}`;
+}
+
 // One sale as the accountant's fields, named as in COLUMNS.
 export function record(order: Order): Record<string, string> {
-  const euros = Math.floor(order.totalCents / 100);
-  const cents = String(order.totalCents % 100).padStart(2, '0');
   return {
     order_id: order.orderId,
     email: order.customerEmail,
     country: order.shippingCountry,
     payment: order.paymentMethod,
-    total: `${euros}.${cents}`,
+    total: euros(order.totalCents),
   };
 }
 
@@ -29,15 +34,16 @@ export function record(order: Order): Record<string, string> {
 // adds nothing unless a format has a closing line.
 export abstract class OrderExport {
   export(orders: Order[]): string {
-    const records = sales(orders).map(record);
-    return this.write(records) + this.closing(records);
+    const sold = sales(orders);
+    const records = sold.map(record);
+    return this.write(records) + this.closing(sold);
   }
 
   // The records as this format's text.
   protected abstract write(records: Record<string, string>[]): string;
 
   // The text after the records: none, unless a format adds some.
-  protected closing(records: Record<string, string>[]): string {
+  protected closing(sold: Order[]): string {
     return '';
   }
 }
@@ -52,14 +58,10 @@ export class CsvExport extends OrderExport {
     return rows.join('\n') + '\n';
   }
 
-  protected override closing(records: Record<string, string>[]): string {
+  protected override closing(sold: Order[]): string {
     // The bank checks the file: the number of sales and their sum.
-    const cents = records
-      .map((sale) => Number(String(sale['total']).replace('.', '')))
-      .reduce((sum, saleCents) => sum + saleCents, 0);
-    const euros = Math.floor(cents / 100);
-    const rest = String(cents % 100).padStart(2, '0');
-    return `total,${records.length},,,${euros}.${rest}\n`;
+    const total = sold.reduce((sum, order) => sum + order.totalCents, 0);
+    return `total,${sold.length},,,${euros(total)}\n`;
   }
 }
 

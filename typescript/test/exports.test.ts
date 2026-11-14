@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { CsvExport, JsonExport, OrderExport } from '../src/exports.ts';
+import { CsvExport, euros, JsonExport, OrderExport } from '../src/exports.ts';
 import { type Order, OrderBuilder, type OrderStatus } from '../src/orders.ts';
 
 function order(
@@ -93,4 +93,11 @@ test('a new format defines only its own step', () => {
     }
   }
   assert.equal(new OrderIds().export(ORDERS), 'SF-00001 SF-00002');
+});
+
+test('euros keeps two digits of cents', () => {
+  assert.deepEqual(
+    [euros(5), euros(1_905), euros(100_000)],
+    ['0.05', '19.05', '1000.00'],
+  );
 });
