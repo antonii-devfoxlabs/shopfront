@@ -1,4 +1,7 @@
 import assert from 'node:assert/strict';
+import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { test } from 'node:test';
 
 import {
@@ -8,6 +11,7 @@ import {
   OrderExport,
   returns,
   sales,
+  save,
 } from '../src/exports.ts';
 import { type Order, OrderBuilder, type OrderStatus } from '../src/orders.ts';
 
@@ -145,4 +149,30 @@ test('euros keeps two digits of cents', () => {
     [euros(5), euros(1_905), euros(100_000)],
     ['0.05', '19.05', '1000.00'],
   );
+});
+
+test('the month is saved as four files', () => {
+  const folder = mkdtempSync(join(tmpdir(), 'shopfront-'));
+  save(folder, ORDERS);
+  assert.deepEqual(readdirSync(folder).sort(), [
+    'returns.csv',
+    'returns.json',
+    'sales.csv',
+    'sales.json',
+  ]);
+  rmSync(folder, { recursive: true });
+});
+
+test("the saved sales CSV is the accountant's file", () => {
+  const folder = mkdtempSync(join(tmpdir(), 'shopfront-'));
+  save(folder, ORDERS);
+  const text = readFileSync(join(folder, 'sales.csv'), 'utf8');
+  assert.equal(text, new CsvExport(sales).export(ORDERS));
+  rmSync(folder, { recursive: true });
+});
+
+test("save never writes over a month's files", () => {
+  const folder = mkdtempSync(join(tmpdir(), 'shopfront-'));
+  save(folder, ORDERS);
+  assert.throws(() => save(folder, []), { code: 'EEXIST' });
 });

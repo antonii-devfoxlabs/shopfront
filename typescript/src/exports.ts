@@ -1,5 +1,8 @@
 // Orders exported for the accountant: as CSV, and as JSON.
 
+import { writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import type { Order } from './orders.ts';
 
 const COLUMNS = ['order_id', 'email', 'country', 'payment', 'total'];
@@ -93,4 +96,20 @@ export class JsonExport extends OrderExport {
 function byOrderId(first: Order, second: Order): number {
   if (first.orderId < second.orderId) return -1;
   return first.orderId > second.orderId ? 1 : 0;
+}
+
+// The month's four files in folder, for the accountant, the bank and the
+// bookkeeping app. A file already there is never written over.
+export function save(folder: string, orders: Order[]): void {
+  const files = new Map<string, OrderExport>([
+    ['sales.csv', new CsvExport(sales)],
+    ['sales.json', new JsonExport(sales)],
+    ['returns.csv', new CsvExport(returns)],
+    ['returns.json', new JsonExport(returns)],
+  ]);
+  for (const [name, exporter] of files) {
+    writeFileSync(join(folder, name), exporter.export(orders), {
+      flag: 'wx',
+    });
+  }
 }

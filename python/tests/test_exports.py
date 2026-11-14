@@ -1,4 +1,9 @@
 import json
+import shutil
+import tempfile
+from pathlib import Path
+
+import pytest
 
 from shopfront.exports import (
     CsvExport,
@@ -7,6 +12,7 @@ from shopfront.exports import (
     euros,
     returns,
     sales,
+    save,
 )
 from shopfront.orders import Order, OrderBuilder
 
@@ -136,3 +142,26 @@ def test_euros_keeps_two_digits_of_cents():
         "19.05",
         "1000.00",
     ]
+
+
+def test_the_month_is_saved_as_four_files():
+    folder = Path(tempfile.mkdtemp(prefix="shopfront-"))
+    save(folder, ORDERS)
+    names = sorted(path.name for path in folder.iterdir())
+    assert names == ["returns.csv", "returns.json", "sales.csv", "sales.json"]
+    shutil.rmtree(folder)
+
+
+def test_the_saved_sales_csv_is_the_accountants_file():
+    folder = Path(tempfile.mkdtemp(prefix="shopfront-"))
+    save(folder, ORDERS)
+    text = (folder / "sales.csv").read_text(encoding="utf-8")
+    assert text == CsvExport(sales).export(ORDERS)
+    shutil.rmtree(folder)
+
+
+def test_save_never_writes_over_a_months_files():
+    folder = Path(tempfile.mkdtemp(prefix="shopfront-"))
+    save(folder, ORDERS)
+    with pytest.raises(FileExistsError):
+        save(folder, [])

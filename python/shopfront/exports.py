@@ -3,6 +3,7 @@
 import json
 from abc import ABC, abstractmethod
 from collections.abc import Callable
+from pathlib import Path
 from typing import final
 
 from shopfront.orders import Order
@@ -90,3 +91,17 @@ class JsonExport(OrderExport):
 
     def write(self, records: list[dict[str, str]]) -> str:
         return json.dumps(records, indent=2, ensure_ascii=False) + "\n"
+
+
+def save(folder: Path, orders: list[Order]) -> None:
+    """The month's four files in folder, for the accountant, the bank and
+    the bookkeeping app. A file already there is never written over."""
+    files = {
+        "sales.csv": CsvExport(sales),
+        "sales.json": JsonExport(sales),
+        "returns.csv": CsvExport(returns),
+        "returns.json": JsonExport(returns),
+    }
+    for name, exporter in files.items():
+        with open(folder / name, "x", encoding="utf-8") as file:
+            file.write(exporter.export(orders))
