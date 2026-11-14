@@ -16,6 +16,12 @@ def sales(orders: list[Order]) -> list[Order]:
     return sorted(placed, key=lambda order: order.order_id)
 
 
+def returns(orders: list[Order]) -> list[Order]:
+    """The orders the shoppers sent back, oldest first."""
+    returned = [order for order in orders if order.status == "returned"]
+    return sorted(returned, key=lambda order: order.order_id)
+
+
 def euros(cents: int) -> str:
     """An amount in cents as euros, the way the files write it: 19.05."""
     return f"{cents // 100}.{cents % 100:02d}"
@@ -86,13 +92,11 @@ class ReturnsCsvExport(CsvExport):
     """The month's returns as CSV: the bank checks the refunds it paid."""
 
     def pick(self, orders: list[Order]) -> list[Order]:
-        returned = [order for order in orders if order.status == "returned"]
-        return sorted(returned, key=lambda order: order.order_id)
+        return returns(orders)
 
 
 class ReturnsJsonExport(JsonExport):
     """The month's returns as JSON: the bookkeeping app books refunds."""
 
     def pick(self, orders: list[Order]) -> list[Order]:
-        returned = [order for order in orders if order.status == "returned"]
-        return sorted(returned, key=lambda order: order.order_id)
+        return returns(orders)

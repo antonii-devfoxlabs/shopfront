@@ -8,6 +8,13 @@ export function sales(orders) {
   return orders.filter((order) => order.status === 'placed').sort(byOrderId);
 }
 
+// The orders the shoppers sent back, oldest first.
+export function returns(orders) {
+  return orders
+    .filter((order) => order.status === 'returned')
+    .sort(byOrderId);
+}
+
 // An amount in cents as euros, the way the files write it: 19.05.
 export function euros(cents) {
   const whole = Math.floor(cents / 100);
@@ -81,18 +88,14 @@ export class JsonExport extends OrderExport {
 // The month's returns as CSV: the bank checks the refunds it paid.
 export class ReturnsCsvExport extends CsvExport {
   pick(orders) {
-    return orders
-      .filter((order) => order.status === 'returned')
-      .sort(byOrderId);
+    return returns(orders);
   }
 }
 
 // The month's returns as JSON: the bookkeeping app books refunds.
 export class ReturnsJsonExport extends JsonExport {
   pick(orders) {
-    return orders
-      .filter((order) => order.status === 'returned')
-      .sort(byOrderId);
+    return returns(orders);
   }
 }
 

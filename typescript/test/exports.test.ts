@@ -8,6 +8,7 @@ import {
   OrderExport,
   ReturnsCsvExport,
   ReturnsJsonExport,
+  returns,
 } from '../src/exports.ts';
 import { type Order, OrderBuilder, type OrderStatus } from '../src/orders.ts';
 
@@ -91,6 +92,18 @@ test('JSON keeps letters outside ASCII', () => {
     order('SF-00001', 'placed', 'zoë@example.com'),
   ]);
   assert.match(text, /"zoë@example\.com"/);
+});
+
+test('returns are the returned orders, oldest first', () => {
+  const returned = returns([
+    order('SF-00006', 'returned'),
+    order('SF-00005', 'returned'),
+    ...ORDERS,
+  ]);
+  assert.deepEqual(
+    returned.map((sent) => sent.orderId),
+    ['SF-00004', 'SF-00005', 'SF-00006'],
+  );
 });
 
 test('the returns CSV lists only returned orders', () => {
