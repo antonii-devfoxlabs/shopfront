@@ -100,6 +100,12 @@ Order SF-00001 placed
 Email sent to ada@example.com
 ```
 
+## Design
+
+[`DESIGN.md`](DESIGN.md) says where the next change to the store
+goes, and why each pattern is there. The tests in every language
+check each name it gives.
+
 ## One tag per module
 
 The code is written plainly on purpose, the way a store grows
@@ -107,7 +113,8 @@ before anyone stops to design it, and the course takes it apart
 one module at a time. Each module's starting point is a tag: `m01`
 is the code at the start of Module 1, `m02` the code at the start
 of Module 2, and so on. A module's tag appears once the course
-reaches that module.
+reaches that module. `m14` is the store as Level 1 leaves it: every
+module's pattern in place, and the design note.
 
 If you skipped a module, or your copy went astray, start the next
 module on a branch of your own made from its tag (here Module 2,
