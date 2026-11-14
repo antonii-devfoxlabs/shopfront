@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { test } from 'node:test';
+import { afterEach, beforeEach, test } from 'node:test';
 
 import { CatalogError, loadCatalog } from '../src/catalogFile.js';
 
@@ -14,9 +14,21 @@ const KETTLE = {
   stock: 8,
 };
 
-// A path to catalog.json in a new, empty folder.
+// Each test gets a new, empty folder, deleted after the test, whether
+// it passed or failed.
+let folder;
+
+beforeEach(() => {
+  folder = mkdtempSync(join(tmpdir(), 'shopfront-'));
+});
+
+afterEach(() => {
+  rmSync(folder, { recursive: true });
+});
+
+// A path to catalog.json in this test's folder.
 function freshPath() {
-  return join(mkdtempSync(join(tmpdir(), 'shopfront-')), 'catalog.json');
+  return join(folder, 'catalog.json');
 }
 
 test('a typo in a field names the file and the product', () => {
