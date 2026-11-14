@@ -1,16 +1,41 @@
 # Design
 
-One line per pattern: where it lives, and why it is there.
+Where the next change to Shopfront goes, and why each pattern is
+there. A name such as `payments.Card` is a part of the store (the
+file named payments in your language's folder) and a name defined in
+it, the same in Python, JavaScript and TypeScript.
 
-- Registry: `payments.py`, `PAYMENT_METHODS`. Ways to pay keep coming.
-- Factory Method: `returns.py`, `GiftReturn`. A gift goes onto a card.
-- Builder: `orders.py`, `OrderBuilder`. An order has ten parts.
-- Singleton: `orders.py`, `OrderBook`. The support page reads it.
-- Adapter: `providers.py`. Each provider has its own API.
-- Decorator: `taxes.py`, `CachedRates`. A rate is asked for once.
-- Facade: `checkout.py`, `Checkout`. A page makes one call.
-- Strategy: `pricing.py`, `COUPONS`. Marketing's rules keep changing.
-- Observer: `listeners.py`. Placing an order names no listener.
-- Iterator: `catalog.py`, `Catalog.cursor`. Products come one by one.
-- Command: `edits.py`, a class per edit. Undo needs each edit kept.
-- Template Method: `exports.py`, `OrderExport`. One export routine.
+## Where a change goes
+
+- **A way to pay**: a row in `payments.PAYMENT_METHODS`. A new kind
+  of payment is a class beside `payments.Card`, then a row.
+- **A coupon**: a row in `pricing.COUPONS`. A new kind of rule is a
+  wrapper in `pricing`, then a row.
+- **A free-shipping offer**: a row in `shipping.OFFERS`.
+- **A shipping provider**: an adapter in `providers`, added to the
+  providers `main` hands `shipping.Shipping`.
+- **A job round a service** (a timer, a cache): a wrapper, as
+  `taxes.CachedRates` is round the tax service.
+- **Something to do when an order is placed**: a listener in
+  `listeners`, subscribed to `orders.OrderEvents` in `main`.
+- **A part of an order**: a step on `orders.OrderBuilder`.
+- **A step of buying a cart**: in `checkout.Checkout`, which runs
+  the steps in their order.
+- **A cart edit**: a kind in `edits`, and its case in `edits.apply`.
+  This one edits old code: edits are plain data so that they can be
+  written down, and one function runs them all.
+- **A collection to walk**: a cursor, as `catalog.Catalog` has.
+- **An export format**: a subclass of `exports.OrderExport`.
+
+## Kept, for now
+
+`orders.OrderBook` is one book for the whole store, a Singleton:
+the support team's page, outside Shopfront, finds the shop's orders
+there. Once that page goes, hand the book in, as the shop's settings
+and the gateway are.
+
+## Dropped
+
+Factory Method, in `returns`: a gift's return differed from any
+other only in where its money went. A `returns.Return` is handed
+that now.
