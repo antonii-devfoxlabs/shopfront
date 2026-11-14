@@ -3,7 +3,9 @@
 Where the next change to Shopfront goes, and why each pattern is
 there. A name such as `payments.Card` is a part of the store (the
 file named payments in your language's folder) and a name defined in
-it, the same in Python, JavaScript and TypeScript.
+it, the same in Python, JavaScript and TypeScript. Each language's
+tests check that every such name is still defined where the note
+says.
 
 ## Where a change goes
 
