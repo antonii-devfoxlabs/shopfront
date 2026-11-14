@@ -6,9 +6,9 @@ from shopfront.catalog import (
     OutOfStockError,
     UnknownProductError,
     starter_catalog,
-    take,
 )
 from shopfront.catalog_file import load_catalog
+from shopfront.cursors import take
 
 
 def test_finds_a_product_by_its_sku():

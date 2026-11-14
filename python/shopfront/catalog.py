@@ -93,17 +93,6 @@ class Catalog:
         return found
 
 
-def take(cursor: ProductCursor, count: int) -> list[Product]:
-    """The next `count` products from the cursor, or fewer at the end."""
-    taken: list[Product] = []
-    while len(taken) < count:
-        product = cursor.next()
-        if product is None:
-            break
-        taken.append(product)
-    return taken
-
-
 def starter_catalog() -> Catalog:
     return Catalog(
         [

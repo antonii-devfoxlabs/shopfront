@@ -95,17 +95,6 @@ export class Catalog {
   }
 }
 
-// The next `count` products from the cursor, or fewer at the end.
-export function take(cursor, count) {
-  const taken = [];
-  while (taken.length < count) {
-    const product = cursor.next();
-    if (product === undefined) break;
-    taken.push(product);
-  }
-  return taken;
-}
-
 export function starterCatalog() {
   return new Catalog([
     product('MUG-01', 'Enamel mug', 1_250, 350, 40),

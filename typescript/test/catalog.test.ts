@@ -6,9 +6,9 @@ import {
   OutOfStockError,
   UnknownProductError,
   starterCatalog,
-  take,
 } from '../src/catalog.ts';
 import { loadCatalog } from '../src/catalogFile.ts';
+import { take } from '../src/cursors.ts';
 
 test('finds a product by its sku', () => {
   assert.equal(starterCatalog().find('MUG-01').name, 'Enamel mug');

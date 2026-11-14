@@ -1,5 +1,7 @@
 // The products Shopfront sells, and how many of each are left.
 
+import type { Cursor } from './cursors.ts';
+
 export type Product = {
   readonly sku: string;
   readonly name: string;
@@ -18,7 +20,7 @@ export class OutOfStockError extends Error {
 
 // Hands over the catalog's products one at a time, in order. It keeps
 // its own place, so each walk has a cursor of its own.
-export class ProductCursor {
+export class ProductCursor implements Cursor<Product> {
   readonly #products: readonly Product[];
   #place = 0;
 
@@ -101,17 +103,6 @@ export class Catalog {
     }
     return found;
   }
-}
-
-// The next `count` products from the cursor, or fewer at the end.
-export function take(cursor: ProductCursor, count: number): Product[] {
-  const taken: Product[] = [];
-  while (taken.length < count) {
-    const product = cursor.next();
-    if (product === undefined) break;
-    taken.push(product);
-  }
-  return taken;
 }
 
 export function starterCatalog(): Catalog {
