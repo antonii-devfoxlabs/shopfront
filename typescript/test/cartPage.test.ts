@@ -3,32 +3,25 @@ import { test } from 'node:test';
 
 import { Cart } from '../src/cart.ts';
 import { CartPage, restore } from '../src/cartPage.ts';
-import {
-  AddLine,
-  ChangeQuantity,
-  EmptyCart,
-  RemoveLine,
-  minus,
-  type Edit,
-} from '../src/edits.ts';
+import { minus } from '../src/edits.ts';
 import { NothingToRedoError, NothingToUndoError } from '../src/history.ts';
 
 test('the message says what the last edit did', () => {
   const cart = new Cart();
-  const page = new CartPage();
-  page.press(new AddLine(cart, 'KTL-03'));
+  const page = new CartPage(cart);
+  page.press({ kind: 'AddLine', sku: 'KTL-03', quantity: 1 });
   assert.equal(page.message, 'Added KTL-03');
-  page.press(new ChangeQuantity(cart, 'KTL-03', 3));
+  page.press({ kind: 'ChangeQuantity', sku: 'KTL-03', quantity: 3 });
   assert.equal(page.message, 'KTL-03 set to 3');
-  page.press(new RemoveLine(cart, 'KTL-03'));
+  page.press({ kind: 'RemoveLine', sku: 'KTL-03' });
   assert.equal(page.message, 'Removed KTL-03');
 });
 
 test('undo puts back what remove took', () => {
   const cart = new Cart();
   cart.add('KTL-03', 2);
-  const page = new CartPage();
-  page.press(new RemoveLine(cart, 'KTL-03'));
+  const page = new CartPage(cart);
+  page.press({ kind: 'RemoveLine', sku: 'KTL-03' });
   page.undo();
   assert.deepEqual([...cart.lines], [['KTL-03', 2]]);
   assert.equal(page.message, '');
@@ -37,7 +30,7 @@ test('undo puts back what remove took', () => {
 test('minus at one removes the line and undo puts it back', () => {
   const cart = new Cart();
   cart.add('MUG-01');
-  const page = new CartPage();
+  const page = new CartPage(cart);
   page.press(minus(cart, 'MUG-01'));
   assert.equal(page.message, 'Removed MUG-01');
   assert.equal(cart.isEmpty(), true);
@@ -48,7 +41,7 @@ test('minus at one removes the line and undo puts it back', () => {
 test('minus above one takes one away', () => {
   const cart = new Cart();
   cart.add('MUG-01', 3);
-  const page = new CartPage();
+  const page = new CartPage(cart);
   page.press(minus(cart, 'MUG-01'));
   assert.equal(page.message, 'MUG-01 set to 2');
   page.undo();
@@ -57,10 +50,10 @@ test('minus above one takes one away', () => {
 
 test('undo after empty cart puts every line back', () => {
   const cart = new Cart();
-  const page = new CartPage();
-  page.press(new AddLine(cart, 'KTL-03'));
-  page.press(new AddLine(cart, 'MUG-01'));
-  page.press(new EmptyCart(cart));
+  const page = new CartPage(cart);
+  page.press({ kind: 'AddLine', sku: 'KTL-03', quantity: 1 });
+  page.press({ kind: 'AddLine', sku: 'MUG-01', quantity: 1 });
+  page.press({ kind: 'EmptyCart' });
   page.undo();
   assert.deepEqual(
     [...cart.lines],
@@ -71,33 +64,15 @@ test('undo after empty cart puts every line back', () => {
   );
 });
 
-test('the page runs any edit that fills the slot', () => {
-  const done: string[] = [];
-  const note: Edit = {
-    run: () => {
-      done.push('run');
-    },
-    undo: () => {
-      done.push('undo');
-    },
-    label: () => 'Noted',
-  };
-  const page = new CartPage();
-  page.press(note);
-  assert.equal(page.message, 'Noted');
-  page.undo();
-  assert.deepEqual(done, ['run', 'undo']);
-});
-
 test('there is nothing to undo before an edit', () => {
-  assert.throws(() => new CartPage().undo(), NothingToUndoError);
+  assert.throws(() => new CartPage(new Cart()).undo(), NothingToUndoError);
 });
 
 test('undo twice takes both edits back', () => {
   const cart = new Cart();
-  const page = new CartPage();
-  page.press(new AddLine(cart, 'KTL-03'));
-  page.press(new AddLine(cart, 'MUG-01'));
+  const page = new CartPage(cart);
+  page.press({ kind: 'AddLine', sku: 'KTL-03', quantity: 1 });
+  page.press({ kind: 'AddLine', sku: 'MUG-01', quantity: 1 });
   page.undo();
   assert.deepEqual([...cart.lines], [['KTL-03', 1]]);
   page.undo();
@@ -107,9 +82,9 @@ test('undo twice takes both edits back', () => {
 
 test('redo runs the undone edits again, newest first', () => {
   const cart = new Cart();
-  const page = new CartPage();
-  page.press(new AddLine(cart, 'KTL-03'));
-  page.press(new AddLine(cart, 'MUG-01'));
+  const page = new CartPage(cart);
+  page.press({ kind: 'AddLine', sku: 'KTL-03', quantity: 1 });
+  page.press({ kind: 'AddLine', sku: 'MUG-01', quantity: 1 });
   page.undo();
   page.undo();
   page.redo();
@@ -126,27 +101,28 @@ test('redo runs the undone edits again, newest first', () => {
 });
 
 test('there is nothing to redo before an undo', () => {
-  const page = new CartPage();
-  page.press(new AddLine(new Cart(), 'KTL-03'));
+  const cart = new Cart();
+  const page = new CartPage(cart);
+  page.press({ kind: 'AddLine', sku: 'KTL-03', quantity: 1 });
   assert.throws(() => page.redo(), NothingToRedoError);
 });
 
 test('redo after empty cart has nothing to redo', () => {
   const cart = new Cart();
-  const page = new CartPage();
-  page.press(new AddLine(cart, 'KTL-03'));
-  page.press(new RemoveLine(cart, 'KTL-03'));
+  const page = new CartPage(cart);
+  page.press({ kind: 'AddLine', sku: 'KTL-03', quantity: 1 });
+  page.press({ kind: 'RemoveLine', sku: 'KTL-03' });
   page.undo();
-  page.press(new EmptyCart(cart));
+  page.press({ kind: 'EmptyCart' });
   assert.throws(() => page.redo(), NothingToRedoError);
   assert.equal(cart.isEmpty(), true);
 });
 
 test('the log holds every press, undo and redo in order', () => {
   const cart = new Cart();
-  const page = new CartPage();
-  page.press(new AddLine(cart, 'KTL-03'));
-  page.press(new ChangeQuantity(cart, 'KTL-03', 3));
+  const page = new CartPage(cart);
+  page.press({ kind: 'AddLine', sku: 'KTL-03', quantity: 1 });
+  page.press({ kind: 'ChangeQuantity', sku: 'KTL-03', quantity: 3 });
   page.undo();
   page.redo();
   assert.deepEqual(page.log, [
@@ -159,11 +135,11 @@ test('the log holds every press, undo and redo in order', () => {
 
 test('a restart brings back the cart from the log', () => {
   const cart = new Cart();
-  const page = new CartPage();
-  page.press(new AddLine(cart, 'KTL-03'));
-  page.press(new AddLine(cart, 'MUG-01'));
-  page.press(new ChangeQuantity(cart, 'MUG-01', 3));
-  page.press(new RemoveLine(cart, 'KTL-03'));
+  const page = new CartPage(cart);
+  page.press({ kind: 'AddLine', sku: 'KTL-03', quantity: 1 });
+  page.press({ kind: 'AddLine', sku: 'MUG-01', quantity: 1 });
+  page.press({ kind: 'ChangeQuantity', sku: 'MUG-01', quantity: 3 });
+  page.press({ kind: 'RemoveLine', sku: 'KTL-03' });
   page.undo();
   const restoredCart = new Cart();
   restore(restoredCart, page.log);
@@ -172,9 +148,9 @@ test('a restart brings back the cart from the log', () => {
 
 test('undo still works after a restart', () => {
   const cart = new Cart();
-  const page = new CartPage();
-  page.press(new AddLine(cart, 'KTL-03'));
-  page.press(new EmptyCart(cart));
+  const page = new CartPage(cart);
+  page.press({ kind: 'AddLine', sku: 'KTL-03', quantity: 1 });
+  page.press({ kind: 'EmptyCart' });
   const restoredCart = new Cart();
   const restored = restore(restoredCart, page.log);
   restored.undo();

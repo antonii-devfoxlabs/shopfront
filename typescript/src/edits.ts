@@ -1,128 +1,91 @@
-// What a shopper asks the cart page to do, kept so it can be undone.
+// What a shopper asks the cart page to do, as data that can be written
+// down, and the one function that runs it.
 
 import type { Cart } from './cart.ts';
+import type { Undo } from './history.ts';
 
-// The slot every cart edit fills, so the page can run any of them.
-export interface Edit {
-  run(): void;
-  undo(): void;
-  label(): string;
-}
+export type AddLine = {
+  readonly kind: 'AddLine';
+  readonly sku: string;
+  readonly quantity: number;
+};
 
-// Adds to a line, and can take the addition back.
-export class AddLine implements Edit {
-  readonly #cart: Cart;
-  readonly #sku: string;
-  readonly #quantity: number;
-  #before = 0;
+export type ChangeQuantity = {
+  readonly kind: 'ChangeQuantity';
+  readonly sku: string;
+  readonly quantity: number;
+};
 
-  constructor(cart: Cart, sku: string, quantity = 1) {
-    this.#cart = cart;
-    this.#sku = sku;
-    this.#quantity = quantity;
-  }
+export type RemoveLine = {
+  readonly kind: 'RemoveLine';
+  readonly sku: string;
+};
 
-  run(): void {
-    // Read what the line held before the add: undo needs it.
-    this.#before = this.#cart.lines.get(this.#sku) ?? 0;
-    this.#cart.add(this.#sku, this.#quantity);
-  }
+export type EmptyCart = { readonly kind: 'EmptyCart' };
 
-  undo(): void {
-    if (this.#before === 0) this.#cart.remove(this.#sku);
-    else this.#cart.changeQuantity(this.#sku, this.#before);
-  }
+export type Edit = AddLine | ChangeQuantity | RemoveLine | EmptyCart;
 
-  label(): string {
-    return `Added ${this.#sku}`;
-  }
-}
-
-// Sets a line's quantity, and can set it back.
-export class ChangeQuantity implements Edit {
-  readonly #cart: Cart;
-  readonly #sku: string;
-  readonly #quantity: number;
-  #before = 0;
-
-  constructor(cart: Cart, sku: string, quantity: number) {
-    this.#cart = cart;
-    this.#sku = sku;
-    this.#quantity = quantity;
-  }
-
-  run(): void {
-    // Read the quantity before it changes: undo needs it.
-    this.#before = this.#cart.lines.get(this.#sku) ?? 0;
-    this.#cart.changeQuantity(this.#sku, this.#quantity);
-  }
-
-  undo(): void {
-    // A change to zero took the line away: add it back.
-    if (this.#quantity < 1) this.#cart.add(this.#sku, this.#before);
-    else this.#cart.changeQuantity(this.#sku, this.#before);
-  }
-
-  label(): string {
-    if (this.#quantity < 1) return `Removed ${this.#sku}`;
-    return `${this.#sku} set to ${this.#quantity}`;
-  }
-}
-
-// Takes one line out of the cart, and can put it back.
-export class RemoveLine implements Edit {
-  readonly #cart: Cart;
-  readonly #sku: string;
-  #quantity = 0;
-
-  constructor(cart: Cart, sku: string) {
-    this.#cart = cart;
-    this.#sku = sku;
-  }
-
-  run(): void {
-    // Read the quantity before the line goes: undo needs it.
-    this.#quantity = this.#cart.lines.get(this.#sku) ?? 0;
-    this.#cart.remove(this.#sku);
-  }
-
-  undo(): void {
-    this.#cart.add(this.#sku, this.#quantity);
-  }
-
-  label(): string {
-    return `Removed ${this.#sku}`;
-  }
-}
-
-// Takes every line out of the cart, and can put them all back.
-export class EmptyCart implements Edit {
-  readonly #cart: Cart;
-  #lines = new Map<string, number>();
-
-  constructor(cart: Cart) {
-    this.#cart = cart;
-  }
-
-  run(): void {
-    // A copy, made before the lines go: undo needs every one.
-    this.#lines = new Map(this.#cart.lines);
-    for (const sku of this.#lines.keys()) this.#cart.remove(sku);
-  }
-
-  undo(): void {
-    for (const [sku, quantity] of this.#lines) {
-      this.#cart.add(sku, quantity);
+// Runs the edit on the cart, and answers what takes it back.
+export function apply(cart: Cart, edit: Edit): Undo {
+  switch (edit.kind) {
+    case 'AddLine': {
+      // Read what the line held before the add: undo needs it.
+      const before = cart.lines.get(edit.sku) ?? 0;
+      cart.add(edit.sku, edit.quantity);
+      if (before === 0) return () => cart.remove(edit.sku);
+      return () => cart.changeQuantity(edit.sku, before);
+    }
+    case 'ChangeQuantity': {
+      // Read the quantity before it changes: undo needs it.
+      const before = cart.lines.get(edit.sku) ?? 0;
+      cart.changeQuantity(edit.sku, edit.quantity);
+      // A change to zero took the line away: add it back.
+      if (edit.quantity < 1) return () => cart.add(edit.sku, before);
+      return () => cart.changeQuantity(edit.sku, before);
+    }
+    case 'RemoveLine': {
+      // Read the quantity before the line goes: undo needs it.
+      const before = cart.lines.get(edit.sku) ?? 0;
+      cart.remove(edit.sku);
+      return () => cart.add(edit.sku, before);
+    }
+    case 'EmptyCart': {
+      // A copy, made before the lines go: undo needs every one.
+      const lines = new Map(cart.lines);
+      for (const sku of lines.keys()) cart.remove(sku);
+      return () => {
+        for (const [sku, quantity] of lines) cart.add(sku, quantity);
+      };
+    }
+    default: {
+      const unhandled: never = edit;
+      throw new Error(`unknown edit: ${JSON.stringify(unhandled)}`);
     }
   }
-  label(): string {
-    return 'Emptied the cart';
+}
+
+// What the page's message says about the edit.
+export function label(edit: Edit): string {
+  switch (edit.kind) {
+    case 'AddLine':
+      return `Added ${edit.sku}`;
+    case 'ChangeQuantity':
+      if (edit.quantity < 1) return `Removed ${edit.sku}`;
+      return `${edit.sku} set to ${edit.quantity}`;
+    case 'RemoveLine':
+      return `Removed ${edit.sku}`;
+    case 'EmptyCart':
+      return 'Emptied the cart';
+    default: {
+      const unhandled: never = edit;
+      throw new Error(`unknown edit: ${JSON.stringify(unhandled)}`);
+    }
   }
 }
 
 // The minus button's edit: a removal at one, one fewer above it.
 export function minus(cart: Cart, sku: string): Edit {
   const quantity = cart.lines.get(sku) ?? 0;
-  if (quantity === 1) return new RemoveLine(cart, sku);
-  return new ChangeQuantity(cart, sku, quantity - 1);
+  if (quantity === 1) return { kind: 'RemoveLine', sku };
+  return { kind: 'ChangeQuantity', sku, quantity: quantity - 1 };
 }

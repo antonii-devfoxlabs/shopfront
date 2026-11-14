@@ -1,115 +1,97 @@
-"""What a shopper asks the cart page to do, kept so it can be undone."""
+"""What a shopper asks the cart page to do, as data that can be written
+down, and the one function that runs it."""
 
-from typing import Protocol
+from dataclasses import dataclass
+from functools import partial
+from typing import assert_never
 
 from shopfront.cart import Cart
+from shopfront.history import Undo
 
 
-class Edit(Protocol):
-    """The slot every cart edit fills, so the page can run any of them."""
-
-    def run(self) -> None: ...
-
-    def undo(self) -> None: ...
-
-    def label(self) -> str: ...
-
-
+@dataclass(frozen=True)
 class AddLine:
-    """Adds to a line, and can take the addition back."""
-
-    def __init__(self, cart: Cart, sku: str, quantity: int = 1) -> None:
-        self._cart = cart
-        self._sku = sku
-        self._quantity = quantity
-        self._before = 0
-
-    def run(self) -> None:
-        # Read what the line held before the add: undo needs it.
-        self._before = self._cart.lines.get(self._sku, 0)
-        self._cart.add(self._sku, self._quantity)
-
-    def undo(self) -> None:
-        if self._before == 0:
-            self._cart.remove(self._sku)
-        else:
-            self._cart.change_quantity(self._sku, self._before)
-
-    def label(self) -> str:
-        return f"Added {self._sku}"
+    sku: str
+    quantity: int = 1
 
 
+@dataclass(frozen=True)
 class ChangeQuantity:
-    """Sets a line's quantity, and can set it back."""
-
-    def __init__(self, cart: Cart, sku: str, quantity: int) -> None:
-        self._cart = cart
-        self._sku = sku
-        self._quantity = quantity
-        self._before = 0
-
-    def run(self) -> None:
-        # Read the quantity before it changes: undo needs it.
-        self._before = self._cart.lines.get(self._sku, 0)
-        self._cart.change_quantity(self._sku, self._quantity)
-
-    def undo(self) -> None:
-        if self._quantity < 1:
-            # The change took the line away: add it back.
-            self._cart.add(self._sku, self._before)
-        else:
-            self._cart.change_quantity(self._sku, self._before)
-
-    def label(self) -> str:
-        if self._quantity < 1:
-            return f"Removed {self._sku}"
-        return f"{self._sku} set to {self._quantity}"
+    sku: str
+    quantity: int
 
 
+@dataclass(frozen=True)
 class RemoveLine:
-    """Takes one line out of the cart, and can put it back."""
-
-    def __init__(self, cart: Cart, sku: str) -> None:
-        self._cart = cart
-        self._sku = sku
-        self._quantity = 0
-
-    def run(self) -> None:
-        # Read the quantity before the line goes: undo needs it.
-        self._quantity = self._cart.lines.get(self._sku, 0)
-        self._cart.remove(self._sku)
-
-    def undo(self) -> None:
-        self._cart.add(self._sku, self._quantity)
-
-    def label(self) -> str:
-        return f"Removed {self._sku}"
+    sku: str
 
 
+@dataclass(frozen=True)
 class EmptyCart:
-    """Takes every line out of the cart, and can put them all back."""
+    pass
 
-    def __init__(self, cart: Cart) -> None:
-        self._cart = cart
-        self._lines: dict[str, int] = {}
 
-    def run(self) -> None:
-        # A copy, made before the lines go: undo needs every one.
-        self._lines = dict(self._cart.lines)
-        for sku in self._lines:
-            self._cart.remove(sku)
+type Edit = AddLine | ChangeQuantity | RemoveLine | EmptyCart
 
-    def undo(self) -> None:
-        for sku, quantity in self._lines.items():
-            self._cart.add(sku, quantity)
 
-    def label(self) -> str:
-        return "Emptied the cart"
+def apply(cart: Cart, edit: Edit) -> Undo:
+    """Runs the edit on the cart, and answers what takes it back."""
+    match edit:
+        case AddLine(sku, quantity):
+            # Read what the line held before the add: undo needs it.
+            before = cart.lines.get(sku, 0)
+            cart.add(sku, quantity)
+            if before == 0:
+                return partial(cart.remove, sku)
+            return partial(cart.change_quantity, sku, before)
+        case ChangeQuantity(sku, quantity):
+            # Read the quantity before it changes: undo needs it.
+            before = cart.lines.get(sku, 0)
+            cart.change_quantity(sku, quantity)
+            if quantity < 1:
+                # The change took the line away: add it back.
+                return partial(cart.add, sku, before)
+            return partial(cart.change_quantity, sku, before)
+        case RemoveLine(sku):
+            # Read the quantity before the line goes: undo needs it.
+            before = cart.lines.get(sku, 0)
+            cart.remove(sku)
+            return partial(cart.add, sku, before)
+        case EmptyCart():
+            # A copy, made before the lines go: undo needs every one.
+            lines = dict(cart.lines)
+            for sku in lines:
+                cart.remove(sku)
+            return partial(_put_back, cart, lines)
+        case _:
+            assert_never(edit)
+
+
+def _put_back(cart: Cart, lines: dict[str, int]) -> None:
+    for sku, quantity in lines.items():
+        cart.add(sku, quantity)
+
+
+def label(edit: Edit) -> str:
+    """What the page's message says about the edit."""
+    match edit:
+        case AddLine(sku):
+            return f"Added {sku}"
+        case ChangeQuantity(sku, quantity):
+            if quantity < 1:
+                return f"Removed {sku}"
+            return f"{sku} set to {quantity}"
+        case RemoveLine(sku):
+            return f"Removed {sku}"
+        case EmptyCart():
+            return "Emptied the cart"
+        case _:
+            assert_never(edit)
 
 
 def minus(cart: Cart, sku: str) -> Edit:
     """The minus button's edit: a removal at one, one fewer above it."""
     quantity = cart.lines.get(sku, 0)
     if quantity == 1:
-        return RemoveLine(cart, sku)
-    return ChangeQuantity(cart, sku, quantity - 1)
+        return RemoveLine(sku)
+    return ChangeQuantity(sku, quantity - 1)

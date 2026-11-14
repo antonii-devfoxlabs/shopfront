@@ -1,13 +1,7 @@
 // What the cart page's buttons call, and its Undo and Redo links.
 
 import type { Cart } from './cart.ts';
-import {
-  AddLine,
-  ChangeQuantity,
-  EmptyCart,
-  RemoveLine,
-  type Edit,
-} from './edits.ts';
+import { apply, label, type Edit } from './edits.ts';
 import { History } from './history.ts';
 
 // Runs whichever edit a button hands it, and keeps it for Undo.
@@ -17,12 +11,16 @@ export class CartPage {
   // Every press, Undo and Redo, in order: replayed after a restart, they
   // rebuild the cart.
   readonly log: string[] = [];
-  readonly #history = new History();
+  readonly #history: History<Edit>;
+
+  constructor(cart: Cart) {
+    this.#history = new History((edit: Edit) => apply(cart, edit));
+  }
 
   press(edit: Edit): void {
     this.#history.run(edit);
-    this.log.push(edit.label());
-    this.message = edit.label();
+    this.log.push(label(edit));
+    this.message = label(edit);
   }
 
   undo(): void {
@@ -34,31 +32,31 @@ export class CartPage {
   redo(): void {
     const edit = this.#history.redo();
     this.log.push('Redo');
-    this.message = edit.label();
+    this.message = label(edit);
   }
 }
 
 // The page after a restart: the log replayed on a new cart.
 export function restore(cart: Cart, log: readonly string[]): CartPage {
-  const page = new CartPage();
+  const page = new CartPage(cart);
   for (const line of log) {
     if (line === 'Undo') page.undo();
     else if (line === 'Redo') page.redo();
-    else page.press(editFromLabel(cart, line));
+    else page.press(editFromLabel(line));
   }
   return page;
 }
 
-// A label is all an edit can say about itself: read the edit back from
-// its words.
-function editFromLabel(cart: Cart, label: string): Edit {
-  if (label === 'Emptied the cart') return new EmptyCart(cart);
-  if (label.startsWith('Added ')) {
-    return new AddLine(cart, label.slice('Added '.length));
+// A label is all the log keeps of an edit: read the edit back from its
+// words.
+function editFromLabel(text: string): Edit {
+  if (text === 'Emptied the cart') return { kind: 'EmptyCart' };
+  if (text.startsWith('Added ')) {
+    return { kind: 'AddLine', sku: text.slice('Added '.length), quantity: 1 };
   }
-  if (label.startsWith('Removed ')) {
-    return new RemoveLine(cart, label.slice('Removed '.length));
+  if (text.startsWith('Removed ')) {
+    return { kind: 'RemoveLine', sku: text.slice('Removed '.length) };
   }
-  const [sku = '', quantity = ''] = label.split(' set to ');
-  return new ChangeQuantity(cart, sku, Number(quantity));
+  const [sku = '', quantity = ''] = text.split(' set to ');
+  return { kind: 'ChangeQuantity', sku, quantity: Number(quantity) };
 }
