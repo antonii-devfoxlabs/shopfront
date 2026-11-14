@@ -2,11 +2,16 @@
 
 import json
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from typing import final
 
 from shopfront.orders import Order
 
 COLUMNS = ("order_id", "email", "country", "payment", "total")
+
+# Which orders a file lists fills this slot: a function of all the
+# orders that answers the ones to list, as sales and returns do.
+Selection = Callable[[list[Order]], list[Order]]
 
 
 def sales(orders: list[Order]) -> list[Order]:
@@ -39,29 +44,28 @@ def record(order: Order) -> dict[str, str]:
 
 
 class OrderExport(ABC):
-    """The accountant's export: every sale, in one format.
+    """The accountant's export: the orders a file lists, in one format.
 
-    export is the routine, the same for every format. A subclass must
-    define write, the step in which the formats differ, and may define
-    closing, a hook that adds nothing unless a format has a closing line,
-    and pick, a hook that picks the sales unless a file lists others.
+    export is the routine, the same for every file. It is handed pick,
+    which orders the file lists, when it is made. A subclass must define
+    write, the step in which the formats differ, and may define closing,
+    a hook that adds nothing unless a format has a closing line.
     """
+
+    def __init__(self, pick: Selection) -> None:
+        self._pick = pick
 
     @final
     def export(self, orders: list[Order]) -> str:
-        sold = self.pick(orders)
-        records = [record(order) for order in sold]
-        return self.write(records) + self.closing(sold)
-
-    def pick(self, orders: list[Order]) -> list[Order]:
-        """The orders this file lists: the sales, unless a file says."""
-        return sales(orders)
+        listed = self._pick(orders)
+        records = [record(order) for order in listed]
+        return self.write(records) + self.closing(listed)
 
     @abstractmethod
     def write(self, records: list[dict[str, str]]) -> str:
         """The records as this format's text."""
 
-    def closing(self, sold: list[Order]) -> str:
+    def closing(self, listed: list[Order]) -> str:
         """The text after the records: none, unless a format adds some."""
         return ""
 
@@ -75,10 +79,10 @@ class CsvExport(OrderExport):
             rows.append(",".join(sale[column] for column in COLUMNS))
         return "\n".join(rows) + "\n"
 
-    def closing(self, sold: list[Order]) -> str:
-        # The bank checks the file: the number of sales and their sum.
-        total = sum(order.total_cents for order in sold)
-        return f"total,{len(sold)},,,{euros(total)}\n"
+    def closing(self, listed: list[Order]) -> str:
+        # The bank checks the file: the number of orders and their sum.
+        total = sum(order.total_cents for order in listed)
+        return f"total,{len(listed)},,,{euros(total)}\n"
 
 
 class JsonExport(OrderExport):
@@ -86,17 +90,3 @@ class JsonExport(OrderExport):
 
     def write(self, records: list[dict[str, str]]) -> str:
         return json.dumps(records, indent=2, ensure_ascii=False) + "\n"
-
-
-class ReturnsCsvExport(CsvExport):
-    """The month's returns as CSV: the bank checks the refunds it paid."""
-
-    def pick(self, orders: list[Order]) -> list[Order]:
-        return returns(orders)
-
-
-class ReturnsJsonExport(JsonExport):
-    """The month's returns as JSON: the bookkeeping app books refunds."""
-
-    def pick(self, orders: list[Order]) -> list[Order]:
-        return returns(orders)

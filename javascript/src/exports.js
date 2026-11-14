@@ -2,6 +2,14 @@
 
 const COLUMNS = ['order_id', 'email', 'country', 'payment', 'total'];
 
+/**
+ * Which orders a file lists fills this slot: a function of all the
+ * orders that answers the ones to list, as sales and returns do.
+ * @callback Selection
+ * @param {import('./orders.js').Order[]} orders
+ * @returns {import('./orders.js').Order[]}
+ */
+
 // The orders the accountant counts as sales, oldest first.
 export function sales(orders) {
   // Only placed orders are sales: a returned one gave its money back.
@@ -33,21 +41,23 @@ export function record(order) {
   };
 }
 
-// The accountant's export: every sale, in one format. export is the
-// routine, the same for every format. A subclass must define write, the
-// step in which the formats differ, and may define closing, a hook that
-// adds nothing unless a format has a closing line, and pick, a hook that
-// picks the sales unless a file lists others.
+// The accountant's export: the orders a file lists, in one format.
+// export is the routine, the same for every file. It is handed pick,
+// which orders the file lists, when it is made. A subclass must define
+// write, the step in which the formats differ, and may define closing, a
+// hook that adds nothing unless a format has a closing line.
 export class OrderExport {
-  export(orders) {
-    const sold = this.pick(orders);
-    const records = sold.map(record);
-    return this.write(records) + this.closing(sold);
+  #pick;
+
+  /** @param {Selection} pick */
+  constructor(pick) {
+    this.#pick = pick;
   }
 
-  // The orders this file lists: the sales, unless a file says.
-  pick(orders) {
-    return sales(orders);
+  export(orders) {
+    const listed = this.#pick(orders);
+    const records = listed.map(record);
+    return this.write(records) + this.closing(listed);
   }
 
   // The records as this format's text.
@@ -56,7 +66,7 @@ export class OrderExport {
   }
 
   // The text after the records: none, unless a format adds some.
-  closing(sold) {
+  closing(listed) {
     return '';
   }
 }
@@ -71,10 +81,10 @@ export class CsvExport extends OrderExport {
     return rows.join('\n') + '\n';
   }
 
-  closing(sold) {
-    // The bank checks the file: the number of sales and their sum.
-    const total = sold.reduce((sum, order) => sum + order.totalCents, 0);
-    return `total,${sold.length},,,${euros(total)}\n`;
+  closing(listed) {
+    // The bank checks the file: the number of orders and their sum.
+    const total = listed.reduce((sum, order) => sum + order.totalCents, 0);
+    return `total,${listed.length},,,${euros(total)}\n`;
   }
 }
 
@@ -82,20 +92,6 @@ export class CsvExport extends OrderExport {
 export class JsonExport extends OrderExport {
   write(records) {
     return JSON.stringify(records, null, 2) + '\n';
-  }
-}
-
-// The month's returns as CSV: the bank checks the refunds it paid.
-export class ReturnsCsvExport extends CsvExport {
-  pick(orders) {
-    return returns(orders);
-  }
-}
-
-// The month's returns as JSON: the bookkeeping app books refunds.
-export class ReturnsJsonExport extends JsonExport {
-  pick(orders) {
-    return returns(orders);
   }
 }
 

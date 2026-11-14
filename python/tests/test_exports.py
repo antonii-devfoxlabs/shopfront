@@ -4,10 +4,9 @@ from shopfront.exports import (
     CsvExport,
     JsonExport,
     OrderExport,
-    ReturnsCsvExport,
-    ReturnsJsonExport,
     euros,
     returns,
+    sales,
 )
 from shopfront.orders import Order, OrderBuilder
 
@@ -41,7 +40,7 @@ ORDERS = [
 
 
 def test_csv_lists_placed_orders_in_order():
-    assert CsvExport().export(ORDERS) == (
+    assert CsvExport(sales).export(ORDERS) == (
         "order_id,email,country,payment,total\n"
         "SF-00001,ada@example.com,DE,card,19.05\n"
         "SF-00002,ada@example.com,DE,card,19.05\n"
@@ -50,28 +49,28 @@ def test_csv_lists_placed_orders_in_order():
 
 
 def test_csv_ends_with_the_count_and_the_sum_of_the_sales():
-    text = CsvExport().export([order("SF-00001")])
+    text = CsvExport(sales).export([order("SF-00001")])
     assert text.endswith(
         "SF-00001,ada@example.com,DE,card,19.05\ntotal,1,,,19.05\n"
     )
 
 
 def test_csv_leaves_out_returned_orders():
-    text = CsvExport().export(
+    text = CsvExport(sales).export(
         [order("SF-00001"), order("SF-00002", "returned")]
     )
     assert "SF-00002" not in text
 
 
 def test_json_leaves_out_returned_orders():
-    text = JsonExport().export(
+    text = JsonExport(sales).export(
         [order("SF-00001"), order("SF-00002", "returned")]
     )
     assert "SF-00002" not in text
 
 
 def test_json_lists_the_same_orders():
-    records = json.loads(JsonExport().export(ORDERS))
+    records = json.loads(JsonExport(sales).export(ORDERS))
     assert [record["order_id"] for record in records] == [
         "SF-00001",
         "SF-00002",
@@ -80,11 +79,13 @@ def test_json_lists_the_same_orders():
 
 
 def test_json_ends_with_its_records():
-    assert JsonExport().export(ORDERS).endswith("  }\n]\n")
+    assert JsonExport(sales).export(ORDERS).endswith("  }\n]\n")
 
 
 def test_json_keeps_letters_outside_ascii():
-    text = JsonExport().export([order("SF-00001", email="zoë@example.com")])
+    text = JsonExport(sales).export(
+        [order("SF-00001", email="zoë@example.com")]
+    )
     assert '"zoë@example.com"' in text
 
 
@@ -101,7 +102,7 @@ def test_returns_are_the_returned_orders_oldest_first():
 
 
 def test_the_returns_csv_lists_only_returned_orders():
-    assert ReturnsCsvExport().export(ORDERS) == (
+    assert CsvExport(returns).export(ORDERS) == (
         "order_id,email,country,payment,total\n"
         "SF-00004,ada@example.com,DE,card,19.05\n"
         "total,1,,,19.05\n"
@@ -109,7 +110,7 @@ def test_the_returns_csv_lists_only_returned_orders():
 
 
 def test_the_returns_json_lists_only_returned_orders():
-    records = json.loads(ReturnsJsonExport().export(ORDERS))
+    records = json.loads(JsonExport(returns).export(ORDERS))
     assert [record["order_id"] for record in records] == ["SF-00004"]
 
 
@@ -118,7 +119,15 @@ def test_a_new_format_defines_only_its_own_step():
         def write(self, records: list[dict[str, str]]) -> str:
             return " ".join(sale["order_id"] for sale in records)
 
-    assert OrderIds().export(ORDERS) == "SF-00001 SF-00002"
+    assert OrderIds(sales).export(ORDERS) == "SF-00001 SF-00002"
+
+
+def test_a_new_format_lists_returns_with_no_class_of_its_own():
+    class OrderIds(OrderExport):
+        def write(self, records: list[dict[str, str]]) -> str:
+            return " ".join(sale["order_id"] for sale in records)
+
+    assert OrderIds(returns).export(ORDERS) == "SF-00004"
 
 
 def test_euros_keeps_two_digits_of_cents():

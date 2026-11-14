@@ -4,6 +4,10 @@ import type { Order } from './orders.ts';
 
 const COLUMNS = ['order_id', 'email', 'country', 'payment', 'total'];
 
+// Which orders a file lists fills this slot: a function of all the
+// orders that answers the ones to list, as sales and returns do.
+export type Selection = (orders: Order[]) => Order[];
+
 // The orders the accountant counts as sales, oldest first.
 export function sales(orders: Order[]): Order[] {
   // Only placed orders are sales: a returned one gave its money back.
@@ -35,28 +39,29 @@ export function record(order: Order): Record<string, string> {
   };
 }
 
-// The accountant's export: every sale, in one format. export is the
-// routine, the same for every format. A subclass must define write, the
-// step in which the formats differ, and may define closing, a hook that
-// adds nothing unless a format has a closing line, and pick, a hook that
-// picks the sales unless a file lists others.
+// The accountant's export: the orders a file lists, in one format.
+// export is the routine, the same for every file. It is handed pick,
+// which orders the file lists, when it is made. A subclass must define
+// write, the step in which the formats differ, and may define closing, a
+// hook that adds nothing unless a format has a closing line.
 export abstract class OrderExport {
-  export(orders: Order[]): string {
-    const sold = this.pick(orders);
-    const records = sold.map(record);
-    return this.write(records) + this.closing(sold);
+  readonly #pick: Selection;
+
+  constructor(pick: Selection) {
+    this.#pick = pick;
   }
 
-  // The orders this file lists: the sales, unless a file says.
-  protected pick(orders: Order[]): Order[] {
-    return sales(orders);
+  export(orders: Order[]): string {
+    const listed = this.#pick(orders);
+    const records = listed.map(record);
+    return this.write(records) + this.closing(listed);
   }
 
   // The records as this format's text.
   protected abstract write(records: Record<string, string>[]): string;
 
   // The text after the records: none, unless a format adds some.
-  protected closing(sold: Order[]): string {
+  protected closing(listed: Order[]): string {
     return '';
   }
 }
@@ -71,10 +76,10 @@ export class CsvExport extends OrderExport {
     return rows.join('\n') + '\n';
   }
 
-  protected override closing(sold: Order[]): string {
-    // The bank checks the file: the number of sales and their sum.
-    const total = sold.reduce((sum, order) => sum + order.totalCents, 0);
-    return `total,${sold.length},,,${euros(total)}\n`;
+  protected override closing(listed: Order[]): string {
+    // The bank checks the file: the number of orders and their sum.
+    const total = listed.reduce((sum, order) => sum + order.totalCents, 0);
+    return `total,${listed.length},,,${euros(total)}\n`;
   }
 }
 
@@ -82,20 +87,6 @@ export class CsvExport extends OrderExport {
 export class JsonExport extends OrderExport {
   protected override write(records: Record<string, string>[]): string {
     return JSON.stringify(records, null, 2) + '\n';
-  }
-}
-
-// The month's returns as CSV: the bank checks the refunds it paid.
-export class ReturnsCsvExport extends CsvExport {
-  protected override pick(orders: Order[]): Order[] {
-    return returns(orders);
-  }
-}
-
-// The month's returns as JSON: the bookkeeping app books refunds.
-export class ReturnsJsonExport extends JsonExport {
-  protected override pick(orders: Order[]): Order[] {
-    return returns(orders);
   }
 }
 
