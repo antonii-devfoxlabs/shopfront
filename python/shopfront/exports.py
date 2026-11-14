@@ -8,7 +8,8 @@ from shopfront.orders import Order
 def export_csv(orders: list[Order]) -> str:
     rows = ["order_id,email,country,payment,total"]
     for order in sorted(orders, key=lambda order: order.order_id):
-        if order.status == "cancelled":
+        # Only placed orders are sales: a returned one gave its money back.
+        if order.status != "placed":
             continue
         total = f"{order.total_cents // 100}.{order.total_cents % 100:02d}"
         rows.append(

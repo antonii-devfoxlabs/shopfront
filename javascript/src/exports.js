@@ -4,7 +4,8 @@ export function exportCsv(orders) {
   const rows = ['order_id,email,country,payment,total'];
   const sorted = [...orders].sort(byOrderId);
   for (const order of sorted) {
-    if (order.status === 'cancelled') continue;
+    // Only placed orders are sales: a returned one gave its money back.
+    if (order.status !== 'placed') continue;
     const euros = Math.floor(order.totalCents / 100);
     const cents = String(order.totalCents % 100).padStart(2, '0');
     const total = `${euros}.${cents}`;

@@ -39,6 +39,11 @@ test('CSV lists placed orders in order', () => {
   );
 });
 
+test('CSV leaves out returned orders', () => {
+  const text = exportCsv([order('SF-00001'), order('SF-00002', 'returned')]);
+  assert.doesNotMatch(text, /SF-00002/);
+});
+
 test('JSON lists the same orders', () => {
   const records = JSON.parse(exportJson(ORDERS));
   assert.deepEqual(
