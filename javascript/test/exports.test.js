@@ -1,7 +1,14 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { CsvExport, euros, JsonExport, OrderExport } from '../src/exports.js';
+import {
+  CsvExport,
+  euros,
+  JsonExport,
+  OrderExport,
+  ReturnsCsvExport,
+  ReturnsJsonExport,
+} from '../src/exports.js';
 import { OrderBuilder } from '../src/orders.js';
 
 function order(orderId, status = 'placed', email = 'ada@example.com') {
@@ -80,6 +87,23 @@ test('JSON keeps letters outside ASCII', () => {
     order('SF-00001', 'placed', 'zoë@example.com'),
   ]);
   assert.match(text, /"zoë@example\.com"/);
+});
+
+test('the returns CSV lists only returned orders', () => {
+  assert.equal(
+    new ReturnsCsvExport().export(ORDERS),
+    'order_id,email,country,payment,total\n' +
+      'SF-00004,ada@example.com,DE,card,19.05\n' +
+      'total,1,,,19.05\n',
+  );
+});
+
+test('the returns JSON lists only returned orders', () => {
+  const records = JSON.parse(new ReturnsJsonExport().export(ORDERS));
+  assert.deepEqual(
+    records.map((record) => record.order_id),
+    ['SF-00004'],
+  );
 });
 
 test('a new format defines only its own step', () => {

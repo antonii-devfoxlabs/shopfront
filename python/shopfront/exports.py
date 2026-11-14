@@ -37,14 +37,19 @@ class OrderExport(ABC):
 
     export is the routine, the same for every format. A subclass must
     define write, the step in which the formats differ, and may define
-    closing, a hook that adds nothing unless a format has a closing line.
+    closing, a hook that adds nothing unless a format has a closing line,
+    and pick, a hook that picks the sales unless a file lists others.
     """
 
     @final
     def export(self, orders: list[Order]) -> str:
-        sold = sales(orders)
+        sold = self.pick(orders)
         records = [record(order) for order in sold]
         return self.write(records) + self.closing(sold)
+
+    def pick(self, orders: list[Order]) -> list[Order]:
+        """The orders this file lists: the sales, unless a file says."""
+        return sales(orders)
 
     @abstractmethod
     def write(self, records: list[dict[str, str]]) -> str:
@@ -75,3 +80,19 @@ class JsonExport(OrderExport):
 
     def write(self, records: list[dict[str, str]]) -> str:
         return json.dumps(records, indent=2, ensure_ascii=False) + "\n"
+
+
+class ReturnsCsvExport(CsvExport):
+    """The month's returns as CSV: the bank checks the refunds it paid."""
+
+    def pick(self, orders: list[Order]) -> list[Order]:
+        returned = [order for order in orders if order.status == "returned"]
+        return sorted(returned, key=lambda order: order.order_id)
+
+
+class ReturnsJsonExport(JsonExport):
+    """The month's returns as JSON: the bookkeeping app books refunds."""
+
+    def pick(self, orders: list[Order]) -> list[Order]:
+        returned = [order for order in orders if order.status == "returned"]
+        return sorted(returned, key=lambda order: order.order_id)

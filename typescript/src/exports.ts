@@ -31,12 +31,18 @@ export function record(order: Order): Record<string, string> {
 // The accountant's export: every sale, in one format. export is the
 // routine, the same for every format. A subclass must define write, the
 // step in which the formats differ, and may define closing, a hook that
-// adds nothing unless a format has a closing line.
+// adds nothing unless a format has a closing line, and pick, a hook that
+// picks the sales unless a file lists others.
 export abstract class OrderExport {
   export(orders: Order[]): string {
-    const sold = sales(orders);
+    const sold = this.pick(orders);
     const records = sold.map(record);
     return this.write(records) + this.closing(sold);
+  }
+
+  // The orders this file lists: the sales, unless a file says.
+  protected pick(orders: Order[]): Order[] {
+    return sales(orders);
   }
 
   // The records as this format's text.
@@ -69,6 +75,24 @@ export class CsvExport extends OrderExport {
 export class JsonExport extends OrderExport {
   protected override write(records: Record<string, string>[]): string {
     return JSON.stringify(records, null, 2) + '\n';
+  }
+}
+
+// The month's returns as CSV: the bank checks the refunds it paid.
+export class ReturnsCsvExport extends CsvExport {
+  protected override pick(orders: Order[]): Order[] {
+    return orders
+      .filter((order) => order.status === 'returned')
+      .sort(byOrderId);
+  }
+}
+
+// The month's returns as JSON: the bookkeeping app books refunds.
+export class ReturnsJsonExport extends JsonExport {
+  protected override pick(orders: Order[]): Order[] {
+    return orders
+      .filter((order) => order.status === 'returned')
+      .sort(byOrderId);
   }
 }
 

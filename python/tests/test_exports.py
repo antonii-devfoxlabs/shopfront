@@ -1,6 +1,13 @@
 import json
 
-from shopfront.exports import CsvExport, JsonExport, OrderExport, euros
+from shopfront.exports import (
+    CsvExport,
+    JsonExport,
+    OrderExport,
+    ReturnsCsvExport,
+    ReturnsJsonExport,
+    euros,
+)
 from shopfront.orders import Order, OrderBuilder
 
 
@@ -78,6 +85,19 @@ def test_json_ends_with_its_records():
 def test_json_keeps_letters_outside_ascii():
     text = JsonExport().export([order("SF-00001", email="zoë@example.com")])
     assert '"zoë@example.com"' in text
+
+
+def test_the_returns_csv_lists_only_returned_orders():
+    assert ReturnsCsvExport().export(ORDERS) == (
+        "order_id,email,country,payment,total\n"
+        "SF-00004,ada@example.com,DE,card,19.05\n"
+        "total,1,,,19.05\n"
+    )
+
+
+def test_the_returns_json_lists_only_returned_orders():
+    records = json.loads(ReturnsJsonExport().export(ORDERS))
+    assert [record["order_id"] for record in records] == ["SF-00004"]
 
 
 def test_a_new_format_defines_only_its_own_step():
