@@ -60,7 +60,7 @@ test('every way to pay charges and refunds through it', () => {
     refund(method, 1_000, EVERY_DETAIL, timed);
   }
   const calls = new Set(lines.map((line) => line.split(' ')[1]));
-  assert.equal(lines.length, 16);
+  assert.equal(lines.length, 2 * accepted().length);
   assert.deepEqual(
     calls,
     new Set([
