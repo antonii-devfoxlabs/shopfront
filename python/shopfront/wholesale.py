@@ -35,3 +35,17 @@ class WholesaleCatalog:
         """The `size` products after the SKU `after`, the last one the
         shopper saw (the More link carries it), or the first page."""
         return await take_async(self.cursor(after), size)
+
+    async def teas(self, under: int, count: int) -> list[str]:
+        """The box "Teas under 10 euros": the first `count` teas cheaper
+        than `under` cents, one line each."""
+        cursor = self.cursor()
+        lines: list[str] = []
+        while len(lines) < count:
+            try:
+                product = await anext(cursor)
+            except StopAsyncIteration:
+                break
+            if "tea" in product.name.lower() and product.price_cents < under:
+                lines.append(f"{product.sku}  {product.name}")
+        return lines

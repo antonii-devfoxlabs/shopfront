@@ -35,4 +35,21 @@ export class WholesaleCatalog {
   async page(size: number, after?: string): Promise<Product[]> {
     return takeAsync(this.cursor(after), size);
   }
+
+  // The box "Teas under 10 euros": the first `count` teas cheaper than
+  // `under` cents, one line each.
+  async teas(under: number, count: number): Promise<string[]> {
+    const cursor = this.cursor();
+    const lines: string[] = [];
+    while (lines.length < count) {
+      const step = await cursor.next();
+      if (step.done) break;
+      const product = step.value;
+      const name = product.name.toLowerCase();
+      if (name.includes('tea') && product.priceCents < under) {
+        lines.push(`${product.sku}  ${product.name}`);
+      }
+    }
+    return lines;
+  }
 }

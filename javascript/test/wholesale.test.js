@@ -55,3 +55,12 @@ test('the more link still works once its product is gone', async () => {
   const page = await new WholesaleCatalog(wholesaler).page(20, 'W-00020');
   assert.equal(page[0].sku, 'W-00021');
 });
+
+test('the teas box holds the first teas under the price in one request', async () => {
+  const wholesaler = new Wholesaler(50_000);
+  const lines = await new WholesaleCatalog(wholesaler).teas(1_000, 20);
+  assert.equal(lines.length, 20);
+  assert.equal(lines[0], 'W-00002  Green tea, 100 g');
+  assert.equal(lines.at(-1), 'W-00097  Green tea, 100 g');
+  assert.equal(wholesaler.requests, 1);
+});

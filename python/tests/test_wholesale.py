@@ -42,3 +42,12 @@ def test_the_more_link_still_works_once_its_product_is_gone():
     wholesaler.stop_selling("W-00020")
     page = asyncio.run(WholesaleCatalog(wholesaler).page(20, "W-00020"))
     assert page[0].sku == "W-00021"
+
+
+def test_the_teas_box_holds_the_first_teas_under_the_price_in_one_request():
+    wholesaler = Wholesaler(50_000)
+    lines = asyncio.run(WholesaleCatalog(wholesaler).teas(1_000, 20))
+    assert len(lines) == 20
+    assert lines[0] == "W-00002  Green tea, 100 g"
+    assert lines[-1] == "W-00097  Green tea, 100 g"
+    assert wholesaler.requests == 1
