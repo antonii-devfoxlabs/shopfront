@@ -246,6 +246,15 @@ test('the sales report walks the order book itself', () => {
   assert.equal(report, 'Orders: 2, takings: 63.36 EUR');
 });
 
+test('the sales report walks a cursor once', () => {
+  const catalog = starterCatalog();
+  for (const orderId of ['SF-00001', 'SF-00002']) {
+    placeOrder(anOrder(undefined, orderId), catalog, new OrderEvents());
+  }
+  const report = salesReport(OrderBook.instance().cursor(), GERMAN_SHOP);
+  assert.equal(report, 'Orders: 2, takings: 63.36 EUR');
+});
+
 test('money is shown in euros', () => {
   assert.equal(formatMoney(3_168, GERMAN_SHOP), '31.68 EUR');
   assert.equal(formatMoney(5, GERMAN_SHOP), '0.05 EUR');
