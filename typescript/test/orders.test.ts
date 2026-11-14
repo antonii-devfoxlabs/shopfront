@@ -15,6 +15,7 @@ import {
   placeOrder,
   reorder,
   salesReport,
+  take,
 } from '../src/orders.ts';
 import { GERMAN_SHOP } from '../src/settings.ts';
 
@@ -153,6 +154,20 @@ test('the book lists its orders in the order placed', () => {
     placeOrder(order, catalog, new OrderEvents());
   }
   assert.deepEqual(OrderBook.instance().orders(), [first, second]);
+});
+
+test('the staff page shows the newest orders first', () => {
+  const first = anOrder(undefined, 'SF-00001');
+  const second = anOrder(undefined, 'SF-00002');
+  const third = anOrder(undefined, 'SF-00003');
+  const catalog = starterCatalog();
+  for (const order of [first, second, third]) {
+    placeOrder(order, catalog, new OrderEvents());
+  }
+  const cursor = OrderBook.instance().cursor();
+  assert.deepEqual(take(cursor, 2), [third, second]);
+  assert.deepEqual(take(cursor, 2), [first]);
+  assert.deepEqual(take(cursor, 2), []);
 });
 
 test('an unknown order number is refused', () => {

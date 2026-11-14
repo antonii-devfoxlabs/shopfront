@@ -200,11 +200,31 @@ export class UnknownOrderError extends Error {
   override name = 'UnknownOrderError';
 }
 
+// Hands over the book's orders one at a time, the newest first. It keeps
+// its own place, so each walk has a cursor of its own.
+export class OrderCursor {
+  readonly #orders: readonly Order[];
+  #place: number;
+
+  constructor(orders: readonly Order[]) {
+    this.#orders = orders;
+    this.#place = orders.length;
+  }
+
+  // The next older order, or undefined once every one is handed over.
+  nextOrder(): Order | undefined {
+    if (this.#place === 0) return undefined;
+    this.#place -= 1;
+    return this.#orders[this.#place];
+  }
+}
+
 // Every order the store has placed, found by its number. The store has
 // one: get it with OrderBook.instance().
 export class OrderBook {
   static #instance: OrderBook | undefined;
-  readonly #orders: Map<string, Order> = new Map();
+  readonly #orders: Order[] = [];
+  readonly #byId: Map<string, Order> = new Map();
 
   private constructor() {}
 
@@ -220,19 +240,36 @@ export class OrderBook {
   }
 
   add(order: Order): void {
-    this.#orders.set(order.orderId, order);
+    this.#orders.push(order);
+    this.#byId.set(order.orderId, order);
   }
 
   find(orderId: string): Order {
-    const order = this.#orders.get(orderId);
+    const order = this.#byId.get(orderId);
     if (order === undefined) throw new UnknownOrderError(orderId);
     return order;
   }
 
   // Every order in the book, in the order they were placed.
   orders(): Order[] {
-    return [...this.#orders.values()];
+    return [...this.#orders];
   }
+
+  // A new walk over every order, from the newest.
+  cursor(): OrderCursor {
+    return new OrderCursor(this.#orders);
+  }
+}
+
+// The next `count` orders from the cursor, or fewer at the end.
+export function take(cursor: OrderCursor, count: number): Order[] {
+  const taken: Order[] = [];
+  while (taken.length < count) {
+    const order = cursor.nextOrder();
+    if (order === undefined) break;
+    taken.push(order);
+  }
+  return taken;
 }
 
 // For tests only: no orders, and numbers from SF-00001 again.

@@ -1,6 +1,6 @@
 """An order, and what happens once it is placed."""
 
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from types import MappingProxyType
 from typing import ClassVar
 
@@ -169,6 +169,22 @@ class UnknownOrderError(Exception):
     pass
 
 
+class OrderCursor:
+    """Hands over the book's orders one at a time, the newest first. It
+    keeps its own place, so each walk has a cursor of its own."""
+
+    def __init__(self, orders: Sequence[Order]) -> None:
+        self._orders = orders
+        self._place = len(orders)
+
+    def next_order(self) -> Order | None:
+        """The next older order, or None once every one is handed over."""
+        if self._place == 0:
+            return None
+        self._place -= 1
+        return self._orders[self._place]
+
+
 class OrderBook:
     """Every order the store has placed, found by its number.
 
@@ -180,7 +196,8 @@ class OrderBook:
     def __init__(self) -> None:
         if OrderBook._instance is not None:
             raise RuntimeError("the store has one order book: use instance()")
-        self._orders: dict[str, Order] = {}
+        self._orders: list[Order] = []
+        self._by_id: dict[str, Order] = {}
         OrderBook._instance = self
 
     @classmethod
@@ -196,17 +213,33 @@ class OrderBook:
         OrderBook._instance = None
 
     def add(self, order: Order) -> None:
-        self._orders[order.order_id] = order
+        self._orders.append(order)
+        self._by_id[order.order_id] = order
 
     def find(self, order_id: str) -> Order:
-        order = self._orders.get(order_id)
+        order = self._by_id.get(order_id)
         if order is None:
             raise UnknownOrderError(order_id)
         return order
 
     def orders(self) -> list[Order]:
         """Every order in the book, in the order they were placed."""
-        return list(self._orders.values())
+        return list(self._orders)
+
+    def cursor(self) -> OrderCursor:
+        """A new walk over every order, from the newest."""
+        return OrderCursor(self._orders)
+
+
+def take(cursor: OrderCursor, count: int) -> list[Order]:
+    """The next `count` orders from the cursor, or fewer at the end."""
+    taken: list[Order] = []
+    while len(taken) < count:
+        order = cursor.next_order()
+        if order is None:
+            break
+        taken.append(order)
+    return taken
 
 
 def reset() -> None:

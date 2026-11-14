@@ -185,11 +185,31 @@ export class UnknownOrderError extends Error {
   name = 'UnknownOrderError';
 }
 
+// Hands over the book's orders one at a time, the newest first. It keeps
+// its own place, so each walk has a cursor of its own.
+export class OrderCursor {
+  #orders;
+  #place;
+
+  constructor(orders) {
+    this.#orders = orders;
+    this.#place = orders.length;
+  }
+
+  // The next older order, or undefined once every one is handed over.
+  nextOrder() {
+    if (this.#place === 0) return undefined;
+    this.#place -= 1;
+    return this.#orders[this.#place];
+  }
+}
+
 // Every order the store has placed, found by its number. The store has
 // one: get it with OrderBook.instance().
 export class OrderBook {
   static #instance = null;
-  #orders = new Map();
+  #orders = [];
+  #byId = new Map();
 
   constructor() {
     if (OrderBook.#instance !== null) {
@@ -209,19 +229,36 @@ export class OrderBook {
   }
 
   add(order) {
-    this.#orders.set(order.orderId, order);
+    this.#orders.push(order);
+    this.#byId.set(order.orderId, order);
   }
 
   find(orderId) {
-    const order = this.#orders.get(orderId);
+    const order = this.#byId.get(orderId);
     if (order === undefined) throw new UnknownOrderError(orderId);
     return order;
   }
 
   // Every order in the book, in the order they were placed.
   orders() {
-    return [...this.#orders.values()];
+    return [...this.#orders];
   }
+
+  // A new walk over every order, from the newest.
+  cursor() {
+    return new OrderCursor(this.#orders);
+  }
+}
+
+// The next `count` orders from the cursor, or fewer at the end.
+export function take(cursor, count) {
+  const taken = [];
+  while (taken.length < count) {
+    const order = cursor.nextOrder();
+    if (order === undefined) break;
+    taken.push(order);
+  }
+  return taken;
 }
 
 // For tests only: no orders, and numbers from SF-00001 again.

@@ -16,6 +16,7 @@ from shopfront.orders import (
     place_order,
     reorder,
     sales_report,
+    take,
 )
 from shopfront.settings import GERMAN_SHOP
 
@@ -152,6 +153,19 @@ def test_the_book_lists_its_orders_in_the_order_placed():
     for order in (first, second):
         place_order(order, catalog, OrderEvents())
     assert OrderBook.instance().orders() == [first, second]
+
+
+def test_the_staff_page_shows_the_newest_orders_first():
+    first = an_order(order_id="SF-00001")
+    second = an_order(order_id="SF-00002")
+    third = an_order(order_id="SF-00003")
+    catalog = starter_catalog()
+    for order in (first, second, third):
+        place_order(order, catalog, OrderEvents())
+    cursor = OrderBook.instance().cursor()
+    assert take(cursor, 2) == [third, second]
+    assert take(cursor, 2) == [first]
+    assert take(cursor, 2) == []
 
 
 def test_an_unknown_order_number_is_refused():
