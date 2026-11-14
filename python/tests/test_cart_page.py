@@ -1,7 +1,7 @@
 import pytest
 
 from shopfront.cart import Cart
-from shopfront.cart_page import CartPage
+from shopfront.cart_page import CartPage, restore
 from shopfront.edits import (
     AddLine,
     ChangeQuantity,
@@ -135,3 +135,37 @@ def test_redo_after_empty_cart_has_nothing_to_redo():
     with pytest.raises(NothingToRedoError):
         page.redo()
     assert cart.is_empty()
+
+
+def test_the_log_holds_every_press_undo_and_redo_in_order():
+    cart = Cart()
+    page = CartPage()
+    page.press(AddLine(cart, "KTL-03"))
+    page.press(ChangeQuantity(cart, "KTL-03", 3))
+    page.undo()
+    page.redo()
+    assert page.log == ["Added KTL-03", "KTL-03 set to 3", "Undo", "Redo"]
+
+
+def test_a_restart_brings_back_the_cart_from_the_log():
+    cart = Cart()
+    page = CartPage()
+    page.press(AddLine(cart, "KTL-03"))
+    page.press(AddLine(cart, "MUG-01"))
+    page.press(ChangeQuantity(cart, "MUG-01", 3))
+    page.press(RemoveLine(cart, "KTL-03"))
+    page.undo()
+    restored_cart = Cart()
+    restore(restored_cart, page.log)
+    assert restored_cart.lines == cart.lines
+
+
+def test_undo_still_works_after_a_restart():
+    cart = Cart()
+    page = CartPage()
+    page.press(AddLine(cart, "KTL-03"))
+    page.press(EmptyCart(cart))
+    restored_cart = Cart()
+    restored = restore(restored_cart, page.log)
+    restored.undo()
+    assert restored_cart.lines == {"KTL-03": 1}

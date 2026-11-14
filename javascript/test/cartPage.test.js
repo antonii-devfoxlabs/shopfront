@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { Cart } from '../src/cart.js';
-import { CartPage } from '../src/cartPage.js';
+import { CartPage, restore } from '../src/cartPage.js';
 import {
   AddLine,
   ChangeQuantity,
@@ -135,4 +135,43 @@ test('redo after empty cart has nothing to redo', () => {
   page.press(new EmptyCart(cart));
   assert.throws(() => page.redo(), NothingToRedoError);
   assert.equal(cart.isEmpty(), true);
+});
+
+test('the log holds every press, undo and redo in order', () => {
+  const cart = new Cart();
+  const page = new CartPage();
+  page.press(new AddLine(cart, 'KTL-03'));
+  page.press(new ChangeQuantity(cart, 'KTL-03', 3));
+  page.undo();
+  page.redo();
+  assert.deepEqual(page.log, [
+    'Added KTL-03',
+    'KTL-03 set to 3',
+    'Undo',
+    'Redo',
+  ]);
+});
+
+test('a restart brings back the cart from the log', () => {
+  const cart = new Cart();
+  const page = new CartPage();
+  page.press(new AddLine(cart, 'KTL-03'));
+  page.press(new AddLine(cart, 'MUG-01'));
+  page.press(new ChangeQuantity(cart, 'MUG-01', 3));
+  page.press(new RemoveLine(cart, 'KTL-03'));
+  page.undo();
+  const restoredCart = new Cart();
+  restore(restoredCart, page.log);
+  assert.deepEqual([...restoredCart.lines], [...cart.lines]);
+});
+
+test('undo still works after a restart', () => {
+  const cart = new Cart();
+  const page = new CartPage();
+  page.press(new AddLine(cart, 'KTL-03'));
+  page.press(new EmptyCart(cart));
+  const restoredCart = new Cart();
+  const restored = restore(restoredCart, page.log);
+  restored.undo();
+  assert.deepEqual([...restoredCart.lines], [['KTL-03', 1]]);
 });
