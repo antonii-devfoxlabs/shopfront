@@ -3,7 +3,6 @@ import { test } from 'node:test';
 
 import { starterCatalog } from '../src/catalog.ts';
 import { OrderBuilder, OrderEvents, placeOrder } from '../src/orders.ts';
-import { Card, GiftCard } from '../src/payments.ts';
 import { Refunds, Return } from '../src/returns.ts';
 import { GERMAN_SHOP } from '../src/settings.ts';
 import { Mailer } from '../src/vendor/mailer.ts';
@@ -102,27 +101,12 @@ test('a gift sent back to the desk is refunded onto a gift card', () => {
 });
 
 const EVERY_RETURN = [
-  [undefined, { cardToken: 'tok-4242' }, Card],
-  ['gift_card', { code: 'GIFT-2026-0001' }, GiftCard],
+  [undefined, { cardToken: 'tok-4242' }, 'the card'],
+  ['gift_card', { code: 'GIFT-2026-0001' }, 'a gift card'],
 ] as const;
 
-for (const [to, details, expected] of EVERY_RETURN) {
-  test(`a return onto ${expected.name} creates its destination`, () => {
-    const gateway = aGateway();
-    const refundsBefore = gateway.refunds.length;
-    const destination = new Return(
-      aCardOrder(),
-      details,
-      gateway,
-      to,
-    ).destination();
-    assert.ok(destination instanceof expected);
-    assert.equal(gateway.refunds.length, refundsBefore);
-  });
-}
-
-for (const [to, details, expected] of EVERY_RETURN) {
-  test(`a return onto ${expected.name} returns an order once`, () => {
+for (const [to, details, onto] of EVERY_RETURN) {
+  test(`a return onto ${onto} returns an order once`, () => {
     const gateway = aGateway();
     const order = aCardOrder();
     new Return(order, details, gateway, to).process();

@@ -8,7 +8,6 @@ import {
   REFUNDED,
   placeOrder,
 } from '../src/orders.js';
-import { Card, GiftCard } from '../src/payments.js';
 import { Refunds, Return } from '../src/returns.js';
 import { GERMAN_SHOP } from '../src/settings.js';
 import { Mailer } from '../src/vendor/mailer.js';
@@ -107,27 +106,12 @@ test('a gift sent back to the desk is refunded onto a gift card', () => {
 });
 
 const EVERY_RETURN = [
-  [undefined, { cardToken: 'tok-4242' }, Card],
-  ['gift_card', { code: 'GIFT-2026-0001' }, GiftCard],
+  [undefined, { cardToken: 'tok-4242' }, 'the card'],
+  ['gift_card', { code: 'GIFT-2026-0001' }, 'a gift card'],
 ];
 
-for (const [to, details, expected] of EVERY_RETURN) {
-  test(`a return onto ${expected.name} creates its destination`, () => {
-    const gateway = aGateway();
-    const refundsBefore = gateway.refunds.length;
-    const destination = new Return(
-      aCardOrder(),
-      details,
-      gateway,
-      to,
-    ).destination();
-    assert.ok(destination instanceof expected);
-    assert.equal(gateway.refunds.length, refundsBefore);
-  });
-}
-
-for (const [to, details, expected] of EVERY_RETURN) {
-  test(`a return onto ${expected.name} returns an order once`, () => {
+for (const [to, details, onto] of EVERY_RETURN) {
+  test(`a return onto ${onto} returns an order once`, () => {
     const gateway = aGateway();
     const order = aCardOrder();
     new Return(order, details, gateway, to).process();

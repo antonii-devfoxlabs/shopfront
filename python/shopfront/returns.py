@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 
 from shopfront.orders import Order, OrderBook, OrderEvents, format_money
-from shopfront.payments import Gateway, PaymentMethod, payment
+from shopfront.payments import Gateway, refund
 from shopfront.settings import Settings
 from shopfront.vendor.mailer import Mailer
 
@@ -34,13 +34,11 @@ class Return:
             raise ReturnRefusedError(
                 f"{self.order.order_id} is {self.order.status}"
             )
-        refund_id = self.destination().refund(self.order.total_cents)
+        refund_id = refund(
+            self.to, self.order.total_cents, self.details, self.gateway
+        )
         self.order.status = "returned"
         return refund_id
-
-    def destination(self) -> PaymentMethod:
-        """Create the way to pay that the money goes back to."""
-        return payment(self.to, self.details, self.gateway)
 
 
 @dataclass(frozen=True, kw_only=True)

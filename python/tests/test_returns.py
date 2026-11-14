@@ -2,7 +2,6 @@ import pytest
 
 from shopfront.catalog import starter_catalog
 from shopfront.orders import Order, OrderBuilder, OrderEvents, place_order
-from shopfront.payments import Card, GiftCard
 from shopfront.returns import Refunds, Return, ReturnRefusedError
 from shopfront.settings import GERMAN_SHOP
 from shopfront.vendor.mailer import Mailer
@@ -87,20 +86,6 @@ def test_a_gift_sent_back_to_the_desk_is_refunded_onto_a_gift_card(gateway):
 
     assert gateway.refunds[-1]["kind"] == "gift_card"
     assert gateway.refunds[-1]["detail"] == "GIFT-2026-0001"
-
-
-@pytest.mark.parametrize(
-    ("to", "details", "expected"),
-    [
-        (None, {"card_token": "tok-4242"}, Card),
-        ("gift_card", {"code": "GIFT-2026-0001"}, GiftCard),
-    ],
-)
-def test_each_return_creates_its_destination(to, details, expected, gateway):
-    refunds_before = len(gateway.refunds)
-    destination = Return(a_card_order(), details, gateway, to).destination()
-    assert isinstance(destination, expected)
-    assert len(gateway.refunds) == refunds_before
 
 
 @pytest.mark.parametrize(

@@ -6,12 +6,7 @@ import {
   type OrderEvents,
   formatMoney,
 } from './orders.ts';
-import {
-  payment,
-  type Gateway,
-  type PaymentDetails,
-  type PaymentMethod,
-} from './payments.ts';
+import { refund, type Gateway, type PaymentDetails } from './payments.ts';
 import type { Settings } from './settings.ts';
 import type { Mailer } from './vendor/mailer.ts';
 
@@ -46,14 +41,14 @@ export class Return {
         `${this.order.orderId} is ${this.order.status}`,
       );
     }
-    const refundId = this.destination().refund(this.order.totalCents);
+    const refundId = refund(
+      this.to,
+      this.order.totalCents,
+      this.details,
+      this.gateway,
+    );
     this.order.status = 'returned';
     return refundId;
-  }
-
-  // Create the way to pay that the money goes back to.
-  destination(): PaymentMethod {
-    return payment(this.to, this.details, this.gateway);
   }
 }
 

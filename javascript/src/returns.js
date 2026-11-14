@@ -1,7 +1,7 @@
 // Orders sent back, and the money that goes back with them.
 
 import { OrderBook, REFUNDED, formatMoney } from './orders.js';
-import { payment } from './payments.js';
+import { refund } from './payments.js';
 
 export class ReturnRefusedError extends Error {
   name = 'ReturnRefusedError';
@@ -24,14 +24,14 @@ export class Return {
         `${this.order.orderId} is ${this.order.status}`,
       );
     }
-    const refundId = this.destination().refund(this.order.totalCents);
+    const refundId = refund(
+      this.to,
+      this.order.totalCents,
+      this.details,
+      this.gateway,
+    );
     this.order.status = 'returned';
     return refundId;
-  }
-
-  // Create the way to pay that the money goes back to.
-  destination() {
-    return payment(this.to, this.details, this.gateway);
   }
 }
 
