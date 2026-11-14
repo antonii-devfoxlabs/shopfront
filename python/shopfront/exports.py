@@ -1,6 +1,8 @@
 """Orders exported for the accountant: as CSV, and as JSON."""
 
 import json
+from abc import ABC, abstractmethod
+from typing import final
 
 from shopfront.orders import Order
 
@@ -26,14 +28,35 @@ def record(order: Order) -> dict[str, str]:
     }
 
 
-def export_csv(orders: list[Order]) -> str:
-    records = [record(order) for order in sales(orders)]
-    rows = [",".join(COLUMNS)]
-    for sale in records:
-        rows.append(",".join(sale[column] for column in COLUMNS))
-    return "\n".join(rows) + "\n"
+class OrderExport(ABC):
+    """The accountant's export: every sale, in one format.
+
+    export is the routine, the same for every format. A subclass defines
+    only write, the one step in which the formats differ.
+    """
+
+    @final
+    def export(self, orders: list[Order]) -> str:
+        records = [record(order) for order in sales(orders)]
+        return self.write(records)
+
+    @abstractmethod
+    def write(self, records: list[dict[str, str]]) -> str:
+        """The records as this format's text."""
 
 
-def export_json(orders: list[Order]) -> str:
-    records = [record(order) for order in sales(orders)]
-    return json.dumps(records, indent=2, ensure_ascii=False) + "\n"
+class CsvExport(OrderExport):
+    """A header row, then a row per sale: what a spreadsheet opens."""
+
+    def write(self, records: list[dict[str, str]]) -> str:
+        rows = [",".join(COLUMNS)]
+        for sale in records:
+            rows.append(",".join(sale[column] for column in COLUMNS))
+        return "\n".join(rows) + "\n"
+
+
+class JsonExport(OrderExport):
+    """A list of records: what the bookkeeping app reads."""
+
+    def write(self, records: list[dict[str, str]]) -> str:
+        return json.dumps(records, indent=2, ensure_ascii=False) + "\n"

@@ -21,18 +21,37 @@ export function record(order) {
   };
 }
 
-export function exportCsv(orders) {
-  const records = sales(orders).map(record);
-  const rows = [COLUMNS.join(',')];
-  for (const sale of records) {
-    rows.push(COLUMNS.map((column) => sale[column]).join(','));
+// The accountant's export: every sale, in one format. export is the
+// routine, the same for every format. A subclass defines only write, the
+// one step in which the formats differ.
+export class OrderExport {
+  export(orders) {
+    const records = sales(orders).map(record);
+    return this.write(records);
   }
-  return rows.join('\n') + '\n';
+
+  // The records as this format's text.
+  write(records) {
+    throw new Error('A subclass of OrderExport must define write()');
+  }
 }
 
-export function exportJson(orders) {
-  const records = sales(orders).map(record);
-  return JSON.stringify(records, null, 2) + '\n';
+// A header row, then a row per sale: what a spreadsheet opens.
+export class CsvExport extends OrderExport {
+  write(records) {
+    const rows = [COLUMNS.join(',')];
+    for (const sale of records) {
+      rows.push(COLUMNS.map((column) => sale[column]).join(','));
+    }
+    return rows.join('\n') + '\n';
+  }
+}
+
+// A list of records: what the bookkeeping app reads.
+export class JsonExport extends OrderExport {
+  write(records) {
+    return JSON.stringify(records, null, 2) + '\n';
+  }
 }
 
 function byOrderId(first, second) {

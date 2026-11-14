@@ -23,18 +23,35 @@ export function record(order: Order): Record<string, string> {
   };
 }
 
-export function exportCsv(orders: Order[]): string {
-  const records = sales(orders).map(record);
-  const rows = [COLUMNS.join(',')];
-  for (const sale of records) {
-    rows.push(COLUMNS.map((column) => sale[column]).join(','));
+// The accountant's export: every sale, in one format. export is the
+// routine, the same for every format. A subclass defines only write, the
+// one step in which the formats differ.
+export abstract class OrderExport {
+  export(orders: Order[]): string {
+    const records = sales(orders).map(record);
+    return this.write(records);
   }
-  return rows.join('\n') + '\n';
+
+  // The records as this format's text.
+  protected abstract write(records: Record<string, string>[]): string;
 }
 
-export function exportJson(orders: Order[]): string {
-  const records = sales(orders).map(record);
-  return JSON.stringify(records, null, 2) + '\n';
+// A header row, then a row per sale: what a spreadsheet opens.
+export class CsvExport extends OrderExport {
+  protected override write(records: Record<string, string>[]): string {
+    const rows = [COLUMNS.join(',')];
+    for (const sale of records) {
+      rows.push(COLUMNS.map((column) => sale[column]).join(','));
+    }
+    return rows.join('\n') + '\n';
+  }
+}
+
+// A list of records: what the bookkeeping app reads.
+export class JsonExport extends OrderExport {
+  protected override write(records: Record<string, string>[]): string {
+    return JSON.stringify(records, null, 2) + '\n';
+  }
 }
 
 function byOrderId(first: Order, second: Order): number {
