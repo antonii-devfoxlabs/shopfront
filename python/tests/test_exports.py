@@ -44,6 +44,11 @@ def test_csv_leaves_out_returned_orders():
     assert "SF-00002" not in text
 
 
+def test_json_leaves_out_returned_orders():
+    text = export_json([order("SF-00001"), order("SF-00002", "returned")])
+    assert "SF-00002" not in text
+
+
 def test_json_lists_the_same_orders():
     records = json.loads(export_json(ORDERS))
     assert [record["order_id"] for record in records] == [

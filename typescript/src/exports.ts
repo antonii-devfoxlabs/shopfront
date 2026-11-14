@@ -2,39 +2,38 @@
 
 import type { Order } from './orders.ts';
 
+const COLUMNS = ['order_id', 'email', 'country', 'payment', 'total'];
+
+// The orders the accountant counts as sales, oldest first.
+export function sales(orders: Order[]): Order[] {
+  // Only placed orders are sales: a returned one gave its money back.
+  return orders.filter((order) => order.status === 'placed').sort(byOrderId);
+}
+
+// One sale as the accountant's fields, named as in COLUMNS.
+export function record(order: Order): Record<string, string> {
+  const euros = Math.floor(order.totalCents / 100);
+  const cents = String(order.totalCents % 100).padStart(2, '0');
+  return {
+    order_id: order.orderId,
+    email: order.customerEmail,
+    country: order.shippingCountry,
+    payment: order.paymentMethod,
+    total: `${euros}.${cents}`,
+  };
+}
+
 export function exportCsv(orders: Order[]): string {
-  const rows = ['order_id,email,country,payment,total'];
-  const sorted = [...orders].sort(byOrderId);
-  for (const order of sorted) {
-    // Only placed orders are sales: a returned one gave its money back.
-    if (order.status !== 'placed') continue;
-    const euros = Math.floor(order.totalCents / 100);
-    const cents = String(order.totalCents % 100).padStart(2, '0');
-    const total = `${euros}.${cents}`;
-    rows.push(
-      `${order.orderId},${order.customerEmail},` +
-        `${order.shippingCountry},${order.paymentMethod},${total}`,
-    );
+  const records = sales(orders).map(record);
+  const rows = [COLUMNS.join(',')];
+  for (const sale of records) {
+    rows.push(COLUMNS.map((column) => sale[column]).join(','));
   }
   return rows.join('\n') + '\n';
 }
 
 export function exportJson(orders: Order[]): string {
-  const records: Record<string, string>[] = [];
-  const sorted = [...orders].sort(byOrderId);
-  for (const order of sorted) {
-    if (order.status === 'cancelled') continue;
-    const euros = Math.floor(order.totalCents / 100);
-    const cents = String(order.totalCents % 100).padStart(2, '0');
-    const total = `${euros}.${cents}`;
-    records.push({
-      order_id: order.orderId,
-      email: order.customerEmail,
-      country: order.shippingCountry,
-      payment: order.paymentMethod,
-      total,
-    });
-  }
+  const records = sales(orders).map(record);
   return JSON.stringify(records, null, 2) + '\n';
 }
 
