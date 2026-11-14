@@ -2,6 +2,7 @@
 
 from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
+from itertools import islice
 
 
 @dataclass
@@ -25,9 +26,6 @@ class Catalog:
     def __init__(self, products: list[Product]) -> None:
         self._products = list(products)
         self._by_sku = {product.sku: product for product in products}
-
-    def all_products(self) -> list[Product]:
-        return list(self._products)
 
     def cursor(self) -> Iterator[Product]:
         """A new walk over every product, from the first."""
@@ -69,13 +67,10 @@ class Catalog:
     def search(self, text: str, limit: int) -> list[Product]:
         """The first `limit` products whose names hold `text`, any case."""
         wanted = text.lower()
-        found: list[Product] = []
-        for product in self:
-            if len(found) == limit:
-                break
-            if wanted in product.name.lower():
-                found.append(product)
-        return found
+        found = (
+            product for product in self if wanted in product.name.lower()
+        )
+        return list(islice(found, limit))
 
 
 def reorder_list(catalog: Catalog, under: int) -> list[Product]:

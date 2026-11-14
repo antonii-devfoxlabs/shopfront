@@ -1,7 +1,8 @@
+from itertools import islice
+
 import pytest
 
 from shopfront.catalog import OutOfStockError, starter_catalog
-from shopfront.cursors import take
 from shopfront.orders import (
     IncompleteOrderError,
     Listeners,
@@ -163,9 +164,9 @@ def test_the_staff_page_shows_the_newest_orders_first():
     for order in (first, second, third):
         place_order(order, catalog, OrderEvents())
     cursor = OrderBook.instance().cursor()
-    assert take(cursor, 2) == [third, second]
-    assert take(cursor, 2) == [first]
-    assert take(cursor, 2) == []
+    assert list(islice(cursor, 2)) == [third, second]
+    assert list(islice(cursor, 2)) == [first]
+    assert list(islice(cursor, 2)) == []
 
 
 def test_an_unknown_order_number_is_refused():

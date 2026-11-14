@@ -17,10 +17,6 @@ export class Catalog {
     this.#bySku = new Map(products.map((product) => [product.sku, product]));
   }
 
-  allProducts() {
-    return [...this.#products];
-  }
-
   // A new walk over every product, from the first.
   *cursor() {
     yield* this.#products;
@@ -70,22 +66,19 @@ export class Catalog {
   // The first `limit` products whose names hold `text`, any case.
   search(text, limit) {
     const wanted = text.toLowerCase();
-    const found = [];
-    for (const product of this) {
-      if (found.length === limit) break;
-      if (product.name.toLowerCase().includes(wanted)) found.push(product);
-    }
-    return found;
+    return this.cursor()
+      .filter((product) => product.name.toLowerCase().includes(wanted))
+      .take(limit)
+      .toArray();
   }
 }
 
 // Every product with fewer than `under` left, for the weekly order.
 export function reorderList(catalog, under) {
-  const short = [];
-  for (const product of catalog) {
-    if (product.stock < under) short.push(product);
-  }
-  return short;
+  return catalog
+    .cursor()
+    .filter((product) => product.stock < under)
+    .toArray();
 }
 
 export function starterCatalog() {

@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { OutOfStockError, starterCatalog } from '../src/catalog.js';
-import { take } from '../src/cursors.js';
 import {
   OrderBook,
   OrderBuilder,
@@ -163,10 +162,10 @@ test('the staff page shows the newest orders first', () => {
   for (const order of [first, second, third]) {
     placeOrder(order, catalog, new OrderEvents());
   }
-  const cursor = OrderBook.instance().cursor();
-  assert.deepEqual(take(cursor, 2), [third, second]);
-  assert.deepEqual(take(cursor, 2), [first]);
-  assert.deepEqual(take(cursor, 2), []);
+  const book = OrderBook.instance();
+  assert.deepEqual(book.cursor().take(2).toArray(), [third, second]);
+  assert.deepEqual(book.cursor().drop(2).take(2).toArray(), [first]);
+  assert.deepEqual(book.cursor().drop(4).take(2).toArray(), []);
 });
 
 test('an unknown order number is refused', () => {

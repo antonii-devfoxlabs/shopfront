@@ -1,3 +1,4 @@
+from itertools import islice
 from pathlib import Path
 
 import pytest
@@ -9,7 +10,6 @@ from shopfront.catalog import (
     starter_catalog,
 )
 from shopfront.catalog_file import load_catalog
-from shopfront.cursors import take
 
 
 def test_finds_a_product_by_its_sku():
@@ -35,7 +35,7 @@ def test_cannot_take_more_than_is_left():
 
 
 def test_lists_every_product():
-    assert len(starter_catalog().all_products()) == 5
+    assert len(list(starter_catalog())) == 5
 
 
 def test_a_cursor_hands_over_every_product_in_order():
@@ -64,16 +64,16 @@ def test_each_cursor_keeps_its_own_place():
 
 def test_a_page_takes_the_next_products_from_its_cursor():
     cursor = starter_catalog().cursor()
-    assert [product.sku for product in take(cursor, 2)] == [
+    assert [product.sku for product in list(islice(cursor, 2))] == [
         "MUG-01",
         "TEA-02",
     ]
-    assert [product.sku for product in take(cursor, 2)] == [
+    assert [product.sku for product in list(islice(cursor, 2))] == [
         "KTL-03",
         "CUP-04",
     ]
-    assert [product.sku for product in take(cursor, 2)] == ["FLT-05"]
-    assert take(cursor, 2) == []
+    assert [product.sku for product in list(islice(cursor, 2))] == ["FLT-05"]
+    assert list(islice(cursor, 2)) == []
 
 
 def test_search_finds_names_whatever_the_case():
@@ -108,4 +108,4 @@ def test_checking_the_stock_takes_nothing():
 
 def test_the_shops_catalog_file_holds_what_it_sells():
     catalog = load_catalog(Path("catalog.json"))
-    assert catalog.all_products() == starter_catalog().all_products()
+    assert list(catalog) == list(starter_catalog())

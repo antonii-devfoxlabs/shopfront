@@ -9,7 +9,6 @@ import {
   starterCatalog,
 } from '../src/catalog.ts';
 import { loadCatalog } from '../src/catalogFile.ts';
-import { take } from '../src/cursors.ts';
 
 test('finds a product by its sku', () => {
   assert.equal(starterCatalog().find('MUG-01').name, 'Enamel mug');
@@ -33,7 +32,7 @@ test('cannot take more than is left', () => {
 });
 
 test('lists every product', () => {
-  assert.equal(starterCatalog().allProducts().length, 5);
+  assert.equal([...starterCatalog()].length, 5);
 });
 
 test('a cursor hands over every product in order', () => {
@@ -63,14 +62,12 @@ test('each cursor keeps its own place', () => {
   assert.equal(first.next().value, catalog.find('KTL-03'));
 });
 
-test('a page takes the next products from its cursor', () => {
+test('taking from a cursor hands over the first products, then closes it', () => {
   const cursor = starterCatalog().cursor();
   const skus = (products: Product[]) =>
     products.map((product) => product.sku);
-  assert.deepEqual(skus(take(cursor, 2)), ['MUG-01', 'TEA-02']);
-  assert.deepEqual(skus(take(cursor, 2)), ['KTL-03', 'CUP-04']);
-  assert.deepEqual(skus(take(cursor, 2)), ['FLT-05']);
-  assert.deepEqual(take(cursor, 2), []);
+  assert.deepEqual(skus(cursor.take(2).toArray()), ['MUG-01', 'TEA-02']);
+  assert.equal(cursor.next().done, true);
 });
 
 test('search finds names whatever the case', () => {
@@ -130,5 +127,5 @@ test('checking the stock takes nothing', () => {
 
 test("the shop's catalog file holds what it sells", () => {
   const catalog = loadCatalog('catalog.json');
-  assert.deepEqual(catalog.allProducts(), starterCatalog().allProducts());
+  assert.deepEqual([...catalog], [...starterCatalog()]);
 });
