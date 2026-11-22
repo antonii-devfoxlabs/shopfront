@@ -3,27 +3,38 @@
 import { formatMoney } from './money.js';
 import { REFUNDED } from './orders.js';
 import { refund } from './payments.js';
+import { goodwillCents } from './support.js';
 
 // An order sent back. Its money goes back to the way to pay named to:
 // the way the order was paid, unless the caller names another.
 export class Return {
-  constructor(order, details, gateway, to = order.paymentMethod) {
+  constructor(
+    order,
+    details,
+    gateway,
+    to = order.paymentMethod,
+    cents = null,
+  ) {
     this.order = order;
     this.details = details;
     this.gateway = gateway;
     this.to = to;
+    // A goodwill credit gives back only part of the money, and the order
+    // is not sent back.
+    this.cents = cents;
   }
 
   // Give the money back once, and mark the order returned.
   process() {
-    this.order.checkReturnable();
-    const refundId = refund(
-      this.to,
-      this.order.totalCents,
-      this.details,
-      this.gateway,
-    );
-    this.order.markReturned();
+    let cents = this.cents;
+    if (this.cents === null) {
+      this.order.checkReturnable();
+      cents = this.order.totalCents;
+    }
+    const refundId = refund(this.to, cents, this.details, this.gateway);
+    if (this.cents === null) {
+      this.order.markReturned();
+    }
     return refundId;
   }
 }
@@ -55,17 +66,31 @@ export class Refunds {
 
   // Give an order's money back, tell the shopper, then announce it.
   // to, if given: the way to pay the money goes back to, as Return takes it.
-  refund(orderId, details, to) {
+  // reason, if given: what went wrong with the parcel, for a goodwill
+  // credit.
+  refund(orderId, details, to = undefined, reason = null) {
     const { gateway, mailer, shop, book, events } = this.#parts;
     const order = book.find(orderId);
-    const refundId = new Return(order, details, gateway, to).process();
+    let cents = null;
+    if (reason !== null) {
+      cents = goodwillCents(order, reason);
+    }
+    const refundId = new Return(order, details, gateway, to, cents).process();
+    let body;
+    if (cents === null) {
+      body =
+        `Hi ${order.customerName}, we have refunded ` +
+        `${formatMoney(order.totalCents, shop)}.`;
+    } else {
+      body =
+        `Hi ${order.customerName}, sorry about your parcel: we have ` +
+        `refunded ${formatMoney(cents, shop)}.`;
+    }
     mailer.send({
       from: shop.storeEmail,
       to: order.customerEmail,
       subject: `${shop.storeName}: refund for ${order.orderId}`,
-      body:
-        `Hi ${order.customerName}, we have refunded ` +
-        `${formatMoney(order.totalCents, shop)}.`,
+      body,
     });
     events.emit(REFUNDED, order);
     return refundId;

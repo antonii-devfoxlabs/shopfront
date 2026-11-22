@@ -13,7 +13,16 @@ from shopfront.orders import (
     place_order,
 )
 from shopfront.parcels import SWIFTSHIP, Parcel
-from shopfront.support import cancel, where_is
+from shopfront.returns import Refunds
+from shopfront.settings import GERMAN_SHOP
+from shopfront.support import (
+    GoodwillRefusedError,
+    cancel,
+    make_good,
+    where_is,
+)
+from shopfront.vendor.mailer import Mailer
+from shopfront.vendor.payment_gateway import PaymentGateway
 
 
 def a_placed_order(book: OrderBook) -> Order:
@@ -78,3 +87,40 @@ def test_a_dispatched_order_is_not_cancelled(book):
     with pytest.raises(CancelRefusedError, match="SF-00001 is dispatched"):
         cancel("SF-00001", book)
     assert order.status == "dispatched"
+
+
+def refunds_for(
+    book: OrderBook, gateway: PaymentGateway, mailer: Mailer
+) -> Refunds:
+    return Refunds(
+        gateway=gateway,
+        mailer=mailer,
+        shop=GERMAN_SHOP,
+        book=book,
+        events=OrderEvents(),
+    )
+
+
+def test_the_support_page_makes_good_on_a_damaged_parcel(book, gateway):
+    order = a_placed_order(book)
+    dispatch(
+        order, Parcel(courier=SWIFTSHIP, number="SW-0072"), OrderEvents()
+    )
+    mailer = Mailer()
+    refunds = refunds_for(book, gateway, mailer)
+
+    make_good("SF-00001", "damaged", {"card_token": "tok-4242"}, refunds)
+
+    assert gateway.refunds[-1]["amount"] == 1_584
+    assert order.status == "dispatched"
+    assert mailer.outbox[-1]["body"] == (
+        "Hi Ada, sorry about your parcel: we have refunded 15.84 EUR."
+    )
+
+
+def test_no_goodwill_for_an_order_that_has_not_left(book, gateway):
+    a_placed_order(book)
+    refunds = refunds_for(book, gateway, Mailer())
+    with pytest.raises(GoodwillRefusedError, match="SF-00001 is placed"):
+        make_good("SF-00001", "late", {"card_token": "tok-4242"}, refunds)
+    assert gateway.refunds == []
