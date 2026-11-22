@@ -1,5 +1,6 @@
-"""What the rest of the store does once an order is placed or refunded:
-each maker gives back a listener, a function that is told the order."""
+"""What the rest of the store does once an order is placed, dispatched or
+refunded: each maker gives back a listener, a function that is told the
+order."""
 
 from shopfront.orders import Order, OrderListener, format_money, packing_slip
 from shopfront.settings import Settings
@@ -61,3 +62,23 @@ def expect_return(sms: Sms, shop: Settings) -> OrderListener:
         )
 
     return send_text
+
+
+def email_parcel_sent(mailer: Mailer, shop: Settings) -> OrderListener:
+    """Tell the shopper the parcel is on its way, and where to follow it."""
+
+    def send_email(order: Order) -> None:
+        if order.parcel is None:
+            return
+        mailer.send(
+            sender=shop.store_email,
+            to=order.customer_email,
+            subject=f"{shop.store_name}: {order.order_id} is on its way",
+            body=(
+                f"Hi {order.customer_name}, your parcel is on its way. "
+                "Follow it at "
+                f"{order.parcel.courier.tracking_page}{order.parcel.number}"
+            ),
+        )
+
+    return send_email

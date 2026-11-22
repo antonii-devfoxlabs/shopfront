@@ -6,6 +6,7 @@ import { CatalogError, loadCatalog } from './catalogFile.ts';
 import { Checkout } from './checkout.ts';
 import { TimedGateway } from './gateways.ts';
 import {
+  emailParcelSent,
   emailShopper,
   expectReturn,
   textWarehouse,
@@ -82,6 +83,9 @@ events.on('placed', trackOrder(new Analytics()));
 events.on('placed', warehouse);
 // Refunds, made for the return page, tell the same events.
 events.on('refunded', expectReturn(sms, shop));
+// The warehouse's page dispatches orders: the shopper hears where to
+// follow the parcel.
+events.on('dispatched', emailParcelSent(mailer, shop));
 // Every step of an order, in order, behind one call. main still
 // decides what is timed, and hands the checkout the timed parts.
 const checkout = new Checkout({

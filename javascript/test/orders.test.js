@@ -3,6 +3,7 @@ import { test } from 'node:test';
 
 import { OutOfStockError, starterCatalog } from '../src/catalog.js';
 import {
+  DISPATCHED,
   DispatchRefusedError,
   OrderBook,
   OrderBuilder,
@@ -19,6 +20,7 @@ import {
   salesReport,
   statusOf,
 } from '../src/orders.js';
+import { PARCELNOW, Parcel } from '../src/parcels.js';
 import { GERMAN_SHOP } from '../src/settings.js';
 
 function anOrder(lines = [['MUG-01', 2]], orderId = 'SF-00007') {
@@ -35,6 +37,8 @@ function anOrder(lines = [['MUG-01', 2]], orderId = 'SF-00007') {
     .transaction('txn-0001')
     .build();
 }
+
+const A_PARCEL = new Parcel({ courier: PARCELNOW, number: 'PN-58213' });
 
 /**
  * The subject's lists, with these listeners of placed orders.
@@ -262,7 +266,7 @@ test('the sales report counts only the orders kept', () => {
 test('the sales report counts dispatched orders', () => {
   const placed = anOrder(undefined, 'SF-00001');
   const dispatched = anOrder(undefined, 'SF-00002');
-  dispatch(dispatched);
+  dispatch(dispatched, A_PARCEL, new OrderEvents());
 
   const report = salesReport([placed, dispatched], GERMAN_SHOP);
 
@@ -271,12 +275,24 @@ test('the sales report counts dispatched orders', () => {
 
 test('a placed order is dispatched once', () => {
   const order = anOrder();
-  dispatch(order);
+  dispatch(order, A_PARCEL, new OrderEvents());
   assert.equal(order.status, 'dispatched');
-  assert.throws(() => dispatch(order), {
+  assert.throws(() => dispatch(order, A_PARCEL, new OrderEvents()), {
     name: 'DispatchRefusedError',
     message: 'SF-00007 is dispatched',
   });
+});
+
+test('dispatch keeps the parcel and tells who listens', () => {
+  const order = anOrder();
+  const events = new OrderEvents();
+  const told = [];
+  events.on(DISPATCHED, (sent) => told.push(sent.orderId));
+
+  dispatch(order, A_PARCEL, events);
+
+  assert.equal(order.parcel, A_PARCEL);
+  assert.deepEqual(told, ['SF-00007']);
 });
 
 test('the sales report walks the order book itself', () => {

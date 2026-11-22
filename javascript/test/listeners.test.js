@@ -3,17 +3,21 @@ import { test } from 'node:test';
 
 import { starterCatalog } from '../src/catalog.js';
 import {
+  emailParcelSent,
   emailShopper,
   expectReturn,
   textWarehouse,
   trackOrder,
 } from '../src/listeners.js';
 import {
+  DISPATCHED,
   OrderBuilder,
   OrderEvents,
   PLACED,
+  dispatch,
   placeOrder,
 } from '../src/orders.js';
+import { PARCELNOW, Parcel } from '../src/parcels.js';
 import { DUTCH_SHOP, GERMAN_SHOP } from '../src/settings.js';
 import { Analytics } from '../src/vendor/analytics.js';
 import { Mailer } from '../src/vendor/mailer.js';
@@ -94,5 +98,25 @@ test('a closed warehouse gets no text until it opens again', () => {
   assert.deepEqual(
     sms.outbox.map((text) => text.text),
     ['Pack SF-00002: 2 x MUG-01'],
+  );
+});
+
+test('the parcel email says where to follow it', () => {
+  const mailer = new Mailer();
+  const events = new OrderEvents();
+  events.on(DISPATCHED, emailParcelSent(mailer, GERMAN_SHOP));
+
+  dispatch(
+    anOrder(),
+    new Parcel({ courier: PARCELNOW, number: 'PN-58213' }),
+    events,
+  );
+
+  assert.equal(mailer.outbox[0].to, 'ada@example.com');
+  assert.equal(mailer.outbox[0].subject, 'Shopfront: SF-00007 is on its way');
+  assert.equal(
+    mailer.outbox[0].body,
+    'Hi Ada, your parcel is on its way. ' +
+      'Follow it at https://parcelnow.example/track/PN-58213',
   );
 });

@@ -12,6 +12,9 @@ export function nextOrderId() {
 export class Order {
   #lines;
   #status = 'placed';
+  // The parcel the warehouse handed a courier: null until dispatched.
+  /** @type {import('./parcels.js').Parcel | null} */
+  #parcel = null;
 
   constructor(
     orderId,
@@ -37,7 +40,8 @@ export class Order {
     this.shippingCountry = shippingCountry;
     this.paymentMethod = paymentMethod;
     this.transactionId = transactionId;
-    // Each part is set once, here; only the status changes.
+    // Each part is set once, here; only the status changes, and the
+    // parcel once the order leaves.
     Object.freeze(this);
   }
 
@@ -52,6 +56,14 @@ export class Order {
 
   set status(status) {
     this.#status = status;
+  }
+
+  get parcel() {
+    return this.#parcel;
+  }
+
+  set parcel(parcel) {
+    this.#parcel = parcel;
   }
 
   get totalCents() {
@@ -297,6 +309,7 @@ export function reset() {
 // a list nobody is told.
 export const PLACED = 'placed';
 export const REFUNDED = 'refunded';
+export const DISPATCHED = 'dispatched';
 
 /**
  * What subscribing answers: call it to take that listener off again.
@@ -305,9 +318,9 @@ export const REFUNDED = 'refunded';
  */
 
 /**
- * Who hears of what happens to an order, by the news's name: PLACED or
- * REFUNDED. Node's EventEmitter keeps a list per name: subscribe with
- * `on`, unsubscribe with `off`, notify with `emit`.
+ * Who hears of what happens to an order, by the news's name: PLACED,
+ * REFUNDED or DISPATCHED. Node's EventEmitter keeps a list per name:
+ * subscribe with `on`, unsubscribe with `off`, notify with `emit`.
  */
 export class OrderEvents extends EventEmitter {
   /**
@@ -341,12 +354,20 @@ export class DispatchRefusedError extends Error {
   name = 'DispatchRefusedError';
 }
 
-// Mark an order dispatched: its parcel has left the warehouse.
-export function dispatch(order) {
+/**
+ * Mark an order dispatched: its parcel has left the warehouse with a
+ * courier. Then announce it.
+ * @param {Order} order
+ * @param {import('./parcels.js').Parcel} parcel
+ * @param {OrderEvents} events
+ */
+export function dispatch(order, parcel, events) {
   if (!statusOf(order).dispatchable) {
     throw new DispatchRefusedError(`${order.orderId} is ${order.status}`);
   }
+  order.parcel = parcel;
   order.status = 'dispatched';
+  events.emit(DISPATCHED, order);
 }
 
 // The owner's Monday line: the orders kept, and what they took.

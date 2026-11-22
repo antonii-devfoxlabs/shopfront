@@ -3,6 +3,7 @@
 import { EventEmitter } from 'node:events';
 
 import type { Catalog } from './catalog.ts';
+import type { Parcel } from './parcels.ts';
 import type { Settings } from './settings.ts';
 
 export type OrderStatus = 'placed' | 'dispatched' | 'cancelled' | 'returned';
@@ -27,6 +28,8 @@ export class Order {
   readonly transactionId: string;
   readonly #lines: Map<string, number>;
   #status: OrderStatus = 'placed';
+  // The parcel the warehouse handed a courier: null until dispatched.
+  #parcel: Parcel | null = null;
 
   constructor(
     orderId: string,
@@ -52,7 +55,8 @@ export class Order {
     this.shippingCountry = shippingCountry;
     this.paymentMethod = paymentMethod;
     this.transactionId = transactionId;
-    // Each part is set once, here; only the status changes.
+    // Each part is set once, here; only the status changes, and the
+    // parcel once the order leaves.
     Object.freeze(this);
   }
 
@@ -67,6 +71,14 @@ export class Order {
 
   set status(status: OrderStatus) {
     this.#status = status;
+  }
+
+  get parcel(): Parcel | null {
+    return this.#parcel;
+  }
+
+  set parcel(parcel: Parcel | null) {
+    this.#parcel = parcel;
   }
 
   get totalCents(): number {
@@ -295,11 +307,12 @@ export type Cancel = () => void;
 export type OrderEventMap = {
   placed: [order: Order];
   refunded: [order: Order];
+  dispatched: [order: Order];
 };
 
-// Who hears of what happens to an order, by the news's name: 'placed' or
-// 'refunded'. Node's EventEmitter keeps a list per name: subscribe with
-// `on`, unsubscribe with `off`, notify with `emit`.
+// Who hears of what happens to an order, by the news's name: 'placed',
+// 'refunded' or 'dispatched'. Node's EventEmitter keeps a list per name:
+// subscribe with `on`, unsubscribe with `off`, notify with `emit`.
 export class OrderEvents extends EventEmitter<OrderEventMap> {
   // Subscribe, and answer the way to cancel: whoever subscribes keeps it.
   subscribe(name: keyof OrderEventMap, listener: OrderListener): Cancel {
@@ -326,12 +339,19 @@ export class DispatchRefusedError extends Error {
   override name = 'DispatchRefusedError';
 }
 
-// Mark an order dispatched: its parcel has left the warehouse.
-export function dispatch(order: Order): void {
+// Mark an order dispatched: its parcel has left the warehouse with a
+// courier. Then announce it.
+export function dispatch(
+  order: Order,
+  parcel: Parcel,
+  events: OrderEvents,
+): void {
   if (!statusOf(order).dispatchable) {
     throw new DispatchRefusedError(`${order.orderId} is ${order.status}`);
   }
+  order.parcel = parcel;
   order.status = 'dispatched';
+  events.emit('dispatched', order);
 }
 
 // The owner's Monday line: the orders kept, and what they took.

@@ -9,6 +9,7 @@ from shopfront.catalog_file import CatalogError, load_catalog
 from shopfront.checkout import Checkout
 from shopfront.gateways import TimedGateway
 from shopfront.listeners import (
+    email_parcel_sent,
     email_shopper,
     expect_return,
     text_warehouse,
@@ -79,6 +80,9 @@ def main() -> None:
     events.placed.subscribe(warehouse)
     # Refunds, made for the return page, tell the same events.
     events.refunded.subscribe(expect_return(sms, shop))
+    # The warehouse's page dispatches orders: the shopper hears where to
+    # follow the parcel.
+    events.dispatched.subscribe(email_parcel_sent(mailer, shop))
     # Every step of an order, in order, behind one call. main still
     # decides what is timed, and hands the checkout the timed parts.
     checkout = Checkout(

@@ -9,6 +9,7 @@ import {
   dispatch,
   placeOrder,
 } from '../src/orders.js';
+import { PARCELNOW, Parcel } from '../src/parcels.js';
 import { Refunds, Return } from '../src/returns.js';
 import { GERMAN_SHOP } from '../src/settings.js';
 import { Mailer } from '../src/vendor/mailer.js';
@@ -50,7 +51,11 @@ test('a return refunds the way the shopper paid', () => {
 
 test('a dispatched order can be sent back', () => {
   const order = aCardOrder();
-  dispatch(order);
+  dispatch(
+    order,
+    new Parcel({ courier: PARCELNOW, number: 'PN-58213' }),
+    new OrderEvents(),
+  );
   new Return(order, { cardToken: 'tok-4242' }, aGateway()).process();
   assert.equal(order.status, 'returned');
 });

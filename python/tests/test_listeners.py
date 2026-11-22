@@ -1,11 +1,19 @@
 from shopfront.catalog import starter_catalog
 from shopfront.listeners import (
+    email_parcel_sent,
     email_shopper,
     expect_return,
     text_warehouse,
     track_order,
 )
-from shopfront.orders import Order, OrderBuilder, OrderEvents, place_order
+from shopfront.orders import (
+    Order,
+    OrderBuilder,
+    OrderEvents,
+    dispatch,
+    place_order,
+)
+from shopfront.parcels import PARCELNOW, Parcel
 from shopfront.settings import DUTCH_SHOP, GERMAN_SHOP
 from shopfront.vendor.analytics import Analytics
 from shopfront.vendor.mailer import Mailer
@@ -84,3 +92,18 @@ def test_a_closed_warehouse_gets_no_text_until_it_opens_again():
     assert [text["text"] for text in sms.outbox] == [
         "Pack SF-00002: 2 x MUG-01"
     ]
+
+
+def test_the_parcel_email_says_where_to_follow_it():
+    mailer = Mailer()
+    events = OrderEvents()
+    events.dispatched.subscribe(email_parcel_sent(mailer, GERMAN_SHOP))
+
+    dispatch(an_order(), Parcel(courier=PARCELNOW, number="PN-58213"), events)
+
+    assert mailer.outbox[0]["to"] == "ada@example.com"
+    assert mailer.outbox[0]["subject"] == "Shopfront: SF-00007 is on its way"
+    assert mailer.outbox[0]["body"] == (
+        "Hi Ada, your parcel is on its way. "
+        "Follow it at https://parcelnow.example/track/PN-58213"
+    )

@@ -6,6 +6,7 @@ from types import MappingProxyType
 from typing import ClassVar
 
 from shopfront.catalog import Catalog
+from shopfront.parcels import Parcel
 from shopfront.settings import Settings
 
 _last_order_number = 0
@@ -44,10 +45,13 @@ class Order:
         self.payment_method = payment_method
         self.transaction_id = transaction_id
         self.status = "placed"
+        # The parcel the warehouse handed a courier: None until dispatched.
+        self.parcel: Parcel | None = None
 
     def __setattr__(self, name: str, value: object) -> None:
-        # Each part is set once, in __init__; only the status changes.
-        if name != "status" and hasattr(self, name):
+        # Each part is set once, in __init__; only the status changes, and
+        # the parcel once the order leaves.
+        if name not in ("status", "parcel") and hasattr(self, name):
             raise AttributeError(f"an order's {name} cannot change")
         super().__setattr__(name, value)
 
@@ -318,6 +322,7 @@ class OrderEvents:
     def __init__(self) -> None:
         self.placed = Listeners()
         self.refunded = Listeners()
+        self.dispatched = Listeners()
 
 
 def place_order(order: Order, catalog: Catalog, events: OrderEvents) -> None:
@@ -332,11 +337,14 @@ class DispatchRefusedError(Exception):
     pass
 
 
-def dispatch(order: Order) -> None:
-    """Mark an order dispatched: its parcel has left the warehouse."""
+def dispatch(order: Order, parcel: Parcel, events: OrderEvents) -> None:
+    """Mark an order dispatched: its parcel has left the warehouse with a
+    courier. Then announce it."""
     if not status_of(order).dispatchable:
         raise DispatchRefusedError(f"{order.order_id} is {order.status}")
+    order.parcel = parcel
     order.status = "dispatched"
+    events.dispatched.notify(order)
 
 
 def sales_report(orders: Iterable[Order], shop: Settings) -> str:

@@ -24,6 +24,7 @@ from shopfront.orders import (
     sales_report,
     status_of,
 )
+from shopfront.parcels import PARCELNOW, Parcel
 from shopfront.settings import GERMAN_SHOP
 
 
@@ -44,6 +45,9 @@ def an_order(
         .transaction("txn-0001")
         .build()
     )
+
+
+A_PARCEL = Parcel(courier=PARCELNOW, number="PN-58213")
 
 
 def events_of(*listeners: OrderListener) -> OrderEvents:
@@ -250,7 +254,7 @@ def test_the_sales_report_counts_only_the_orders_kept():
 def test_the_sales_report_counts_dispatched_orders():
     placed = an_order(order_id="SF-00001")
     dispatched = an_order(order_id="SF-00002")
-    dispatch(dispatched)
+    dispatch(dispatched, A_PARCEL, OrderEvents())
 
     report = sales_report([placed, dispatched], GERMAN_SHOP)
 
@@ -259,10 +263,22 @@ def test_the_sales_report_counts_dispatched_orders():
 
 def test_a_placed_order_is_dispatched_once():
     order = an_order()
-    dispatch(order)
+    dispatch(order, A_PARCEL, OrderEvents())
     assert order.status == "dispatched"
     with pytest.raises(DispatchRefusedError, match="SF-00007 is dispatched"):
-        dispatch(order)
+        dispatch(order, A_PARCEL, OrderEvents())
+
+
+def test_dispatch_keeps_the_parcel_and_tells_who_listens():
+    order = an_order()
+    events = OrderEvents()
+    told: list[str] = []
+    events.dispatched.subscribe(lambda sent: told.append(sent.order_id))
+
+    dispatch(order, A_PARCEL, events)
+
+    assert order.parcel == A_PARCEL
+    assert told == ["SF-00007"]
 
 
 def test_the_sales_report_walks_the_order_book_itself():

@@ -1,5 +1,6 @@
-// What the rest of the store does once an order is placed or refunded:
-// each maker gives back a listener, a function that is told the order.
+// What the rest of the store does once an order is placed, dispatched or
+// refunded: each maker gives back a listener, a function that is told the
+// order.
 
 import { formatMoney, packingSlip } from './orders.js';
 
@@ -65,6 +66,27 @@ export function expectReturn(sms, shop) {
     sms.send({
       to: shop.warehousePhone,
       text: `Expect ${order.orderId} back: ${packingSlip(order).join(', ')}`,
+    });
+  };
+}
+
+/**
+ * Tell the shopper the parcel is on its way, and where to follow it.
+ * @param {import('./vendor/mailer.js').Mailer} mailer
+ * @param {import('./settings.js').Settings} shop
+ * @returns {OrderListener}
+ */
+export function emailParcelSent(mailer, shop) {
+  return (order) => {
+    if (order.parcel === null) return;
+    mailer.send({
+      from: shop.storeEmail,
+      to: order.customerEmail,
+      subject: `${shop.storeName}: ${order.orderId} is on its way`,
+      body:
+        `Hi ${order.customerName}, your parcel is on its way. ` +
+        'Follow it at ' +
+        `${order.parcel.courier.trackingPage}${order.parcel.number}`,
     });
   };
 }

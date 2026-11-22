@@ -3,12 +3,19 @@ import { test } from 'node:test';
 
 import { starterCatalog } from '../src/catalog.ts';
 import {
+  emailParcelSent,
   emailShopper,
   expectReturn,
   textWarehouse,
   trackOrder,
 } from '../src/listeners.ts';
-import { OrderBuilder, OrderEvents, placeOrder } from '../src/orders.ts';
+import {
+  OrderBuilder,
+  OrderEvents,
+  dispatch,
+  placeOrder,
+} from '../src/orders.ts';
+import { PARCELNOW, Parcel } from '../src/parcels.ts';
 import { DUTCH_SHOP, GERMAN_SHOP } from '../src/settings.ts';
 import { Analytics } from '../src/vendor/analytics.ts';
 import { Mailer } from '../src/vendor/mailer.ts';
@@ -89,5 +96,26 @@ test('a closed warehouse gets no text until it opens again', () => {
   assert.deepEqual(
     sms.outbox.map((text) => text.text),
     ['Pack SF-00002: 2 x MUG-01'],
+  );
+});
+
+test('the parcel email says where to follow it', () => {
+  const mailer = new Mailer();
+  const events = new OrderEvents();
+  events.on('dispatched', emailParcelSent(mailer, GERMAN_SHOP));
+
+  dispatch(
+    anOrder(),
+    new Parcel({ courier: PARCELNOW, number: 'PN-58213' }),
+    events,
+  );
+
+  const [email] = mailer.outbox;
+  assert.equal(email?.to, 'ada@example.com');
+  assert.equal(email?.subject, 'Shopfront: SF-00007 is on its way');
+  assert.equal(
+    email?.body,
+    'Hi Ada, your parcel is on its way. ' +
+      'Follow it at https://parcelnow.example/track/PN-58213',
   );
 });

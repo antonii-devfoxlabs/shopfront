@@ -5,12 +5,19 @@ import { CatalogError, loadCatalog } from './catalogFile.js';
 import { Checkout } from './checkout.js';
 import { TimedGateway } from './gateways.js';
 import {
+  emailParcelSent,
   emailShopper,
   expectReturn,
   textWarehouse,
   trackOrder,
 } from './listeners.js';
-import { OrderEvents, PLACED, REFUNDED, formatMoney } from './orders.js';
+import {
+  DISPATCHED,
+  OrderEvents,
+  PLACED,
+  REFUNDED,
+  formatMoney,
+} from './orders.js';
 import { PriceCalculator } from './pricing.js';
 import {
   boxRouteQuote,
@@ -81,6 +88,9 @@ events.on(PLACED, trackOrder(new Analytics()));
 events.on(PLACED, warehouse);
 // Refunds, made for the return page, tell the same events.
 events.on(REFUNDED, expectReturn(sms, shop));
+// The warehouse's page dispatches orders: the shopper hears where to
+// follow the parcel.
+events.on(DISPATCHED, emailParcelSent(mailer, shop));
 // Every step of an order, in order, behind one call. main still
 // decides what is timed, and hands the checkout the timed parts.
 const checkout = new Checkout({
