@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { starterCatalog } from '../src/catalog.js';
+import { sales } from '../src/exports.js';
 import {
   OrderBook,
   OrderBuilder,
@@ -10,7 +11,7 @@ import {
   placeOrder,
 } from '../src/orders.js';
 import { Parcel, SWIFTSHIP } from '../src/parcels.js';
-import { whereIs } from '../src/support.js';
+import { cancel, whereIs } from '../src/support.js';
 
 function aPlacedOrder(book) {
   const order = new OrderBuilder('SF-00001')
@@ -55,5 +56,23 @@ test('the support page reads the book it is handed', () => {
   assert.throws(() => whereIs('SF-00001', new OrderBook()), {
     name: 'UnknownOrderError',
     message: 'SF-00001',
+  });
+});
+
+test('the support page cancels a placed order', () => {
+  const book = new OrderBook();
+  const order = aPlacedOrder(book);
+  cancel('SF-00001', book);
+  assert.equal(whereIs('SF-00001', book), 'SF-00001 is cancelled');
+  assert.deepEqual(sales([order]), []);
+});
+
+test('a cancelled order is not cancelled again', () => {
+  const book = new OrderBook();
+  aPlacedOrder(book);
+  cancel('SF-00001', book);
+  assert.throws(() => cancel('SF-00001', book), {
+    name: 'CancelRefusedError',
+    message: 'SF-00001 is cancelled',
   });
 });

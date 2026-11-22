@@ -1,6 +1,10 @@
 // What the support team's page asks Shopfront.
 
-import type { OrderBook } from './orders.ts';
+import { type OrderBook, statusOf } from './orders.ts';
+
+export class CancelRefusedError extends Error {
+  override name = 'CancelRefusedError';
+}
 
 // The support page's answer to "where is my order?", from the store's
 // order book.
@@ -11,4 +15,14 @@ export function whereIs(orderId: string, book: OrderBook): string {
     return `${order.orderId} is ${order.status}`;
   }
   return `${order.orderId} is ${order.status}: ${link}`;
+}
+
+// The support page cancels an order the shopper no longer wants: the
+// store will not send it, and no longer counts it as a sale.
+export function cancel(orderId: string, book: OrderBook): void {
+  const order = book.find(orderId);
+  if (!statusOf(order).returnable) {
+    throw new CancelRefusedError(`${order.orderId} is ${order.status}`);
+  }
+  order.status = 'cancelled';
 }

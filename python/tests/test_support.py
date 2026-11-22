@@ -1,6 +1,7 @@
 import pytest
 
 from shopfront.catalog import starter_catalog
+from shopfront.exports import sales
 from shopfront.orders import (
     Order,
     OrderBook,
@@ -11,7 +12,7 @@ from shopfront.orders import (
     place_order,
 )
 from shopfront.parcels import SWIFTSHIP, Parcel
-from shopfront.support import where_is
+from shopfront.support import CancelRefusedError, cancel, where_is
 
 
 def a_placed_order(book: OrderBook) -> Order:
@@ -52,3 +53,17 @@ def test_the_support_page_reads_the_book_it_is_handed(book):
     a_placed_order(book)
     with pytest.raises(UnknownOrderError, match="SF-00001"):
         where_is("SF-00001", OrderBook())
+
+
+def test_the_support_page_cancels_a_placed_order(book):
+    order = a_placed_order(book)
+    cancel("SF-00001", book)
+    assert where_is("SF-00001", book) == "SF-00001 is cancelled"
+    assert sales([order]) == []
+
+
+def test_a_cancelled_order_is_not_cancelled_again(book):
+    a_placed_order(book)
+    cancel("SF-00001", book)
+    with pytest.raises(CancelRefusedError, match="SF-00001 is cancelled"):
+        cancel("SF-00001", book)
