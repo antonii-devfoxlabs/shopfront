@@ -64,6 +64,13 @@ class Order:
             + self.shipping_cents
         )
 
+    def tracking_link(self) -> str | None:
+        """Where the shopper can follow the order's parcel: None until the
+        order is dispatched."""
+        if self.parcel is None:
+            return None
+        return self.parcel.tracking_link()
+
 
 class UnknownStatusError(Exception):
     pass

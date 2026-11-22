@@ -269,6 +269,16 @@ def test_a_placed_order_is_dispatched_once():
         dispatch(order, A_PARCEL, OrderEvents())
 
 
+def test_a_placed_order_has_no_tracking_link_yet():
+    assert an_order().tracking_link() is None
+
+
+def test_a_dispatched_order_links_to_its_parcel():
+    order = an_order()
+    dispatch(order, A_PARCEL, OrderEvents())
+    assert order.tracking_link() == "https://parcelnow.example/track/PN-58213"
+
+
 def test_dispatch_keeps_the_parcel_and_tells_who_listens():
     order = an_order()
     events = OrderEvents()

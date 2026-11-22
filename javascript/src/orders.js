@@ -66,6 +66,13 @@ export class Order {
     this.#parcel = parcel;
   }
 
+  // Where the shopper can follow the order's parcel: null until the order
+  // is dispatched.
+  trackingLink() {
+    if (this.#parcel === null) return null;
+    return this.#parcel.trackingLink();
+  }
+
   get totalCents() {
     return (
       this.subtotalCents -

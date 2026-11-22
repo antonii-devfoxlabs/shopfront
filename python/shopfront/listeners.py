@@ -68,7 +68,8 @@ def email_parcel_sent(mailer: Mailer, shop: Settings) -> OrderListener:
     """Tell the shopper the parcel is on its way, and where to follow it."""
 
     def send_email(order: Order) -> None:
-        if order.parcel is None:
+        link = order.tracking_link()
+        if link is None:
             return
         mailer.send(
             sender=shop.store_email,
@@ -76,7 +77,7 @@ def email_parcel_sent(mailer: Mailer, shop: Settings) -> OrderListener:
             subject=f"{shop.store_name}: {order.order_id} is on its way",
             body=(
                 f"Hi {order.customer_name}, your parcel is on its way. "
-                f"Follow it at {order.parcel.tracking_link()}"
+                f"Follow it at {link}"
             ),
         )
 

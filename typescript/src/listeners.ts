@@ -59,14 +59,15 @@ export function emailParcelSent(
   shop: Settings,
 ): OrderListener {
   return (order) => {
-    if (order.parcel === null) return;
+    const link = order.trackingLink();
+    if (link === null) return;
     mailer.send({
       from: shop.storeEmail,
       to: order.customerEmail,
       subject: `${shop.storeName}: ${order.orderId} is on its way`,
       body:
         `Hi ${order.customerName}, your parcel is on its way. ` +
-        `Follow it at ${order.parcel.trackingLink()}`,
+        `Follow it at ${link}`,
     });
   };
 }

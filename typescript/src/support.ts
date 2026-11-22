@@ -5,10 +5,9 @@ import { OrderBook } from './orders.ts';
 // The support page's answer to "where is my order?".
 export function whereIs(orderId: string): string {
   const order = OrderBook.instance().find(orderId);
-  if (order.parcel === null) {
+  const link = order.trackingLink();
+  if (link === null) {
     return `${order.orderId} is ${order.status}`;
   }
-  return (
-    `${order.orderId} is ${order.status}: ` + order.parcel.trackingLink()
-  );
+  return `${order.orderId} is ${order.status}: ${link}`;
 }

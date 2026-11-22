@@ -283,6 +283,19 @@ test('a placed order is dispatched once', () => {
   });
 });
 
+test('a placed order has no tracking link yet', () => {
+  assert.equal(anOrder().trackingLink(), null);
+});
+
+test('a dispatched order links to its parcel', () => {
+  const order = anOrder();
+  dispatch(order, A_PARCEL, new OrderEvents());
+  assert.equal(
+    order.trackingLink(),
+    'https://parcelnow.example/track/PN-58213',
+  );
+});
+
 test('dispatch keeps the parcel and tells who listens', () => {
   const order = anOrder();
   const events = new OrderEvents();
