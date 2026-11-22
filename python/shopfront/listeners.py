@@ -107,13 +107,10 @@ class SmsNotifier:
         self._sms.send(to=self._phone, text=text)
 
 
-def stop_packing(
-    notifier: Notifier, template: str = "Do not pack {order_id}"
-) -> OrderListener:
-    """Tell the warehouse not to pack a cancelled order. A shop can word
-    the text its own way, or in its own language later."""
+def stop_packing(notifier: Notifier) -> OrderListener:
+    """Tell the warehouse not to pack a cancelled order."""
 
     def send_text(order: Order) -> None:
-        notifier.send(template.format(order_id=order.order_id))
+        notifier.send(f"Do not pack {order.order_id}")
 
     return send_text

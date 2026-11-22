@@ -129,20 +129,6 @@ test('a refused cancel is not announced', () => {
   assert.deepEqual(heard, []);
 });
 
-test('a listener told before a cancel can stop it', () => {
-  const book = new OrderBook();
-  const order = aPlacedOrder(book);
-  const events = new OrderEvents();
-  events.on('beforeCancel', (order) => {
-    throw new CancelRefusedError(`${order.orderId} is kept`);
-  });
-  assert.throws(() => cancel('SF-00001', book, events), {
-    name: 'CancelRefusedError',
-    message: 'SF-00001 is kept',
-  });
-  assert.equal(order.status, 'placed');
-});
-
 function refundsFor(
   book: OrderBook,
   gateway: PaymentGateway,

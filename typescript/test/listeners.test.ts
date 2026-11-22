@@ -82,15 +82,6 @@ test('the stop-packing listener texts the warehouse', () => {
   ]);
 });
 
-test('a shop can word the stop text its own way', () => {
-  const sms = new Sms();
-  const notifier = new SmsNotifier(sms, DUTCH_SHOP.warehousePhone);
-  stopPacking(notifier, 'Stop {orderId}')(anOrder());
-  assert.deepEqual(sms.outbox, [
-    { to: '+44 7700 900200', text: 'Stop SF-00007' },
-  ]);
-});
-
 test('the return listener texts what comes back', () => {
   const sms = new Sms();
   expectReturn(sms, GERMAN_SHOP)(anOrder());

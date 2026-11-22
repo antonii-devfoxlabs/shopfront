@@ -4,7 +4,6 @@ import { test } from 'node:test';
 import { starterCatalog } from '../src/catalog.js';
 import { sales } from '../src/exports.js';
 import {
-  BEFORE_CANCEL,
   CANCELLED,
   CancelRefusedError,
   OrderBook,
@@ -130,20 +129,6 @@ test('a refused cancel is not announced', () => {
     name: 'CancelRefusedError',
   });
   assert.deepEqual(heard, []);
-});
-
-test('a listener told before a cancel can stop it', () => {
-  const book = new OrderBook();
-  const order = aPlacedOrder(book);
-  const events = new OrderEvents();
-  events.on(BEFORE_CANCEL, (order) => {
-    throw new CancelRefusedError(`${order.orderId} is kept`);
-  });
-  assert.throws(() => cancel('SF-00001', book, events), {
-    name: 'CancelRefusedError',
-    message: 'SF-00001 is kept',
-  });
-  assert.equal(order.status, 'placed');
 });
 
 function refundsFor(book, gateway, mailer) {

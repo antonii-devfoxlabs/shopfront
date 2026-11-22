@@ -19,7 +19,6 @@ def cancel(order_id: str, book: OrderBook, events: OrderEvents) -> None:
     the store will not send it, and no longer counts it as a sale. Then
     it announces it."""
     order = book.find(order_id)
-    events.before_cancel.notify(order)
     order.mark_cancelled()
     events.cancelled.notify(order)
 

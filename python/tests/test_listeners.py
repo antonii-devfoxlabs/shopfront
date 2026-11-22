@@ -80,13 +80,6 @@ def test_the_stop_packing_listener_texts_the_warehouse():
     ]
 
 
-def test_a_shop_can_word_the_stop_text_its_own_way():
-    sms = Sms()
-    notifier = SmsNotifier(sms, DUTCH_SHOP.warehouse_phone)
-    stop_packing(notifier, "Stop {order_id}")(an_order())
-    assert sms.outbox == [{"to": "+44 7700 900200", "text": "Stop SF-00007"}]
-
-
 def test_the_return_listener_texts_what_comes_back():
     sms = Sms()
     expect_return(sms, GERMAN_SHOP)(an_order())

@@ -120,14 +120,12 @@ export class SmsNotifier {
 }
 
 /**
- * Tell the warehouse not to pack a cancelled order. A shop can word the
- * text its own way, or in its own language later.
+ * Tell the warehouse not to pack a cancelled order.
  * @param {Notifier} notifier
- * @param {string} [template]
  * @returns {OrderListener}
  */
-export function stopPacking(notifier, template = 'Do not pack {orderId}') {
+export function stopPacking(notifier) {
   return (order) => {
-    notifier.send(template.replace('{orderId}', order.orderId));
+    notifier.send(`Do not pack ${order.orderId}`);
   };
 }

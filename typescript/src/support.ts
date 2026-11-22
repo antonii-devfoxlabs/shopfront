@@ -24,7 +24,6 @@ export function cancel(
   events: OrderEvents,
 ): void {
   const order = book.find(orderId);
-  events.emit('beforeCancel', order);
   order.markCancelled();
   events.emit('cancelled', order);
 }

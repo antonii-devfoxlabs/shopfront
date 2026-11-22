@@ -106,19 +106,6 @@ def test_a_refused_cancel_is_not_announced(book):
     assert heard == []
 
 
-def test_a_listener_told_before_a_cancel_can_stop_it(book):
-    order = a_placed_order(book)
-    events = OrderEvents()
-
-    def refuse(order: Order) -> None:
-        raise CancelRefusedError(f"{order.order_id} is kept")
-
-    events.before_cancel.subscribe(refuse)
-    with pytest.raises(CancelRefusedError, match="SF-00001 is kept"):
-        cancel("SF-00001", book, events)
-    assert order.status == "placed"
-
-
 def refunds_for(
     book: OrderBook, gateway: PaymentGateway, mailer: Mailer
 ) -> Refunds:

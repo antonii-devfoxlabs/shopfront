@@ -95,13 +95,9 @@ export class SmsNotifier implements Notifier {
   }
 }
 
-// Tell the warehouse not to pack a cancelled order. A shop can word the
-// text its own way, or in its own language later.
-export function stopPacking(
-  notifier: Notifier,
-  template = 'Do not pack {orderId}',
-): OrderListener {
+// Tell the warehouse not to pack a cancelled order.
+export function stopPacking(notifier: Notifier): OrderListener {
   return (order) => {
-    notifier.send(template.replace('{orderId}', order.orderId));
+    notifier.send(`Do not pack ${order.orderId}`);
   };
 }
