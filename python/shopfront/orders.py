@@ -1,6 +1,7 @@
 """An order, and what happens once it is placed."""
 
 from collections.abc import Callable, Iterable, Iterator, Mapping
+from dataclasses import dataclass
 from types import MappingProxyType
 from typing import ClassVar
 
@@ -58,6 +59,42 @@ class Order:
             + self.tax_cents
             + self.shipping_cents
         )
+
+
+class UnknownStatusError(Exception):
+    pass
+
+
+@dataclass(frozen=True, kw_only=True)
+class Status:
+    """What the rest of the store needs to know of an order's status."""
+
+    # Counted in the takings and in the accountant's sales files.
+    sale: bool
+    # Can still be sent back for its money.
+    returnable: bool
+    # Can still leave the warehouse.
+    dispatchable: bool
+
+
+# Every status an order can have, and what it means. A new status is a
+# new row: the code that asks what a status means reads it here.
+STATUSES: Mapping[str, Status] = MappingProxyType(
+    {
+        "placed": Status(sale=True, returnable=True, dispatchable=True),
+        "dispatched": Status(sale=True, returnable=True, dispatchable=False),
+        "cancelled": Status(sale=False, returnable=False, dispatchable=False),
+        "returned": Status(sale=False, returnable=False, dispatchable=False),
+    }
+)
+
+
+def status_of(order: Order) -> Status:
+    """What the order's status means: its row in STATUSES."""
+    status = STATUSES.get(order.status)
+    if status is None:
+        raise UnknownStatusError(order.status)
+    return status
 
 
 class IncompleteOrderError(Exception):

@@ -79,6 +79,30 @@ export class Order {
   }
 }
 
+// What the rest of the store needs to know of an order's status.
+export type Status = {
+  // Counted in the takings and in the accountant's sales files.
+  readonly sale: boolean;
+  // Can still be sent back for its money.
+  readonly returnable: boolean;
+  // Can still leave the warehouse.
+  readonly dispatchable: boolean;
+};
+
+// Every status an order can have, and what it means. A new status is a
+// new row: the code that asks what a status means reads it here.
+const STATUSES: Readonly<Record<OrderStatus, Status>> = Object.freeze({
+  placed: { sale: true, returnable: true, dispatchable: true },
+  dispatched: { sale: true, returnable: true, dispatchable: false },
+  cancelled: { sale: false, returnable: false, dispatchable: false },
+  returned: { sale: false, returnable: false, dispatchable: false },
+});
+
+// What the order's status means: its row in STATUSES.
+export function statusOf(order: Order): Status {
+  return STATUSES[order.status];
+}
+
 export class IncompleteOrderError extends Error {
   override name = 'IncompleteOrderError';
 }

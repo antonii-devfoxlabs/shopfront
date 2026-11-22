@@ -9,6 +9,7 @@ import {
   OrderEvents,
   PLACED,
   UnknownOrderError,
+  UnknownStatusError,
   dispatch,
   formatMoney,
   nextOrderId,
@@ -16,6 +17,7 @@ import {
   placeOrder,
   reorder,
   salesReport,
+  statusOf,
 } from '../src/orders.js';
 import { GERMAN_SHOP } from '../src/settings.js';
 
@@ -226,6 +228,25 @@ test('a parcel of 40 EUR or more gets a free sample', () => {
     .transaction('txn-0003')
     .build();
   assert.deepEqual(packingSlip(order), ['4 x MUG-01', '1 x TEA-SAMPLE']);
+});
+
+test('the status table says what dispatched means', () => {
+  const order = anOrder();
+  order.status = 'dispatched';
+  assert.deepEqual(statusOf(order), {
+    sale: true,
+    returnable: true,
+    dispatchable: false,
+  });
+});
+
+test('an unknown status is refused', () => {
+  const order = anOrder();
+  order.status = 'lost';
+  assert.throws(() => statusOf(order), {
+    name: 'UnknownStatusError',
+    message: 'lost',
+  });
 });
 
 test('the sales report counts only the orders kept', () => {

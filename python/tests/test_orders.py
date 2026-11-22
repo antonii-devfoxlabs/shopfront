@@ -12,7 +12,9 @@ from shopfront.orders import (
     OrderBuilder,
     OrderEvents,
     OrderListener,
+    Status,
     UnknownOrderError,
+    UnknownStatusError,
     dispatch,
     format_money,
     next_order_id,
@@ -20,6 +22,7 @@ from shopfront.orders import (
     place_order,
     reorder,
     sales_report,
+    status_of,
 )
 from shopfront.settings import GERMAN_SHOP
 
@@ -217,6 +220,21 @@ def test_a_parcel_of_40_eur_or_more_gets_a_free_sample():
         .build()
     )
     assert packing_slip(order) == ["4 x MUG-01", "1 x TEA-SAMPLE"]
+
+
+def test_the_status_table_says_what_dispatched_means():
+    order = an_order()
+    order.status = "dispatched"
+    assert status_of(order) == Status(
+        sale=True, returnable=True, dispatchable=False
+    )
+
+
+def test_an_unknown_status_is_refused():
+    order = an_order()
+    order.status = "lost"
+    with pytest.raises(UnknownStatusError, match="lost"):
+        status_of(order)
 
 
 def test_the_sales_report_counts_only_the_orders_kept():

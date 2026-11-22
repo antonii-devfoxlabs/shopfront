@@ -16,6 +16,7 @@ import {
   placeOrder,
   reorder,
   salesReport,
+  statusOf,
 } from '../src/orders.ts';
 import { GERMAN_SHOP } from '../src/settings.ts';
 
@@ -225,6 +226,16 @@ test('a parcel of 40 EUR or more gets a free sample', () => {
     .transaction('txn-0003')
     .build();
   assert.deepEqual(packingSlip(order), ['4 x MUG-01', '1 x TEA-SAMPLE']);
+});
+
+test('the status table says what dispatched means', () => {
+  const order = anOrder();
+  order.status = 'dispatched';
+  assert.deepEqual(statusOf(order), {
+    sale: true,
+    returnable: true,
+    dispatchable: false,
+  });
 });
 
 test('the sales report counts only the orders kept', () => {

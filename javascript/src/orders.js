@@ -64,6 +64,44 @@ export class Order {
   }
 }
 
+export class UnknownStatusError extends Error {
+  name = 'UnknownStatusError';
+}
+
+/**
+ * What the rest of the store needs to know of an order's status.
+ * @typedef {object} Status
+ * @property {boolean} sale Counted in the takings and in the
+ *   accountant's sales files.
+ * @property {boolean} returnable Can still be sent back for its money.
+ * @property {boolean} dispatchable Can still leave the warehouse.
+ */
+
+/**
+ * Every status an order can have, and what it means. A new status is a
+ * new row: the code that asks what a status means reads it here.
+ * @type {ReadonlyMap<string, Status>}
+ */
+const STATUSES = new Map([
+  ['placed', { sale: true, returnable: true, dispatchable: true }],
+  ['dispatched', { sale: true, returnable: true, dispatchable: false }],
+  ['cancelled', { sale: false, returnable: false, dispatchable: false }],
+  ['returned', { sale: false, returnable: false, dispatchable: false }],
+]);
+
+/**
+ * What the order's status means: its row in STATUSES.
+ * @param {Order} order
+ * @returns {Status}
+ */
+export function statusOf(order) {
+  const status = STATUSES.get(order.status);
+  if (status === undefined) {
+    throw new UnknownStatusError(order.status);
+  }
+  return status;
+}
+
 export class IncompleteOrderError extends Error {
   name = 'IncompleteOrderError';
 }
