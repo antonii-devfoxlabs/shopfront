@@ -1,6 +1,7 @@
 import pytest
 
 from shopfront.catalog import starter_catalog
+from shopfront.exports import returns, sales
 from shopfront.orders import (
     Order,
     OrderBuilder,
@@ -43,11 +44,19 @@ def test_a_return_refunds_the_way_the_shopper_paid(gateway):
     assert order.status == "returned"
 
 
-def test_an_exchange_gives_no_money_back(gateway):
+def test_an_exchange_keeps_the_sale_and_is_no_return():
     order = a_card_order()
-    Exchange(order, gateway).process()
-    assert gateway.refunds == []
-    assert order.status == "returned"
+    Exchange(order).process()
+    assert order.status == "exchanged"
+    assert sales([order]) == [order]
+    assert returns([order]) == []
+
+
+def test_a_returned_order_is_not_exchanged(gateway):
+    order = a_card_order()
+    Return(order, {"card_token": "tok-4242"}, gateway).process()
+    with pytest.raises(ReturnRefusedError, match="SF-00007 is returned"):
+        Exchange(order).process()
 
 
 def test_a_dispatched_order_can_be_sent_back(gateway):

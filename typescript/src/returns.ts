@@ -53,21 +53,23 @@ export class Return {
   }
 }
 
-// A product sent back and the same one sent again: no money moves.
-export class Exchange extends Return {
-  constructor(order: Order, gateway: Gateway) {
-    super(order, {}, gateway);
+// A product sent back and the same one sent again: the sale stands, and
+// no money moves, so an exchange is not a Return.
+export class Exchange {
+  readonly order: Order;
+
+  constructor(order: Order) {
+    this.order = order;
   }
 
-  // Take the product back and mark the order returned: no refund.
-  override process(): string {
+  // Take the product back, and mark the order exchanged.
+  process(): void {
     if (!statusOf(this.order).returnable) {
       throw new ReturnRefusedError(
         `${this.order.orderId} is ${this.order.status}`,
       );
     }
-    this.order.status = 'returned';
-    return '';
+    this.order.status = 'exchanged';
   }
 }
 

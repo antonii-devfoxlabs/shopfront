@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { starterCatalog } from '../src/catalog.js';
+import { returns, sales } from '../src/exports.js';
 import {
   OrderBuilder,
   OrderEvents,
@@ -49,12 +50,21 @@ test('a return refunds the way the shopper paid', () => {
   assert.equal(order.status, 'returned');
 });
 
-test('an exchange gives no money back', () => {
-  const gateway = aGateway();
+test('an exchange keeps the sale and is no return', () => {
   const order = aCardOrder();
-  new Exchange(order, gateway).process();
-  assert.deepEqual(gateway.refunds, []);
-  assert.equal(order.status, 'returned');
+  new Exchange(order).process();
+  assert.equal(order.status, 'exchanged');
+  assert.deepEqual(sales([order]), [order]);
+  assert.deepEqual(returns([order]), []);
+});
+
+test('a returned order is not exchanged', () => {
+  const order = aCardOrder();
+  new Return(order, { cardToken: 'tok-4242' }, aGateway()).process();
+  assert.throws(() => new Exchange(order).process(), {
+    name: 'ReturnRefusedError',
+    message: 'SF-00007 is returned',
+  });
 });
 
 test('a dispatched order can be sent back', () => {
