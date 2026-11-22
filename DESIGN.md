@@ -13,7 +13,8 @@ Each kind of change has the shape that fits what differs between its
 cases: a number is a row of a table, a refusal is an `if`, and a class
 or a function per case is for cases whose code differs. A new case
 takes its kind's shape; a kind whose cases start to differ in code
-changes shape then, not before.
+changes shape then, not before. A slot, a parameter or a hook is
+added with the case that needs it, never for one nobody has asked for.
 
 - **A way to pay**: a row in `payments.PAYMENT_METHODS`. A new kind
   of payment is a class beside `payments.Card`, then a row.
@@ -24,8 +25,10 @@ changes shape then, not before.
   providers `main` hands `shipping.Shipping`.
 - **A job round a service** (a timer, a cache): a wrapper, as
   `taxes.CachedRates` is round the tax service.
-- **Something to do when an order is placed**: a listener in
-  `listeners`, subscribed to `orders.OrderEvents` in `main`.
+- **Something to do when an order is placed, dispatched, refunded or
+  cancelled**: a listener in `listeners`, subscribed to
+  `orders.OrderEvents` in `main`. A new way to tell someone is one more
+  listener.
 - **A part of an order**: a step on `orders.OrderBuilder`.
 - **A status of an order**: a row in `orders.STATUSES`, which says
   whether it is a sale, can be sent back, dispatched or cancelled.
