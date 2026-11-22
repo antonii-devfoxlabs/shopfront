@@ -54,16 +54,24 @@ class Order:
         self.shipping_country = shipping_country
         self.payment_method = payment_method
         self.transaction_id = transaction_id
-        self.status = "placed"
+        self._status = "placed"
         # The parcel the warehouse handed a courier: None until dispatched.
-        self.parcel: Parcel | None = None
+        self._parcel: Parcel | None = None
 
     def __setattr__(self, name: str, value: object) -> None:
-        # Each part is set once, in __init__; only the status changes, and
-        # the parcel once the order leaves.
-        if name not in ("status", "parcel") and hasattr(self, name):
+        # Each part is set once, in __init__; only the order's own moves
+        # change the status, and the parcel once the order leaves.
+        if name not in ("_status", "_parcel") and hasattr(self, name):
             raise AttributeError(f"an order's {name} cannot change")
         super().__setattr__(name, value)
+
+    @property
+    def status(self) -> str:
+        return self._status
+
+    @property
+    def parcel(self) -> Parcel | None:
+        return self._parcel
 
     @property
     def total_cents(self) -> int:
@@ -88,14 +96,14 @@ class Order:
         """Its parcel has left the warehouse with a courier."""
         if not status_of(self).dispatchable:
             raise DispatchRefusedError(f"{self.order_id} is {self.status}")
-        self.parcel = parcel
-        self.status = "dispatched"
+        self._parcel = parcel
+        self._status = "dispatched"
 
     def mark_cancelled(self) -> None:
         """The shopper no longer wants it, and it has not left yet."""
         if not status_of(self).cancellable:
             raise CancelRefusedError(f"{self.order_id} is {self.status}")
-        self.status = "cancelled"
+        self._status = "cancelled"
 
     def check_returnable(self) -> None:
         """Refuse a return before any money goes back for it."""
@@ -105,12 +113,12 @@ class Order:
     def mark_returned(self) -> None:
         """It came back, and its money went back."""
         self.check_returnable()
-        self.status = "returned"
+        self._status = "returned"
 
     def mark_exchanged(self) -> None:
         """It came back for the same product again."""
         self.check_returnable()
-        self.status = "exchanged"
+        self._status = "exchanged"
 
 
 class UnknownStatusError(Exception):

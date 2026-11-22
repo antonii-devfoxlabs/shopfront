@@ -33,7 +33,7 @@ const A_PARCEL = new Parcel({ courier: PARCELNOW, number: 'PN-58213' });
 test('the sales report counts only the orders kept', () => {
   const kept = anOrder(undefined, 'SF-00001');
   const sentBack = anOrder(undefined, 'SF-00002');
-  sentBack.status = 'returned';
+  sentBack.markReturned();
 
   const report = salesReport([kept, sentBack], GERMAN_SHOP);
 

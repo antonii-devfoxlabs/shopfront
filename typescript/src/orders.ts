@@ -71,8 +71,8 @@ export class Order {
     this.shippingCountry = shippingCountry;
     this.paymentMethod = paymentMethod;
     this.transactionId = transactionId;
-    // Each part is set once, here; only the status changes, and the
-    // parcel once the order leaves.
+    // Each part is set once, here; only the order's own moves change the
+    // status, and the parcel once the order leaves.
     Object.freeze(this);
   }
 
@@ -85,16 +85,8 @@ export class Order {
     return this.#status;
   }
 
-  set status(status: OrderStatus) {
-    this.#status = status;
-  }
-
   get parcel(): Parcel | null {
     return this.#parcel;
-  }
-
-  set parcel(parcel: Parcel | null) {
-    this.#parcel = parcel;
   }
 
   // Where the shopper can follow the order's parcel: null until the order

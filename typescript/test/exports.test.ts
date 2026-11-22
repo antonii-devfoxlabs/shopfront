@@ -14,6 +14,7 @@ import {
   save,
 } from '../src/exports.ts';
 import { type Order, OrderBuilder, type OrderStatus } from '../src/orders.ts';
+import { PARCELNOW, Parcel } from '../src/parcels.ts';
 
 function order(
   orderId: string,
@@ -31,7 +32,16 @@ function order(
     .paidBy('card')
     .transaction('txn-0001')
     .build();
-  placed.status = status;
+  // Each status is reached as the store reaches it: by the order's move.
+  if (status === 'dispatched') {
+    placed.markDispatched(
+      new Parcel({ courier: PARCELNOW, number: 'PN-58213' }),
+    );
+  } else if (status === 'cancelled') {
+    placed.markCancelled();
+  } else if (status === 'returned') {
+    placed.markReturned();
+  }
   return placed;
 }
 

@@ -209,7 +209,7 @@ test('an order with a short line takes nothing and tells nobody', () => {
 
 test('the status table says what exchanged means', () => {
   const order = anOrder();
-  order.status = 'exchanged';
+  order.markExchanged();
   assert.deepEqual(statusOf(order), {
     sale: true,
     returnable: true,
@@ -220,7 +220,7 @@ test('the status table says what exchanged means', () => {
 
 test('the status table says what dispatched means', () => {
   const order = anOrder();
-  order.status = 'dispatched';
+  order.markDispatched(A_PARCEL);
   assert.deepEqual(statusOf(order), {
     sale: true,
     returnable: true,
@@ -230,12 +230,25 @@ test('the status table says what dispatched means', () => {
 });
 
 test('an unknown status is refused', () => {
-  const order = anOrder();
-  order.status = 'lost';
-  assert.throws(() => statusOf(order), {
+  // No order can hold one: only its moves set a status, each a row of the
+  // table. A stand-in shows that statusOf still refuses one.
+  const lost = { status: 'lost' };
+  assert.throws(() => statusOf(lost), {
     name: 'UnknownStatusError',
     message: 'lost',
   });
+});
+
+test("only the order's moves change its status", () => {
+  const order = anOrder();
+  assert.throws(
+    () => {
+      order.status = 'cancelled';
+    },
+    { name: 'TypeError' },
+  );
+  order.markCancelled();
+  assert.equal(order.status, 'cancelled');
 });
 
 test('a placed order is dispatched once', () => {

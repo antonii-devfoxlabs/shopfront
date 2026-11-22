@@ -36,7 +36,7 @@ A_PARCEL = Parcel(courier=PARCELNOW, number="PN-58213")
 def test_the_sales_report_counts_only_the_orders_kept():
     kept = an_order(order_id="SF-00001")
     sent_back = an_order(order_id="SF-00002")
-    sent_back.status = "returned"
+    sent_back.mark_returned()
 
     report = sales_report([kept, sent_back], GERMAN_SHOP)
 

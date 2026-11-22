@@ -14,6 +14,7 @@ import {
   save,
 } from '../src/exports.js';
 import { OrderBuilder } from '../src/orders.js';
+import { PARCELNOW, Parcel } from '../src/parcels.js';
 
 function order(orderId, status = 'placed', email = 'ada@example.com') {
   const placed = new OrderBuilder(orderId)
@@ -27,7 +28,16 @@ function order(orderId, status = 'placed', email = 'ada@example.com') {
     .paidBy('card')
     .transaction('txn-0001')
     .build();
-  placed.status = status;
+  // Each status is reached as the store reaches it: by the order's move.
+  if (status === 'dispatched') {
+    placed.markDispatched(
+      new Parcel({ courier: PARCELNOW, number: 'PN-58213' }),
+    );
+  } else if (status === 'cancelled') {
+    placed.markCancelled();
+  } else if (status === 'returned') {
+    placed.markReturned();
+  }
   return placed;
 }
 

@@ -1,4 +1,6 @@
 from itertools import islice
+from types import SimpleNamespace
+from typing import cast
 
 import pytest
 
@@ -192,7 +194,7 @@ def test_an_order_with_a_short_line_takes_nothing_and_tells_nobody(book):
 
 def test_the_status_table_says_what_dispatched_means():
     order = an_order()
-    order.status = "dispatched"
+    order.mark_dispatched(A_PARCEL)
     assert status_of(order) == Status(
         sale=True, returnable=True, dispatchable=False, cancellable=False
     )
@@ -200,17 +202,26 @@ def test_the_status_table_says_what_dispatched_means():
 
 def test_the_status_table_says_what_exchanged_means():
     order = an_order()
-    order.status = "exchanged"
+    order.mark_exchanged()
     assert status_of(order) == Status(
         sale=True, returnable=True, dispatchable=True, cancellable=False
     )
 
 
 def test_an_unknown_status_is_refused():
-    order = an_order()
-    order.status = "lost"
+    # No order can hold one: only its moves set a status, each a row of
+    # the table. A stand-in shows that status_of still refuses one.
+    lost = cast(Order, SimpleNamespace(status="lost"))
     with pytest.raises(UnknownStatusError, match="lost"):
-        status_of(order)
+        status_of(lost)
+
+
+def test_only_the_orders_moves_change_its_status():
+    order = an_order()
+    with pytest.raises(AttributeError, match="status cannot change"):
+        order.status = "cancelled"  # type: ignore[misc]
+    order.mark_cancelled()
+    assert order.status == "cancelled"
 
 
 def test_a_placed_order_is_dispatched_once():

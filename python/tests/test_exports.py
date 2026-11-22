@@ -16,6 +16,7 @@ from shopfront.exports import (
     save,
 )
 from shopfront.orders import Order, OrderBuilder
+from shopfront.parcels import PARCELNOW, Parcel
 
 
 def order(
@@ -34,7 +35,13 @@ def order(
         .transaction("txn-0001")
         .build()
     )
-    placed.status = status
+    # Each status is reached as the store reaches it: by the order's move.
+    if status == "dispatched":
+        placed.mark_dispatched(Parcel(courier=PARCELNOW, number="PN-58213"))
+    elif status == "cancelled":
+        placed.mark_cancelled()
+    elif status == "returned":
+        placed.mark_returned()
     return placed
 
 
