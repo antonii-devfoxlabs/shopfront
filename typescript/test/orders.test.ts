@@ -13,11 +13,9 @@ import {
   nextOrderId,
   placeOrder,
   reorder,
-  salesReport,
   statusOf,
 } from '../src/orders.ts';
 import { PARCELNOW, Parcel } from '../src/parcels.ts';
-import { GERMAN_SHOP } from '../src/settings.ts';
 
 function anOrder(
   lines: Iterable<[string, number]> = [['MUG-01', 2]],
@@ -223,26 +221,6 @@ test('the status table says what dispatched means', () => {
   });
 });
 
-test('the sales report counts only the orders kept', () => {
-  const kept = anOrder(undefined, 'SF-00001');
-  const sentBack = anOrder(undefined, 'SF-00002');
-  sentBack.status = 'returned';
-
-  const report = salesReport([kept, sentBack], GERMAN_SHOP);
-
-  assert.equal(report, 'Orders: 1, takings: 31.68 EUR, average: 31.68 EUR');
-});
-
-test('the sales report counts dispatched orders', () => {
-  const placed = anOrder(undefined, 'SF-00001');
-  const dispatched = anOrder(undefined, 'SF-00002');
-  dispatch(dispatched, A_PARCEL, new OrderEvents());
-
-  const report = salesReport([placed, dispatched], GERMAN_SHOP);
-
-  assert.equal(report, 'Orders: 2, takings: 63.36 EUR, average: 31.68 EUR');
-});
-
 test('a placed order is dispatched once', () => {
   const order = anOrder();
   dispatch(order, A_PARCEL, new OrderEvents());
@@ -276,31 +254,6 @@ test('dispatch keeps the parcel and tells who listens', () => {
 
   assert.equal(order.parcel, A_PARCEL);
   assert.deepEqual(told, ['SF-00007']);
-});
-
-test('the sales report walks the order book itself', () => {
-  const catalog = starterCatalog();
-  for (const orderId of ['SF-00001', 'SF-00002']) {
-    placeOrder(anOrder(undefined, orderId), catalog, new OrderEvents());
-  }
-  const report = salesReport(OrderBook.instance(), GERMAN_SHOP);
-  assert.equal(report, 'Orders: 2, takings: 63.36 EUR, average: 31.68 EUR');
-});
-
-test('the sales report walks a cursor once', () => {
-  const catalog = starterCatalog();
-  for (const orderId of ['SF-00001', 'SF-00002']) {
-    placeOrder(anOrder(undefined, orderId), catalog, new OrderEvents());
-  }
-  const report = salesReport(OrderBook.instance().cursor(), GERMAN_SHOP);
-  assert.equal(report, 'Orders: 2, takings: 63.36 EUR, average: 31.68 EUR');
-});
-
-test('an empty week averages nothing', () => {
-  assert.equal(
-    salesReport([], GERMAN_SHOP),
-    'Orders: 0, takings: 0.00 EUR, average: 0.00 EUR',
-  );
 });
 
 test('cancelling takes the listener off the list', () => {

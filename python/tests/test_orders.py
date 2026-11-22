@@ -19,11 +19,9 @@ from shopfront.orders import (
     next_order_id,
     place_order,
     reorder,
-    sales_report,
     status_of,
 )
 from shopfront.parcels import PARCELNOW, Parcel
-from shopfront.settings import GERMAN_SHOP
 
 
 def an_order(
@@ -221,26 +219,6 @@ def test_an_unknown_status_is_refused():
         status_of(order)
 
 
-def test_the_sales_report_counts_only_the_orders_kept():
-    kept = an_order(order_id="SF-00001")
-    sent_back = an_order(order_id="SF-00002")
-    sent_back.status = "returned"
-
-    report = sales_report([kept, sent_back], GERMAN_SHOP)
-
-    assert report == "Orders: 1, takings: 31.68 EUR, average: 31.68 EUR"
-
-
-def test_the_sales_report_counts_dispatched_orders():
-    placed = an_order(order_id="SF-00001")
-    dispatched = an_order(order_id="SF-00002")
-    dispatch(dispatched, A_PARCEL, OrderEvents())
-
-    report = sales_report([placed, dispatched], GERMAN_SHOP)
-
-    assert report == "Orders: 2, takings: 63.36 EUR, average: 31.68 EUR"
-
-
 def test_a_placed_order_is_dispatched_once():
     order = an_order()
     dispatch(order, A_PARCEL, OrderEvents())
@@ -269,28 +247,6 @@ def test_dispatch_keeps_the_parcel_and_tells_who_listens():
 
     assert order.parcel == A_PARCEL
     assert told == ["SF-00007"]
-
-
-def test_the_sales_report_walks_the_order_book_itself():
-    catalog = starter_catalog()
-    for order_id in ("SF-00001", "SF-00002"):
-        place_order(an_order(order_id=order_id), catalog, OrderEvents())
-    report = sales_report(OrderBook.instance(), GERMAN_SHOP)
-    assert report == "Orders: 2, takings: 63.36 EUR, average: 31.68 EUR"
-
-
-def test_the_sales_report_walks_a_cursor_once():
-    catalog = starter_catalog()
-    for order_id in ("SF-00001", "SF-00002"):
-        place_order(an_order(order_id=order_id), catalog, OrderEvents())
-    report = sales_report(OrderBook.instance().cursor(), GERMAN_SHOP)
-    assert report == "Orders: 2, takings: 63.36 EUR, average: 31.68 EUR"
-
-
-def test_an_empty_week_averages_nothing():
-    assert sales_report([], GERMAN_SHOP) == (
-        "Orders: 0, takings: 0.00 EUR, average: 0.00 EUR"
-    )
 
 
 def test_every_subscriber_is_told_in_the_order_they_subscribed():

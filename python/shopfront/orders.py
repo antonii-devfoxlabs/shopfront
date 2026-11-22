@@ -1,14 +1,12 @@
 """An order, and what happens once it is placed."""
 
-from collections.abc import Callable, Iterable, Iterator, Mapping
+from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
 from typing import ClassVar
 
 from shopfront.catalog import Catalog
-from shopfront.money import format_money
 from shopfront.parcels import Parcel
-from shopfront.settings import Settings
 
 _last_order_number = 0
 
@@ -341,19 +339,3 @@ def dispatch(order: Order, parcel: Parcel, events: OrderEvents) -> None:
     order.parcel = parcel
     order.status = "dispatched"
     events.dispatched.notify(order)
-
-
-def sales_report(orders: Iterable[Order], shop: Settings) -> str:
-    """The owner's Monday line: the orders kept, what they took, and the
-    average order, rounded down to the cent."""
-    count = 0
-    takings = 0
-    for order in orders:
-        if status_of(order).sale:
-            count += 1
-            takings += order.total_cents
-    average = takings // count if count else 0
-    return (
-        f"Orders: {count}, takings: {format_money(takings, shop)}, "
-        f"average: {format_money(average, shop)}"
-    )

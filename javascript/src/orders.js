@@ -2,8 +2,6 @@
 
 import { EventEmitter } from 'node:events';
 
-import { formatMoney } from './money.js';
-
 let lastOrderNumber = 0;
 
 export function nextOrderId() {
@@ -362,21 +360,4 @@ export function dispatch(order, parcel, events) {
   order.parcel = parcel;
   order.status = 'dispatched';
   events.emit(DISPATCHED, order);
-}
-
-// The owner's Monday line: the orders kept, what they took, and the
-// average order, rounded down to the cent.
-export function salesReport(orders, shop) {
-  let count = 0;
-  let takings = 0;
-  for (const order of orders) {
-    if (!statusOf(order).sale) continue;
-    count += 1;
-    takings += order.totalCents;
-  }
-  const average = count === 0 ? 0 : Math.floor(takings / count);
-  return (
-    `Orders: ${count}, takings: ${formatMoney(takings, shop)}, ` +
-    `average: ${formatMoney(average, shop)}`
-  );
 }
