@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 
 from shopfront.money import format_money
-from shopfront.orders import Order, OrderBook, OrderEvents
+from shopfront.orders import Order, OrderBook, OrderEvents, status_of
 from shopfront.payments import Gateway, refund
 from shopfront.settings import Settings
 from shopfront.vendor.mailer import Mailer
@@ -47,6 +47,26 @@ class Exchange:
         self.order.mark_exchanged()
 
 
+class GoodwillRefusedError(Exception):
+    pass
+
+
+# The part of an order's total the support team gives back, in percent,
+# by what went wrong with the parcel.
+GOODWILL_PERCENT = {"late": 10, "damaged": 50}
+
+
+def goodwill_cents(order: Order, reason: str) -> int:
+    """What the store gives back for a parcel that went wrong: only for
+    an order that has left, and is still a sale."""
+    if order.parcel is None or not status_of(order).sale:
+        raise GoodwillRefusedError(f"{order.order_id} is {order.status}")
+    percent = GOODWILL_PERCENT.get(reason)
+    if percent is None:
+        raise GoodwillRefusedError(f"no goodwill for {reason}")
+    return order.total_cents * percent // 100
+
+
 @dataclass(frozen=True, kw_only=True)
 class Refunds:
     """The calls that give an order's money back, and tell the shopper.
@@ -86,9 +106,6 @@ class Refunds:
         """Give part of an order's money back for a parcel that went
         wrong, and tell the shopper. The order stays as it is, and nothing
         is announced: nothing comes back to the warehouse."""
-        # Here, not at the top: support imports this module.
-        from shopfront.support import goodwill_cents
-
         order = self.book.find(order_id)
         cents = goodwill_cents(order, reason)
         refund_id = refund(order.payment_method, cents, details, self.gateway)

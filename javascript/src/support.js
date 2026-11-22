@@ -1,7 +1,5 @@
 // What the support team's page asks Shopfront.
 
-import { statusOf } from './orders.js';
-
 // The support page's answer to "where is my order?", from the store's
 // order book.
 export function whereIs(orderId, book) {
@@ -17,30 +15,6 @@ export function whereIs(orderId, book) {
 // store will not send it, and no longer counts it as a sale.
 export function cancel(orderId, book) {
   book.find(orderId).markCancelled();
-}
-
-export class GoodwillRefusedError extends Error {
-  name = 'GoodwillRefusedError';
-}
-
-// The part of an order's total the support team gives back, in percent,
-// by what went wrong with the parcel.
-const GOODWILL_PERCENT = new Map([
-  ['late', 10],
-  ['damaged', 50],
-]);
-
-// What the store gives back for a parcel that went wrong: only for an
-// order that has left, and is still a sale.
-export function goodwillCents(order, reason) {
-  if (order.parcel === null || !statusOf(order).sale) {
-    throw new GoodwillRefusedError(`${order.orderId} is ${order.status}`);
-  }
-  const percent = GOODWILL_PERCENT.get(reason);
-  if (percent === undefined) {
-    throw new GoodwillRefusedError(`no goodwill for ${reason}`);
-  }
-  return Math.floor((order.totalCents * percent) / 100);
 }
 
 /**

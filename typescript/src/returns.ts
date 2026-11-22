@@ -1,10 +1,14 @@
 // Orders sent back, and the money that goes back with them.
 
 import { formatMoney } from './money.ts';
-import type { Order, OrderBook, OrderEvents } from './orders.ts';
+import {
+  statusOf,
+  type Order,
+  type OrderBook,
+  type OrderEvents,
+} from './orders.ts';
 import { refund, type Gateway, type PaymentDetails } from './payments.ts';
 import type { Settings } from './settings.ts';
-import { goodwillCents } from './support.ts';
 import type { Mailer } from './vendor/mailer.ts';
 
 // An order sent back. Its money goes back to the way to pay named to:
@@ -54,6 +58,30 @@ export class Exchange {
   process(): void {
     this.order.markExchanged();
   }
+}
+
+export class GoodwillRefusedError extends Error {
+  override name = 'GoodwillRefusedError';
+}
+
+// The part of an order's total the support team gives back, in percent,
+// by what went wrong with the parcel.
+const GOODWILL_PERCENT = new Map<string, number>([
+  ['late', 10],
+  ['damaged', 50],
+]);
+
+// What the store gives back for a parcel that went wrong: only for an
+// order that has left, and is still a sale.
+export function goodwillCents(order: Order, reason: string): number {
+  if (order.parcel === null || !statusOf(order).sale) {
+    throw new GoodwillRefusedError(`${order.orderId} is ${order.status}`);
+  }
+  const percent = GOODWILL_PERCENT.get(reason);
+  if (percent === undefined) {
+    throw new GoodwillRefusedError(`no goodwill for ${reason}`);
+  }
+  return Math.floor((order.totalCents * percent) / 100);
 }
 
 // The parts main hands the refunds once.

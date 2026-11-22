@@ -1,9 +1,8 @@
 // Orders sent back, and the money that goes back with them.
 
 import { formatMoney } from './money.js';
-import { REFUNDED } from './orders.js';
+import { REFUNDED, statusOf } from './orders.js';
 import { refund } from './payments.js';
-import { goodwillCents } from './support.js';
 
 // An order sent back. Its money goes back to the way to pay named to:
 // the way the order was paid, unless the caller names another.
@@ -40,6 +39,30 @@ export class Exchange {
   process() {
     this.order.markExchanged();
   }
+}
+
+export class GoodwillRefusedError extends Error {
+  name = 'GoodwillRefusedError';
+}
+
+// The part of an order's total the support team gives back, in percent,
+// by what went wrong with the parcel.
+const GOODWILL_PERCENT = new Map([
+  ['late', 10],
+  ['damaged', 50],
+]);
+
+// What the store gives back for a parcel that went wrong: only for an
+// order that has left, and is still a sale.
+export function goodwillCents(order, reason) {
+  if (order.parcel === null || !statusOf(order).sale) {
+    throw new GoodwillRefusedError(`${order.orderId} is ${order.status}`);
+  }
+  const percent = GOODWILL_PERCENT.get(reason);
+  if (percent === undefined) {
+    throw new GoodwillRefusedError(`no goodwill for ${reason}`);
+  }
+  return Math.floor((order.totalCents * percent) / 100);
 }
 
 // The calls that give an order's money back, and tell the shopper.
