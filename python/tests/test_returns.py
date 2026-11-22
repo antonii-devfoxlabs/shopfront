@@ -1,7 +1,13 @@
 import pytest
 
 from shopfront.catalog import starter_catalog
-from shopfront.orders import Order, OrderBuilder, OrderEvents, place_order
+from shopfront.orders import (
+    Order,
+    OrderBuilder,
+    OrderEvents,
+    dispatch,
+    place_order,
+)
 from shopfront.returns import Refunds, Return, ReturnRefusedError
 from shopfront.settings import GERMAN_SHOP
 from shopfront.vendor.mailer import Mailer
@@ -33,6 +39,13 @@ def test_a_return_refunds_the_way_the_shopper_paid(gateway):
         "amount": 3_168,
         "detail": None,
     }
+    assert order.status == "returned"
+
+
+def test_a_dispatched_order_can_be_sent_back(gateway):
+    order = a_card_order()
+    dispatch(order)
+    Return(order, {"card_token": "tok-4242"}, gateway).process()
     assert order.status == "returned"
 
 

@@ -6,6 +6,7 @@ import {
   OrderBuilder,
   OrderEvents,
   REFUNDED,
+  dispatch,
   placeOrder,
 } from '../src/orders.js';
 import { Refunds, Return } from '../src/returns.js';
@@ -44,6 +45,13 @@ test('a return refunds the way the shopper paid', () => {
     amount: 3_168,
     detail: null,
   });
+  assert.equal(order.status, 'returned');
+});
+
+test('a dispatched order can be sent back', () => {
+  const order = aCardOrder();
+  dispatch(order);
+  new Return(order, { cardToken: 'tok-4242' }, aGateway()).process();
   assert.equal(order.status, 'returned');
 });
 

@@ -291,12 +291,23 @@ def place_order(order: Order, catalog: Catalog, events: OrderEvents) -> None:
     events.placed.notify(order)
 
 
+class DispatchRefusedError(Exception):
+    pass
+
+
+def dispatch(order: Order) -> None:
+    """Mark an order dispatched: its parcel has left the warehouse."""
+    if order.status != "placed":
+        raise DispatchRefusedError(f"{order.order_id} is {order.status}")
+    order.status = "dispatched"
+
+
 def sales_report(orders: Iterable[Order], shop: Settings) -> str:
     """The owner's Monday line: the orders kept, and what they took."""
     count = 0
     takings = 0
     for order in orders:
-        if order.status == "placed":
+        if order.status in ("placed", "dispatched"):
             count += 1
             takings += order.total_cents
     return f"Orders: {count}, takings: {format_money(takings, shop)}"

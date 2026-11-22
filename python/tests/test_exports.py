@@ -69,6 +69,11 @@ def test_csv_leaves_out_returned_orders():
     assert "SF-00002" not in text
 
 
+def test_csv_lists_dispatched_orders_as_sales():
+    text = CsvExport(sales).export([order("SF-00001", "dispatched")])
+    assert "SF-00001,ada@example.com,DE,card,19.05\n" in text
+
+
 def test_json_leaves_out_returned_orders():
     text = JsonExport(sales).export(
         [order("SF-00001"), order("SF-00002", "returned")]

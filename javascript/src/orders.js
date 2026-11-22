@@ -299,12 +299,24 @@ export function placeOrder(order, catalog, events) {
   events.emit(PLACED, order);
 }
 
+export class DispatchRefusedError extends Error {
+  name = 'DispatchRefusedError';
+}
+
+// Mark an order dispatched: its parcel has left the warehouse.
+export function dispatch(order) {
+  if (order.status !== 'placed') {
+    throw new DispatchRefusedError(`${order.orderId} is ${order.status}`);
+  }
+  order.status = 'dispatched';
+}
+
 // The owner's Monday line: the orders kept, and what they took.
 export function salesReport(orders, shop) {
   let count = 0;
   let takings = 0;
   for (const order of orders) {
-    if (order.status !== 'placed') continue;
+    if (!['placed', 'dispatched'].includes(order.status)) continue;
     count += 1;
     takings += order.totalCents;
   }

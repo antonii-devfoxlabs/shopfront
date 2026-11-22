@@ -15,8 +15,11 @@ const COLUMNS = ['order_id', 'email', 'country', 'payment', 'total'];
 
 // The orders the accountant counts as sales, oldest first.
 export function sales(orders) {
-  // Only placed orders are sales: a returned one gave its money back.
-  return orders.filter((order) => order.status === 'placed').sort(byOrderId);
+  // Placed and dispatched orders are sales: a returned one gave its
+  // money back.
+  return orders
+    .filter((order) => ['placed', 'dispatched'].includes(order.status))
+    .sort(byOrderId);
 }
 
 // The orders the shoppers sent back, oldest first.

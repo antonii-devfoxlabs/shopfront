@@ -5,7 +5,7 @@ import { EventEmitter } from 'node:events';
 import type { Catalog } from './catalog.ts';
 import type { Settings } from './settings.ts';
 
-export type OrderStatus = 'placed' | 'cancelled' | 'returned';
+export type OrderStatus = 'placed' | 'dispatched' | 'cancelled' | 'returned';
 
 let lastOrderNumber = 0;
 
@@ -298,12 +298,24 @@ export function placeOrder(
   events.emit('placed', order);
 }
 
+export class DispatchRefusedError extends Error {
+  override name = 'DispatchRefusedError';
+}
+
+// Mark an order dispatched: its parcel has left the warehouse.
+export function dispatch(order: Order): void {
+  if (order.status !== 'placed') {
+    throw new DispatchRefusedError(`${order.orderId} is ${order.status}`);
+  }
+  order.status = 'dispatched';
+}
+
 // The owner's Monday line: the orders kept, and what they took.
 export function salesReport(orders: Iterable<Order>, shop: Settings): string {
   let count = 0;
   let takings = 0;
   for (const order of orders) {
-    if (order.status !== 'placed') continue;
+    if (!['placed', 'dispatched'].includes(order.status)) continue;
     count += 1;
     takings += order.totalCents;
   }

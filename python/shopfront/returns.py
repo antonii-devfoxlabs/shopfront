@@ -30,7 +30,7 @@ class Return:
 
     def process(self) -> str:
         """Give the money back once, and mark the order returned."""
-        if self.order.status != "placed":
+        if self.order.status not in ("placed", "dispatched"):
             raise ReturnRefusedError(
                 f"{self.order.order_id} is {self.order.status}"
             )

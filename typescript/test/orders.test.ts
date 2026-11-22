@@ -9,6 +9,7 @@ import {
   OrderEvents,
   type OrderListener,
   UnknownOrderError,
+  dispatch,
   formatMoney,
   nextOrderId,
   packingSlip,
@@ -234,6 +235,26 @@ test('the sales report counts only the orders kept', () => {
   const report = salesReport([kept, sentBack], GERMAN_SHOP);
 
   assert.equal(report, 'Orders: 1, takings: 31.68 EUR');
+});
+
+test('the sales report counts dispatched orders', () => {
+  const placed = anOrder(undefined, 'SF-00001');
+  const dispatched = anOrder(undefined, 'SF-00002');
+  dispatch(dispatched);
+
+  const report = salesReport([placed, dispatched], GERMAN_SHOP);
+
+  assert.equal(report, 'Orders: 2, takings: 63.36 EUR');
+});
+
+test('a placed order is dispatched once', () => {
+  const order = anOrder();
+  dispatch(order);
+  assert.equal(order.status, 'dispatched');
+  assert.throws(() => dispatch(order), {
+    name: 'DispatchRefusedError',
+    message: 'SF-00007 is dispatched',
+  });
 });
 
 test('the sales report walks the order book itself', () => {

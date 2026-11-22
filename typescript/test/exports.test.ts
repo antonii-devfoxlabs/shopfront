@@ -69,6 +69,11 @@ test('CSV leaves out returned orders', () => {
   assert.doesNotMatch(text, /SF-00002/);
 });
 
+test('CSV lists dispatched orders as sales', () => {
+  const text = new CsvExport(sales).export([order('SF-00001', 'dispatched')]);
+  assert.ok(text.includes('SF-00001,ada@example.com,DE,card,19.05\n'));
+});
+
 test('JSON leaves out returned orders', () => {
   const text = new JsonExport(sales).export([
     order('SF-00001'),

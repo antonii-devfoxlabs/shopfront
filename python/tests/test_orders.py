@@ -4,6 +4,7 @@ import pytest
 
 from shopfront.catalog import OutOfStockError, starter_catalog
 from shopfront.orders import (
+    DispatchRefusedError,
     IncompleteOrderError,
     Listeners,
     Order,
@@ -12,6 +13,7 @@ from shopfront.orders import (
     OrderEvents,
     OrderListener,
     UnknownOrderError,
+    dispatch,
     format_money,
     next_order_id,
     packing_slip,
@@ -225,6 +227,24 @@ def test_the_sales_report_counts_only_the_orders_kept():
     report = sales_report([kept, sent_back], GERMAN_SHOP)
 
     assert report == "Orders: 1, takings: 31.68 EUR"
+
+
+def test_the_sales_report_counts_dispatched_orders():
+    placed = an_order(order_id="SF-00001")
+    dispatched = an_order(order_id="SF-00002")
+    dispatch(dispatched)
+
+    report = sales_report([placed, dispatched], GERMAN_SHOP)
+
+    assert report == "Orders: 2, takings: 63.36 EUR"
+
+
+def test_a_placed_order_is_dispatched_once():
+    order = an_order()
+    dispatch(order)
+    assert order.status == "dispatched"
+    with pytest.raises(DispatchRefusedError, match="SF-00007 is dispatched"):
+        dispatch(order)
 
 
 def test_the_sales_report_walks_the_order_book_itself():

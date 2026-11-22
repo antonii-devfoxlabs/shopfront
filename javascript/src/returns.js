@@ -19,7 +19,7 @@ export class Return {
 
   // Give the money back once, and mark the order returned.
   process() {
-    if (this.order.status !== 'placed') {
+    if (!['placed', 'dispatched'].includes(this.order.status)) {
       throw new ReturnRefusedError(
         `${this.order.orderId} is ${this.order.status}`,
       );
