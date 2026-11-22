@@ -2,6 +2,8 @@
 
 import { EventEmitter } from 'node:events';
 
+import * as services from './services.js';
+
 let lastOrderNumber = 0;
 
 export function nextOrderId() {
@@ -230,29 +232,11 @@ export class UnknownOrderError extends Error {
   name = 'UnknownOrderError';
 }
 
-// Every order the store has placed, found by its number. The store has
-// one: get it with OrderBook.instance().
+// Every order the store has placed, found by its number. main registers
+// the store's book in services, as 'order_book'.
 export class OrderBook {
-  static #instance = null;
   #orders = [];
   #byId = new Map();
-
-  constructor() {
-    if (OrderBook.#instance !== null) {
-      throw new Error('the store has one order book: use instance()');
-    }
-    OrderBook.#instance = this;
-  }
-
-  // The store's order book, created the first time it is asked for.
-  static instance() {
-    return OrderBook.#instance ?? new OrderBook();
-  }
-
-  // For tests only: forget the book; the next ask makes a new one.
-  static reset() {
-    OrderBook.#instance = null;
-  }
 
   add(order) {
     this.#orders.push(order);
@@ -288,7 +272,6 @@ export class OrderBook {
 // For tests only: no orders, and numbers from SF-00001 again.
 export function reset() {
   lastOrderNumber = 0;
-  OrderBook.reset();
 }
 
 /**
@@ -340,7 +323,7 @@ export class OrderEvents extends EventEmitter {
  */
 export function placeOrder(order, catalog, events) {
   catalog.takeAllFromStock(order.lines);
-  OrderBook.instance().add(order);
+  services.get('order_book').add(order);
   // The order is placed: now tell everyone subscribed at this moment.
   events.emit(PLACED, order);
 }

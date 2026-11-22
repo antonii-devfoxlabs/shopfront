@@ -3,12 +3,14 @@ import { test } from 'node:test';
 
 import { starterCatalog } from '../src/catalog.js';
 import {
+  OrderBook,
   OrderBuilder,
   OrderEvents,
   dispatch,
   placeOrder,
 } from '../src/orders.js';
 import { Parcel, SWIFTSHIP } from '../src/parcels.js';
+import * as services from '../src/services.js';
 import { whereIs } from '../src/support.js';
 
 function aPlacedOrder() {
@@ -44,4 +46,12 @@ test('where is a dispatched order links its parcel', () => {
     whereIs('SF-00001'),
     'SF-00001 is dispatched: https://swiftship.example/t/SW-0072',
   );
+});
+
+test('the support page finds an order in a book of its own', () => {
+  const book = new OrderBook();
+  services.register('order_book', book);
+  const order = aPlacedOrder();
+  assert.equal(book.find('SF-00001'), order);
+  assert.equal(whereIs('SF-00001'), 'SF-00001 is placed');
 });

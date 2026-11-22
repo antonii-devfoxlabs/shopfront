@@ -5,7 +5,6 @@ import { OutOfStockError, starterCatalog } from '../src/catalog.js';
 import {
   DISPATCHED,
   DispatchRefusedError,
-  OrderBook,
   OrderBuilder,
   OrderEvents,
   PLACED,
@@ -18,6 +17,7 @@ import {
   statusOf,
 } from '../src/orders.js';
 import { PARCELNOW, Parcel } from '../src/parcels.js';
+import * as services from '../src/services.js';
 
 function anOrder(lines = [['MUG-01', 2]], orderId = 'SF-00007') {
   return new OrderBuilder(orderId)
@@ -136,7 +136,7 @@ test('a listener is told once the order is in the book', () => {
     order,
     starterCatalog(),
     eventsOf((placed) =>
-      found.push(OrderBook.instance().find(placed.orderId)),
+      found.push(services.get('order_book').find(placed.orderId)),
     ),
   );
   assert.deepEqual(found, [order]);
@@ -145,7 +145,7 @@ test('a listener is told once the order is in the book', () => {
 test('a placed order is in the order book', () => {
   const order = anOrder();
   placeOrder(order, starterCatalog(), new OrderEvents());
-  assert.equal(OrderBook.instance().find('SF-00007'), order);
+  assert.equal(services.get('order_book').find('SF-00007'), order);
 });
 
 test('the book lists its orders in the order placed', () => {
@@ -155,7 +155,7 @@ test('the book lists its orders in the order placed', () => {
   for (const order of [first, second]) {
     placeOrder(order, catalog, new OrderEvents());
   }
-  assert.deepEqual(OrderBook.instance().orders(), [first, second]);
+  assert.deepEqual(services.get('order_book').orders(), [first, second]);
 });
 
 test('the staff page shows the newest orders first', () => {
@@ -166,7 +166,7 @@ test('the staff page shows the newest orders first', () => {
   for (const order of [first, second, third]) {
     placeOrder(order, catalog, new OrderEvents());
   }
-  const book = OrderBook.instance();
+  const book = services.get('order_book');
   assert.deepEqual(book.cursor().take(2).toArray(), [third, second]);
   assert.deepEqual(book.cursor().drop(2).take(2).toArray(), [first]);
   assert.deepEqual(book.cursor().drop(4).take(2).toArray(), []);
@@ -174,24 +174,19 @@ test('the staff page shows the newest orders first', () => {
 
 test('an unknown order number is refused', () => {
   assert.throws(
-    () => OrderBook.instance().find('SF-99999'),
+    () => services.get('order_book').find('SF-99999'),
     UnknownOrderError,
   );
 });
 
 test('every test starts with an empty order book', () => {
-  assert.throws(() => OrderBook.instance().find('SF-00007'), {
+  assert.throws(() => services.get('order_book').find('SF-00007'), {
     message: 'SF-00007',
   });
 });
 
 test('every test starts with order number one', () => {
   assert.equal(nextOrderId(), 'SF-00001');
-});
-
-test('the store has one order book', () => {
-  assert.equal(OrderBook.instance(), OrderBook.instance());
-  assert.throws(() => new OrderBook(), /the store has one order book/);
 });
 
 test('an order with a short line takes nothing and tells nobody', () => {

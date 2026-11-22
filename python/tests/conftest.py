@@ -1,6 +1,7 @@
 import pytest
 
-from shopfront import orders
+from shopfront import orders, services
+from shopfront.orders import OrderBook
 from shopfront.settings import GERMAN_SHOP
 from shopfront.vendor.payment_gateway import PaymentGateway
 
@@ -9,6 +10,8 @@ from shopfront.vendor.payment_gateway import PaymentGateway
 def fresh_store():
     """Every test starts with what lives for the whole run made new."""
     orders.reset()
+    services.reset()
+    services.register("order_book", OrderBook())
 
 
 @pytest.fixture

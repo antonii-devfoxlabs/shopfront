@@ -3,8 +3,8 @@
 from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import ClassVar
 
+from shopfront import services
 from shopfront.catalog import Catalog
 from shopfront.parcels import Parcel
 
@@ -210,29 +210,12 @@ class UnknownOrderError(Exception):
 class OrderBook:
     """Every order the store has placed, found by its number.
 
-    The store has one: get it with OrderBook.instance().
+    main registers the store's book in services, as "order_book".
     """
 
-    _instance: ClassVar[OrderBook | None] = None
-
     def __init__(self) -> None:
-        if OrderBook._instance is not None:
-            raise RuntimeError("the store has one order book: use instance()")
         self._orders: list[Order] = []
         self._by_id: dict[str, Order] = {}
-        OrderBook._instance = self
-
-    @classmethod
-    def instance(cls) -> OrderBook:
-        """The store's order book, created the first time it is asked for."""
-        if cls._instance is None:
-            return cls()
-        return cls._instance
-
-    @classmethod
-    def reset(cls) -> None:
-        """For tests only: forget the book; the next ask makes a new one."""
-        OrderBook._instance = None
 
     def add(self, order: Order) -> None:
         self._orders.append(order)
@@ -264,7 +247,6 @@ def reset() -> None:
     """For tests only: no orders, and numbers from SF-00001 again."""
     global _last_order_number
     _last_order_number = 0
-    OrderBook.reset()
 
 
 # Every part that must hear of a placed order fills this slot: a
@@ -325,7 +307,7 @@ class OrderEvents:
 def place_order(order: Order, catalog: Catalog, events: OrderEvents) -> None:
     """Take the stock and keep the order, then announce it."""
     catalog.take_all_from_stock(order.lines)
-    OrderBook.instance().add(order)
+    services.get("order_book").add(order)
     # The order is placed: now tell everyone subscribed at this moment.
     events.placed.notify(order)
 

@@ -13,13 +13,14 @@ import {
   trackOrder,
 } from './listeners.ts';
 import { formatMoney } from './money.ts';
-import { OrderEvents } from './orders.ts';
+import { OrderBook, OrderEvents } from './orders.ts';
 import { PriceCalculator, type QuoteOptions } from './pricing.ts';
 import {
   boxRouteQuote,
   parcelNowQuote,
   swiftShipQuote,
 } from './providers.ts';
+import * as services from './services.ts';
 import { GERMAN_SHOP } from './settings.ts';
 import { Shipping, offerFor } from './shipping.ts';
 import { CachedRates, TimedRates } from './taxes.ts';
@@ -34,6 +35,8 @@ import { TaxService } from './vendor/taxService.ts';
 
 // The one place that picks the shop, and hands it to every part.
 const shop = GERMAN_SHOP;
+// Every part finds the order book here, by name.
+services.register('order_book', new OrderBook());
 // Every call to the payment gateway is timed and logged.
 const gateway = new TimedGateway(
   new PaymentGateway({ merchant: shop.merchantId }),

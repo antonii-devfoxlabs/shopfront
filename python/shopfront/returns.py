@@ -2,10 +2,10 @@
 
 from dataclasses import dataclass
 
+from shopfront import services
 from shopfront.money import format_money
 from shopfront.orders import (
     Order,
-    OrderBook,
     OrderEvents,
     status_of,
 )
@@ -81,7 +81,7 @@ class Refunds:
     ) -> str:
         """Give an order's money back, tell the shopper, then announce it.
         to: the way to pay the money goes back to, as Return takes it."""
-        order = OrderBook.instance().find(order_id)
+        order = services.get("order_book").find(order_id)
         refund_id = Return(order, details, self.gateway, to).process()
         self.mailer.send(
             sender=self.shop.store_email,

@@ -3,13 +3,14 @@ import { test } from 'node:test';
 
 import { starterCatalog } from '../src/catalog.ts';
 import {
-  OrderBook,
+  type OrderBook,
   OrderBuilder,
   OrderEvents,
   dispatch,
   placeOrder,
 } from '../src/orders.ts';
 import { PARCELNOW, Parcel } from '../src/parcels.ts';
+import * as services from '../src/services.ts';
 import { salesReport } from '../src/reports.ts';
 import { GERMAN_SHOP } from '../src/settings.ts';
 
@@ -58,7 +59,10 @@ test('the sales report walks the order book itself', () => {
   for (const orderId of ['SF-00001', 'SF-00002']) {
     placeOrder(anOrder(undefined, orderId), catalog, new OrderEvents());
   }
-  const report = salesReport(OrderBook.instance(), GERMAN_SHOP);
+  const report = salesReport(
+    services.get<OrderBook>('order_book'),
+    GERMAN_SHOP,
+  );
   assert.equal(report, 'Orders: 2, takings: 63.36 EUR, average: 31.68 EUR');
 });
 
@@ -67,7 +71,10 @@ test('the sales report walks a cursor once', () => {
   for (const orderId of ['SF-00001', 'SF-00002']) {
     placeOrder(anOrder(undefined, orderId), catalog, new OrderEvents());
   }
-  const report = salesReport(OrderBook.instance().cursor(), GERMAN_SHOP);
+  const report = salesReport(
+    services.get<OrderBook>('order_book').cursor(),
+    GERMAN_SHOP,
+  );
   assert.equal(report, 'Orders: 2, takings: 63.36 EUR, average: 31.68 EUR');
 });
 

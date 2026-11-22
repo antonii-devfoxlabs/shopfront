@@ -3,11 +3,12 @@
 import { formatMoney } from './money.ts';
 import {
   type Order,
-  OrderBook,
+  type OrderBook,
   type OrderEvents,
   statusOf,
 } from './orders.ts';
 import { refund, type Gateway, type PaymentDetails } from './payments.ts';
+import * as services from './services.ts';
 import type { Settings } from './settings.ts';
 import type { Mailer } from './vendor/mailer.ts';
 
@@ -95,7 +96,7 @@ export class Refunds {
   // to, if given: the way to pay the money goes back to, as Return takes it.
   refund(orderId: string, details: PaymentDetails, to?: string): string {
     const { gateway, mailer, shop, events } = this.#parts;
-    const order = OrderBook.instance().find(orderId);
+    const order = services.get<OrderBook>('order_book').find(orderId);
     const refundId = new Return(order, details, gateway, to).process();
     mailer.send({
       from: shop.storeEmail,

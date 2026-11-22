@@ -12,13 +12,20 @@ import {
   trackOrder,
 } from './listeners.js';
 import { formatMoney } from './money.js';
-import { DISPATCHED, OrderEvents, PLACED, REFUNDED } from './orders.js';
+import {
+  DISPATCHED,
+  OrderBook,
+  OrderEvents,
+  PLACED,
+  REFUNDED,
+} from './orders.js';
 import { PriceCalculator } from './pricing.js';
 import {
   boxRouteQuote,
   parcelNowQuote,
   swiftShipQuote,
 } from './providers.js';
+import * as services from './services.js';
 import { GERMAN_SHOP } from './settings.js';
 import { Shipping, offerFor } from './shipping.js';
 import { CachedRates, TimedRates } from './taxes.js';
@@ -33,6 +40,8 @@ import { TaxService } from './vendor/taxService.js';
 
 // The one place that picks the shop, and hands it to every part.
 const shop = GERMAN_SHOP;
+// Every part finds the order book here, by name.
+services.register('order_book', new OrderBook());
 // Every call to the payment gateway is timed and logged.
 const gateway = new TimedGateway(
   new PaymentGateway({ merchant: shop.merchantId }),

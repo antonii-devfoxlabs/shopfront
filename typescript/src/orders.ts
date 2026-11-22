@@ -4,6 +4,7 @@ import { EventEmitter } from 'node:events';
 
 import type { Catalog } from './catalog.ts';
 import type { Parcel } from './parcels.ts';
+import * as services from './services.ts';
 
 export type OrderStatus =
   | 'placed'
@@ -235,25 +236,11 @@ export class UnknownOrderError extends Error {
   override name = 'UnknownOrderError';
 }
 
-// Every order the store has placed, found by its number. The store has
-// one: get it with OrderBook.instance().
+// Every order the store has placed, found by its number. main registers
+// the store's book in services, as 'order_book'.
 export class OrderBook {
-  static #instance: OrderBook | undefined;
   readonly #orders: Order[] = [];
   readonly #byId: Map<string, Order> = new Map();
-
-  private constructor() {}
-
-  // The store's order book, created the first time it is asked for.
-  static instance(): OrderBook {
-    OrderBook.#instance ??= new OrderBook();
-    return OrderBook.#instance;
-  }
-
-  // For tests only: forget the book; the next ask makes a new one.
-  static reset(): void {
-    OrderBook.#instance = undefined;
-  }
 
   add(order: Order): void {
     this.#orders.push(order);
@@ -290,7 +277,6 @@ export class OrderBook {
 // For tests only: no orders, and numbers from SF-00001 again.
 export function reset(): void {
   lastOrderNumber = 0;
-  OrderBook.reset();
 }
 
 // Every part that must hear of a placed order fills this slot: a
@@ -329,7 +315,7 @@ export function placeOrder(
   events: OrderEvents,
 ): void {
   catalog.takeAllFromStock(order.lines);
-  OrderBook.instance().add(order);
+  services.get<OrderBook>('order_book').add(order);
   // The order is placed: now tell everyone subscribed at this moment.
   events.emit('placed', order);
 }

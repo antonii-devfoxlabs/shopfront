@@ -2,13 +2,13 @@ from itertools import islice
 
 import pytest
 
+from shopfront import services
 from shopfront.catalog import OutOfStockError, starter_catalog
 from shopfront.orders import (
     DispatchRefusedError,
     IncompleteOrderError,
     Listeners,
     Order,
-    OrderBook,
     OrderBuilder,
     OrderEvents,
     OrderListener,
@@ -139,7 +139,7 @@ def test_a_listener_is_told_once_the_order_is_in_the_book():
         starter_catalog(),
         events_of(
             lambda placed: found.append(
-                OrderBook.instance().find(placed.order_id)
+                services.get("order_book").find(placed.order_id)
             )
         ),
     )
@@ -149,7 +149,7 @@ def test_a_listener_is_told_once_the_order_is_in_the_book():
 def test_a_placed_order_is_in_the_order_book():
     order = an_order()
     place_order(order, starter_catalog(), OrderEvents())
-    assert OrderBook.instance().find("SF-00007") is order
+    assert services.get("order_book").find("SF-00007") is order
 
 
 def test_the_book_lists_its_orders_in_the_order_placed():
@@ -158,7 +158,7 @@ def test_the_book_lists_its_orders_in_the_order_placed():
     catalog = starter_catalog()
     for order in (first, second):
         place_order(order, catalog, OrderEvents())
-    assert OrderBook.instance().orders() == [first, second]
+    assert services.get("order_book").orders() == [first, second]
 
 
 def test_the_staff_page_shows_the_newest_orders_first():
@@ -168,7 +168,7 @@ def test_the_staff_page_shows_the_newest_orders_first():
     catalog = starter_catalog()
     for order in (first, second, third):
         place_order(order, catalog, OrderEvents())
-    cursor = OrderBook.instance().cursor()
+    cursor = services.get("order_book").cursor()
     assert list(islice(cursor, 2)) == [third, second]
     assert list(islice(cursor, 2)) == [first]
     assert list(islice(cursor, 2)) == []
@@ -176,22 +176,16 @@ def test_the_staff_page_shows_the_newest_orders_first():
 
 def test_an_unknown_order_number_is_refused():
     with pytest.raises(UnknownOrderError, match="SF-99999"):
-        OrderBook.instance().find("SF-99999")
+        services.get("order_book").find("SF-99999")
 
 
 def test_every_test_starts_with_an_empty_order_book():
     with pytest.raises(UnknownOrderError, match="SF-00007"):
-        OrderBook.instance().find("SF-00007")
+        services.get("order_book").find("SF-00007")
 
 
 def test_every_test_starts_with_order_number_one():
     assert next_order_id() == "SF-00001"
-
-
-def test_the_store_has_one_order_book():
-    assert OrderBook.instance() is OrderBook.instance()
-    with pytest.raises(RuntimeError, match="the store has one order book"):
-        OrderBook()
 
 
 def test_an_order_with_a_short_line_takes_nothing_and_tells_nobody():

@@ -3,7 +3,10 @@
 import { beforeEach } from 'node:test';
 
 import * as orders from './src/orders.ts';
+import * as services from './src/services.ts';
 
 beforeEach(() => {
   orders.reset();
+  services.reset();
+  services.register('order_book', new orders.OrderBook());
 });

@@ -42,13 +42,9 @@ says.
   written down, and one function runs them all.
 - **A collection to walk**: a cursor, as `catalog.Catalog` has.
 - **An export format**: a subclass of `exports.OrderExport`.
-
-## Kept, for now
-
-`orders.OrderBook` is one book for the whole store, a Singleton:
-the support team's page, outside Shopfront, finds the shop's orders
-there. Once that page goes, hand the book in, as the shop's settings
-and the gateway are.
+- **Something many parts share**, such as the order book: registered
+  once by name in `services`, in `main`; a part gets it with
+  `services.get`.
 
 ## Dropped
 

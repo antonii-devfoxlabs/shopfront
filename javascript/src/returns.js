@@ -1,8 +1,9 @@
 // Orders sent back, and the money that goes back with them.
 
 import { formatMoney } from './money.js';
-import { OrderBook, REFUNDED, statusOf } from './orders.js';
+import { REFUNDED, statusOf } from './orders.js';
 import { refund } from './payments.js';
+import * as services from './services.js';
 
 export class ReturnRefusedError extends Error {
   name = 'ReturnRefusedError';
@@ -69,7 +70,7 @@ export class Refunds {
   // to, if given: the way to pay the money goes back to, as Return takes it.
   refund(orderId, details, to) {
     const { gateway, mailer, shop, events } = this.#parts;
-    const order = OrderBook.instance().find(orderId);
+    const order = services.get('order_book').find(orderId);
     const refundId = new Return(order, details, gateway, to).process();
     mailer.send({
       from: shop.storeEmail,

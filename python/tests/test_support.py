@@ -1,6 +1,8 @@
+from shopfront import services
 from shopfront.catalog import starter_catalog
 from shopfront.orders import (
     Order,
+    OrderBook,
     OrderBuilder,
     OrderEvents,
     dispatch,
@@ -42,3 +44,11 @@ def test_where_is_a_dispatched_order_links_its_parcel():
     assert where_is("SF-00001") == (
         "SF-00001 is dispatched: https://swiftship.example/t/SW-0072"
     )
+
+
+def test_the_support_page_finds_an_order_in_a_book_of_its_own():
+    book = OrderBook()
+    services.register("order_book", book)
+    order = a_placed_order()
+    assert book.find("SF-00001") is order
+    assert where_is("SF-00001") == "SF-00001 is placed"
