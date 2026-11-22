@@ -22,7 +22,11 @@ says.
   `listeners`, subscribed to `orders.OrderEvents` in `main`.
 - **A part of an order**: a step on `orders.OrderBuilder`.
 - **A status of an order**: a row in `orders.STATUSES`, which says
-  whether it is a sale, can be sent back, or can be dispatched.
+  whether it is a sale, can be sent back, dispatched or cancelled.
+- **A move of an order**, such as cancelling it: a method of
+  `orders.Order`, the only code that changes its status. It refuses a
+  move its status's row does not allow; the rest of the store asks the
+  order to move, and only reads its status.
 - **An exchange**, a product sent back for the same one: in
   `returns.Exchange`, which gives no money back and marks the order
   exchanged. It is not a kind of `returns.Return`: the rest of the
