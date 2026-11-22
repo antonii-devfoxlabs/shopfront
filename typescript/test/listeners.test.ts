@@ -6,6 +6,8 @@ import {
   emailParcelSent,
   emailShopper,
   expectReturn,
+  SmsNotifier,
+  stopPacking,
   textWarehouse,
   trackOrder,
 } from '../src/listeners.ts';
@@ -68,6 +70,24 @@ test('the warehouse listener texts what to pack', () => {
   textWarehouse(sms, DUTCH_SHOP)(anOrder());
   assert.deepEqual(sms.outbox, [
     { to: '+44 7700 900200', text: 'Pack SF-00007: 2 x MUG-01' },
+  ]);
+});
+
+test('the stop-packing listener texts the warehouse', () => {
+  const sms = new Sms();
+  const notifier = new SmsNotifier(sms, DUTCH_SHOP.warehousePhone);
+  stopPacking(notifier)(anOrder());
+  assert.deepEqual(sms.outbox, [
+    { to: '+44 7700 900200', text: 'Do not pack SF-00007' },
+  ]);
+});
+
+test('a shop can word the stop text its own way', () => {
+  const sms = new Sms();
+  const notifier = new SmsNotifier(sms, DUTCH_SHOP.warehousePhone);
+  stopPacking(notifier, 'Stop {orderId}')(anOrder());
+  assert.deepEqual(sms.outbox, [
+    { to: '+44 7700 900200', text: 'Stop SF-00007' },
   ]);
 });
 

@@ -9,6 +9,8 @@ import {
   emailParcelSent,
   emailShopper,
   expectReturn,
+  SmsNotifier,
+  stopPacking,
   textWarehouse,
   trackOrder,
 } from './listeners.ts';
@@ -90,6 +92,11 @@ events.on('refunded', expectReturn(sms, shop));
 // The warehouse's page dispatches orders: the shopper hears where to
 // follow the parcel.
 events.on('dispatched', emailParcelSent(mailer, shop));
+// The support page cancels orders: the warehouse hears not to pack.
+events.on(
+  'cancelled',
+  stopPacking(new SmsNotifier(sms, shop.warehousePhone)),
+);
 // Every step of an order, in order, behind one call. main still
 // decides what is timed, and hands the checkout the timed parts.
 const checkout = new Checkout({

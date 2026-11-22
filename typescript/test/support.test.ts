@@ -4,6 +4,7 @@ import { test } from 'node:test';
 import { starterCatalog } from '../src/catalog.ts';
 import { sales } from '../src/exports.ts';
 import {
+  CancelRefusedError,
   OrderBook,
   OrderBuilder,
   OrderEvents,
@@ -71,7 +72,7 @@ test('the support page reads the book it is handed', () => {
 test('the support page cancels a placed order', () => {
   const book = new OrderBook();
   const order = aPlacedOrder(book);
-  cancel('SF-00001', book);
+  cancel('SF-00001', book, new OrderEvents());
   assert.equal(whereIs('SF-00001', book), 'SF-00001 is cancelled');
   assert.deepEqual(sales([order]), []);
 });
@@ -79,8 +80,8 @@ test('the support page cancels a placed order', () => {
 test('a cancelled order is not cancelled again', () => {
   const book = new OrderBook();
   aPlacedOrder(book);
-  cancel('SF-00001', book);
-  assert.throws(() => cancel('SF-00001', book), {
+  cancel('SF-00001', book, new OrderEvents());
+  assert.throws(() => cancel('SF-00001', book, new OrderEvents()), {
     name: 'CancelRefusedError',
     message: 'SF-00001 is cancelled',
   });
@@ -94,11 +95,52 @@ test('a dispatched order is not cancelled', () => {
     new Parcel({ courier: SWIFTSHIP, number: 'SW-0072' }),
     new OrderEvents(),
   );
-  assert.throws(() => cancel('SF-00001', book), {
+  assert.throws(() => cancel('SF-00001', book, new OrderEvents()), {
     name: 'CancelRefusedError',
     message: 'SF-00001 is dispatched',
   });
   assert.equal(order.status, 'dispatched');
+});
+
+test('a cancelled order is announced', () => {
+  const book = new OrderBook();
+  aPlacedOrder(book);
+  const events = new OrderEvents();
+  const heard: string[] = [];
+  events.on('cancelled', (order) => heard.push(order.orderId));
+  cancel('SF-00001', book, events);
+  assert.deepEqual(heard, ['SF-00001']);
+});
+
+test('a refused cancel is not announced', () => {
+  const book = new OrderBook();
+  const order = aPlacedOrder(book);
+  dispatch(
+    order,
+    new Parcel({ courier: SWIFTSHIP, number: 'SW-0072' }),
+    new OrderEvents(),
+  );
+  const events = new OrderEvents();
+  const heard: string[] = [];
+  events.on('cancelled', (order) => heard.push(order.orderId));
+  assert.throws(() => cancel('SF-00001', book, events), {
+    name: 'CancelRefusedError',
+  });
+  assert.deepEqual(heard, []);
+});
+
+test('a listener told before a cancel can stop it', () => {
+  const book = new OrderBook();
+  const order = aPlacedOrder(book);
+  const events = new OrderEvents();
+  events.on('beforeCancel', (order) => {
+    throw new CancelRefusedError(`${order.orderId} is kept`);
+  });
+  assert.throws(() => cancel('SF-00001', book, events), {
+    name: 'CancelRefusedError',
+    message: 'SF-00001 is kept',
+  });
+  assert.equal(order.status, 'placed');
 });
 
 function refundsFor(

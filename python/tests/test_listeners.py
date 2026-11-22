@@ -1,8 +1,10 @@
 from shopfront.catalog import starter_catalog
 from shopfront.listeners import (
+    SmsNotifier,
     email_parcel_sent,
     email_shopper,
     expect_return,
+    stop_packing,
     text_warehouse,
     track_order,
 )
@@ -67,6 +69,22 @@ def test_the_warehouse_listener_texts_what_to_pack():
     assert sms.outbox == [
         {"to": "+44 7700 900200", "text": "Pack SF-00007: 2 x MUG-01"}
     ]
+
+
+def test_the_stop_packing_listener_texts_the_warehouse():
+    sms = Sms()
+    notifier = SmsNotifier(sms, DUTCH_SHOP.warehouse_phone)
+    stop_packing(notifier)(an_order())
+    assert sms.outbox == [
+        {"to": "+44 7700 900200", "text": "Do not pack SF-00007"}
+    ]
+
+
+def test_a_shop_can_word_the_stop_text_its_own_way():
+    sms = Sms()
+    notifier = SmsNotifier(sms, DUTCH_SHOP.warehouse_phone)
+    stop_packing(notifier, "Stop {order_id}")(an_order())
+    assert sms.outbox == [{"to": "+44 7700 900200", "text": "Stop SF-00007"}]
 
 
 def test_the_return_listener_texts_what_comes_back():

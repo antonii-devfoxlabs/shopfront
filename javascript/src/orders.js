@@ -359,6 +359,10 @@ export function reset() {
 export const PLACED = 'placed';
 export const REFUNDED = 'refunded';
 export const DISPATCHED = 'dispatched';
+export const CANCELLED = 'cancelled';
+// Told before an order is cancelled: a listener that throws stops the
+// cancel. Nothing listens yet; other teams can plug in here.
+export const BEFORE_CANCEL = 'beforeCancel';
 
 /**
  * What subscribing answers: call it to take that listener off again.
@@ -368,7 +372,7 @@ export const DISPATCHED = 'dispatched';
 
 /**
  * Who hears of what happens to an order, by the news's name: PLACED,
- * REFUNDED or DISPATCHED. Node's EventEmitter keeps a list per name:
+ * REFUNDED, DISPATCHED, CANCELLED or BEFORE_CANCEL. Node's EventEmitter keeps a list per name:
  * subscribe with `on`, unsubscribe with `off`, notify with `emit`.
  */
 export class OrderEvents extends EventEmitter {

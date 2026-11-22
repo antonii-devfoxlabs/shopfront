@@ -362,10 +362,14 @@ export type OrderEventMap = {
   placed: [order: Order];
   refunded: [order: Order];
   dispatched: [order: Order];
+  cancelled: [order: Order];
+  // Told before an order is cancelled: a listener that throws stops the
+  // cancel. Nothing listens yet; other teams can plug in here.
+  beforeCancel: [order: Order];
 };
 
 // Who hears of what happens to an order, by the news's name: 'placed',
-// 'refunded' or 'dispatched'. Node's EventEmitter keeps a list per name:
+// 'refunded', 'dispatched', 'cancelled' or 'beforeCancel'. Node's EventEmitter keeps a list per name:
 // subscribe with `on`, unsubscribe with `off`, notify with `emit`.
 export class OrderEvents extends EventEmitter<OrderEventMap> {
   // Subscribe, and answer the way to cancel: whoever subscribes keeps it.

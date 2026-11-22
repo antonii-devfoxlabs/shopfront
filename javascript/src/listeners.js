@@ -1,6 +1,6 @@
-// What the rest of the store does once an order is placed, dispatched or
-// refunded: each maker gives back a listener, a function that is told the
-// order.
+// What the rest of the store does once an order is placed, dispatched,
+// refunded or cancelled: each maker gives back a listener, a function that
+// is told the order.
 
 import { formatMoney } from './money.js';
 import { packingSlip } from './packing.js';
@@ -89,5 +89,45 @@ export function emailParcelSent(mailer, shop) {
         `Hi ${order.customerName}, your parcel is on its way. ` +
         `Follow it at ${link}`,
     });
+  };
+}
+
+/**
+ * Whatever tells the warehouse something. Text messages fill it today;
+ * email or a chat app can fill it later, and no listener changes.
+ * @typedef {object} Notifier
+ * @property {(text: string) => void} send
+ */
+
+// Tells by text message, to one phone number.
+export class SmsNotifier {
+  #sms;
+  #phone;
+
+  /**
+   * @param {import('./vendor/sms.js').Sms} sms
+   * @param {string} phone
+   */
+  constructor(sms, phone) {
+    this.#sms = sms;
+    this.#phone = phone;
+  }
+
+  /** @param {string} text */
+  send(text) {
+    this.#sms.send({ to: this.#phone, text });
+  }
+}
+
+/**
+ * Tell the warehouse not to pack a cancelled order. A shop can word the
+ * text its own way, or in its own language later.
+ * @param {Notifier} notifier
+ * @param {string} [template]
+ * @returns {OrderListener}
+ */
+export function stopPacking(notifier, template = 'Do not pack {orderId}') {
+  return (order) => {
+    notifier.send(template.replace('{orderId}', order.orderId));
   };
 }

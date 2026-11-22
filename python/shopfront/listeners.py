@@ -1,6 +1,8 @@
-"""What the rest of the store does once an order is placed, dispatched or
-refunded: each maker gives back a listener, a function that is told the
-order."""
+"""What the rest of the store does once an order is placed, dispatched,
+refunded or cancelled: each maker gives back a listener, a function that
+is told the order."""
+
+from typing import Protocol
 
 from shopfront.money import format_money
 from shopfront.orders import Order, OrderListener
@@ -84,3 +86,34 @@ def email_parcel_sent(mailer: Mailer, shop: Settings) -> OrderListener:
         )
 
     return send_email
+
+
+class Notifier(Protocol):
+    """Whatever tells the warehouse something. Text messages fill it
+    today; email or a chat app can fill it later, and no listener
+    changes."""
+
+    def send(self, text: str) -> None: ...
+
+
+class SmsNotifier:
+    """Tells by text message, to one phone number."""
+
+    def __init__(self, sms: Sms, phone: str) -> None:
+        self._sms = sms
+        self._phone = phone
+
+    def send(self, text: str) -> None:
+        self._sms.send(to=self._phone, text=text)
+
+
+def stop_packing(
+    notifier: Notifier, template: str = "Do not pack {order_id}"
+) -> OrderListener:
+    """Tell the warehouse not to pack a cancelled order. A shop can word
+    the text its own way, or in its own language later."""
+
+    def send_text(order: Order) -> None:
+        notifier.send(template.format(order_id=order.order_id))
+
+    return send_text

@@ -1,6 +1,6 @@
 """What the support team's page asks Shopfront."""
 
-from shopfront.orders import OrderBook
+from shopfront.orders import OrderBook, OrderEvents
 from shopfront.returns import GOODWILL_PERCENT, Refunds
 
 
@@ -14,10 +14,14 @@ def where_is(order_id: str, book: OrderBook) -> str:
     return f"{order.order_id} is {order.status}: {link}"
 
 
-def cancel(order_id: str, book: OrderBook) -> None:
+def cancel(order_id: str, book: OrderBook, events: OrderEvents) -> None:
     """The support page cancels an order the shopper no longer wants:
-    the store will not send it, and no longer counts it as a sale."""
-    book.find(order_id).mark_cancelled()
+    the store will not send it, and no longer counts it as a sale. Then
+    it announces it."""
+    order = book.find(order_id)
+    events.before_cancel.notify(order)
+    order.mark_cancelled()
+    events.cancelled.notify(order)
 
 
 def make_good(

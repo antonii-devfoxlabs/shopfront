@@ -1,5 +1,6 @@
 // What the support team's page asks Shopfront.
 
+import { BEFORE_CANCEL, CANCELLED } from './orders.js';
 import { GOODWILL_PERCENT } from './returns.js';
 
 // The support page's answer to "where is my order?", from the store's
@@ -14,9 +15,13 @@ export function whereIs(orderId, book) {
 }
 
 // The support page cancels an order the shopper no longer wants: the
-// store will not send it, and no longer counts it as a sale.
-export function cancel(orderId, book) {
-  book.find(orderId).markCancelled();
+// store will not send it, and no longer counts it as a sale. Then it
+// announces it.
+export function cancel(orderId, book, events) {
+  const order = book.find(orderId);
+  events.emit(BEFORE_CANCEL, order);
+  order.markCancelled();
+  events.emit(CANCELLED, order);
 }
 
 /**

@@ -62,16 +62,16 @@ def test_the_support_page_reads_the_book_it_is_handed(book):
 
 def test_the_support_page_cancels_a_placed_order(book):
     order = a_placed_order(book)
-    cancel("SF-00001", book)
+    cancel("SF-00001", book, OrderEvents())
     assert where_is("SF-00001", book) == "SF-00001 is cancelled"
     assert sales([order]) == []
 
 
 def test_a_cancelled_order_is_not_cancelled_again(book):
     a_placed_order(book)
-    cancel("SF-00001", book)
+    cancel("SF-00001", book, OrderEvents())
     with pytest.raises(CancelRefusedError, match="SF-00001 is cancelled"):
-        cancel("SF-00001", book)
+        cancel("SF-00001", book, OrderEvents())
 
 
 def test_a_dispatched_order_is_not_cancelled(book):
@@ -80,8 +80,43 @@ def test_a_dispatched_order_is_not_cancelled(book):
         order, Parcel(courier=SWIFTSHIP, number="SW-0072"), OrderEvents()
     )
     with pytest.raises(CancelRefusedError, match="SF-00001 is dispatched"):
-        cancel("SF-00001", book)
+        cancel("SF-00001", book, OrderEvents())
     assert order.status == "dispatched"
+
+
+def test_a_cancelled_order_is_announced(book):
+    a_placed_order(book)
+    events = OrderEvents()
+    heard: list[str] = []
+    events.cancelled.subscribe(lambda order: heard.append(order.order_id))
+    cancel("SF-00001", book, events)
+    assert heard == ["SF-00001"]
+
+
+def test_a_refused_cancel_is_not_announced(book):
+    order = a_placed_order(book)
+    dispatch(
+        order, Parcel(courier=SWIFTSHIP, number="SW-0072"), OrderEvents()
+    )
+    events = OrderEvents()
+    heard: list[str] = []
+    events.cancelled.subscribe(lambda order: heard.append(order.order_id))
+    with pytest.raises(CancelRefusedError):
+        cancel("SF-00001", book, events)
+    assert heard == []
+
+
+def test_a_listener_told_before_a_cancel_can_stop_it(book):
+    order = a_placed_order(book)
+    events = OrderEvents()
+
+    def refuse(order: Order) -> None:
+        raise CancelRefusedError(f"{order.order_id} is kept")
+
+    events.before_cancel.subscribe(refuse)
+    with pytest.raises(CancelRefusedError, match="SF-00001 is kept"):
+        cancel("SF-00001", book, events)
+    assert order.status == "placed"
 
 
 def refunds_for(

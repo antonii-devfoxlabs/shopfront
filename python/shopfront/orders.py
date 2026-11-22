@@ -371,6 +371,10 @@ class OrderEvents:
         self.placed = Listeners()
         self.refunded = Listeners()
         self.dispatched = Listeners()
+        self.cancelled = Listeners()
+        # Told before an order is cancelled: a listener that raises stops
+        # the cancel. Nothing listens yet; other teams can plug in here.
+        self.before_cancel = Listeners()
 
 
 def place_order(
