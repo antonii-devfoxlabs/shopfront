@@ -9,6 +9,12 @@ says.
 
 ## Where a change goes
 
+Each kind of change has the shape that fits what differs between its
+cases: a number is a row of a table, a refusal is an `if`, and a class
+or a function per case is for cases whose code differs. A new case
+takes its kind's shape; a kind whose cases start to differ in code
+changes shape then, not before.
+
 - **A way to pay**: a row in `payments.PAYMENT_METHODS`. A new kind
   of payment is a class beside `payments.Card`, then a row.
 - **A coupon**: a row in `pricing.COUPONS`. A new kind of rule is a
@@ -35,6 +41,7 @@ says.
   parcel that went wrong: a row in `returns.GOODWILL_PERCENT`, given
   by its own call on `returns.Refunds`, beside the refund. It runs
   none of a return's steps: it marks nothing and announces nothing.
+  The support form's list is made from the table's rows.
 - **A courier**: a constant beside `parcels.PARCELNOW`. A parcel
   makes its own tracking link, in `parcels.Parcel`; the rest of the
   store asks an order for its link and never builds one.
