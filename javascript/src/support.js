@@ -1,6 +1,6 @@
 // What the support team's page asks Shopfront.
 
-import { GOODWILL_RULES } from './returns.js';
+import { GOODWILL_PERCENT } from './returns.js';
 
 // The support page's answer to "where is my order?", from the store's
 // order book.
@@ -31,5 +31,7 @@ export function makeGood(orderId, reason, details, refunds) {
 // The lines the support page's goodwill form shows, one per reason the
 // support team can pick.
 export function goodwillChoices() {
-  return [...GOODWILL_RULES.values()].map((rule) => rule.label());
+  return [...GOODWILL_PERCENT].map(
+    ([reason, percent]) => `${reason}: ${percent} % back`,
+  );
 }

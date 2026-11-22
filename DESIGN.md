@@ -32,12 +32,11 @@ says.
   exchanged. It is not a kind of `returns.Return`: the rest of the
   store reads a returned order as money paid back.
 - **A goodwill credit**, part of an order's money given back for a
-  parcel that went wrong: a rule beside `returns.LateParcel`, then a
-  row in `returns.GOODWILL_RULES`; a reason to refuse one is a check
-  beside `returns.HasLeft`, then a row in `returns.GOODWILL_CHECKS`.
-  It is given by its own call on `returns.Refunds`, beside the refund.
-  It runs none of a return's steps: it marks nothing and announces
-  nothing.
+  parcel that went wrong: a row in `returns.GOODWILL_PERCENT`; a
+  reason to refuse one is a check beside `returns.HasLeft`, then a row
+  in `returns.GOODWILL_CHECKS`. It is given by its own call on
+  `returns.Refunds`, beside the refund. It runs none of a return's
+  steps: it marks nothing and announces nothing.
 - **A courier**: a constant beside `parcels.PARCELNOW`. A parcel
   makes its own tracking link, in `parcels.Parcel`; the rest of the
   store asks an order for its link and never builds one.

@@ -64,43 +64,6 @@ export class GoodwillRefusedError extends Error {
   override name = 'GoodwillRefusedError';
 }
 
-// What a goodwill reason must offer: the line the support form shows,
-// and what the reason gives back for an order.
-export interface GoodwillRule {
-  label(): string;
-  cents(order: Order): number;
-}
-
-export class LateParcel implements GoodwillRule {
-  label(): string {
-    return 'late: 10 % back';
-  }
-
-  cents(order: Order): number {
-    return Math.floor((order.totalCents * 10) / 100);
-  }
-}
-
-export class DamagedParcel implements GoodwillRule {
-  label(): string {
-    return 'damaged: 50 % back';
-  }
-
-  cents(order: Order): number {
-    return Math.floor((order.totalCents * 50) / 100);
-  }
-}
-
-export class LostParcel implements GoodwillRule {
-  label(): string {
-    return 'lost: 100 % back';
-  }
-
-  cents(order: Order): number {
-    return order.totalCents;
-  }
-}
-
 // A reason to refuse a goodwill credit: check throws, or passes.
 export interface GoodwillCheck {
   check(order: Order): void;
@@ -122,11 +85,12 @@ export class StillASale implements GoodwillCheck {
   }
 }
 
-// Every reason the support team can name, with the rule it stands for.
-export const GOODWILL_RULES = new Map<string, GoodwillRule>([
-  ['late', new LateParcel()],
-  ['damaged', new DamagedParcel()],
-  ['lost', new LostParcel()],
+// The part of an order's total the support team gives back, in percent,
+// by what went wrong with the parcel.
+export const GOODWILL_PERCENT: ReadonlyMap<string, number> = new Map([
+  ['late', 10],
+  ['damaged', 50],
+  ['lost', 100],
 ]);
 
 // The checks every goodwill credit must pass, in this order.
@@ -141,11 +105,11 @@ export function goodwillCents(order: Order, reason: string): number {
   for (const goodwillCheck of GOODWILL_CHECKS) {
     goodwillCheck.check(order);
   }
-  const rule = GOODWILL_RULES.get(reason);
-  if (rule === undefined) {
+  const percent = GOODWILL_PERCENT.get(reason);
+  if (percent === undefined) {
     throw new GoodwillRefusedError(`no goodwill for ${reason}`);
   }
-  return rule.cents(order);
+  return Math.floor((order.totalCents * percent) / 100);
 }
 
 // The parts main hands the refunds once.

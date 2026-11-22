@@ -46,44 +46,6 @@ export class GoodwillRefusedError extends Error {
 }
 
 /**
- * What a goodwill reason must offer: the line the support form shows,
- * and what the reason gives back for an order.
- * @typedef {object} GoodwillRule
- * @property {() => string} label
- * @property {(order: import('./orders.js').Order) => number} cents
- */
-
-export class LateParcel {
-  label() {
-    return 'late: 10 % back';
-  }
-
-  cents(order) {
-    return Math.floor((order.totalCents * 10) / 100);
-  }
-}
-
-export class DamagedParcel {
-  label() {
-    return 'damaged: 50 % back';
-  }
-
-  cents(order) {
-    return Math.floor((order.totalCents * 50) / 100);
-  }
-}
-
-export class LostParcel {
-  label() {
-    return 'lost: 100 % back';
-  }
-
-  cents(order) {
-    return order.totalCents;
-  }
-}
-
-/**
  * A reason to refuse a goodwill credit: check throws, or passes.
  * @typedef {object} GoodwillCheck
  * @property {(order: import('./orders.js').Order) => void} check
@@ -105,12 +67,12 @@ export class StillASale {
   }
 }
 
-// Every reason the support team can name, with the rule it stands for.
-/** @type {Map<string, GoodwillRule>} */
-export const GOODWILL_RULES = new Map([
-  ['late', new LateParcel()],
-  ['damaged', new DamagedParcel()],
-  ['lost', new LostParcel()],
+// The part of an order's total the support team gives back, in percent,
+// by what went wrong with the parcel.
+export const GOODWILL_PERCENT = new Map([
+  ['late', 10],
+  ['damaged', 50],
+  ['lost', 100],
 ]);
 
 // The checks every goodwill credit must pass, in this order.
@@ -123,11 +85,11 @@ export function goodwillCents(order, reason) {
   for (const goodwillCheck of GOODWILL_CHECKS) {
     goodwillCheck.check(order);
   }
-  const rule = GOODWILL_RULES.get(reason);
-  if (rule === undefined) {
+  const percent = GOODWILL_PERCENT.get(reason);
+  if (percent === undefined) {
     throw new GoodwillRefusedError(`no goodwill for ${reason}`);
   }
-  return rule.cents(order);
+  return Math.floor((order.totalCents * percent) / 100);
 }
 
 // The calls that give an order's money back, and tell the shopper.

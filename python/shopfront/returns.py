@@ -52,39 +52,6 @@ class GoodwillRefusedError(Exception):
     pass
 
 
-class GoodwillRule(Protocol):
-    """What a goodwill reason must offer: the line the support form
-    shows, and what the reason gives back for an order."""
-
-    def label(self) -> str: ...
-
-    def cents(self, order: Order) -> int: ...
-
-
-class LateParcel:
-    def label(self) -> str:
-        return "late: 10 % back"
-
-    def cents(self, order: Order) -> int:
-        return order.total_cents * 10 // 100
-
-
-class DamagedParcel:
-    def label(self) -> str:
-        return "damaged: 50 % back"
-
-    def cents(self, order: Order) -> int:
-        return order.total_cents * 50 // 100
-
-
-class LostParcel:
-    def label(self) -> str:
-        return "lost: 100 % back"
-
-    def cents(self, order: Order) -> int:
-        return order.total_cents
-
-
 class GoodwillCheck(Protocol):
     """A reason to refuse a goodwill credit: check raises, or passes."""
 
@@ -103,12 +70,9 @@ class StillASale:
             raise GoodwillRefusedError(f"{order.order_id} is {order.status}")
 
 
-# Every reason the support team can name, with the rule it stands for.
-GOODWILL_RULES: dict[str, GoodwillRule] = {
-    "late": LateParcel(),
-    "damaged": DamagedParcel(),
-    "lost": LostParcel(),
-}
+# The part of an order's total the support team gives back, in percent,
+# by what went wrong with the parcel.
+GOODWILL_PERCENT = {"late": 10, "damaged": 50, "lost": 100}
 
 # The checks every goodwill credit must pass, in this order.
 GOODWILL_CHECKS: list[GoodwillCheck] = [HasLeft(), StillASale()]
@@ -119,10 +83,10 @@ def goodwill_cents(order: Order, reason: str) -> int:
     an order that has left, and is still a sale."""
     for goodwill_check in GOODWILL_CHECKS:
         goodwill_check.check(order)
-    rule = GOODWILL_RULES.get(reason)
-    if rule is None:
+    percent = GOODWILL_PERCENT.get(reason)
+    if percent is None:
         raise GoodwillRefusedError(f"no goodwill for {reason}")
-    return rule.cents(order)
+    return order.total_cents * percent // 100
 
 
 @dataclass(frozen=True, kw_only=True)

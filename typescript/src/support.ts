@@ -2,7 +2,7 @@
 
 import type { OrderBook } from './orders.ts';
 import type { PaymentDetails } from './payments.ts';
-import { GOODWILL_RULES, type Refunds } from './returns.ts';
+import { GOODWILL_PERCENT, type Refunds } from './returns.ts';
 
 // The support page's answer to "where is my order?", from the store's
 // order book.
@@ -35,5 +35,7 @@ export function makeGood(
 // The lines the support page's goodwill form shows, one per reason the
 // support team can pick.
 export function goodwillChoices(): string[] {
-  return [...GOODWILL_RULES.values()].map((rule) => rule.label());
+  return [...GOODWILL_PERCENT].map(
+    ([reason, percent]) => `${reason}: ${percent} % back`,
+  );
 }
