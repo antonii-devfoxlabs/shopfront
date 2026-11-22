@@ -74,30 +74,12 @@ export function emailParcelSent(
   };
 }
 
-// Whatever tells the warehouse something. Text messages fill it today;
-// email or a chat app can fill it later, and no listener changes.
-export interface Notifier {
-  send(text: string): void;
-}
-
-// Tells by text message, to one phone number.
-export class SmsNotifier implements Notifier {
-  readonly #sms: Sms;
-  readonly #phone: string;
-
-  constructor(sms: Sms, phone: string) {
-    this.#sms = sms;
-    this.#phone = phone;
-  }
-
-  send(text: string): void {
-    this.#sms.send({ to: this.#phone, text });
-  }
-}
-
-// Tell the warehouse not to pack a cancelled order.
-export function stopPacking(notifier: Notifier): OrderListener {
+// Text the shop's warehouse not to pack a cancelled order.
+export function stopPacking(sms: Sms, shop: Settings): OrderListener {
   return (order) => {
-    notifier.send(`Do not pack ${order.orderId}`);
+    sms.send({
+      to: shop.warehousePhone,
+      text: `Do not pack ${order.orderId}`,
+    });
   };
 }

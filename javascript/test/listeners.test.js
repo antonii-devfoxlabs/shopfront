@@ -6,7 +6,6 @@ import {
   emailParcelSent,
   emailShopper,
   expectReturn,
-  SmsNotifier,
   stopPacking,
   textWarehouse,
   trackOrder,
@@ -77,8 +76,7 @@ test('the warehouse listener texts what to pack', () => {
 
 test('the stop-packing listener texts the warehouse', () => {
   const sms = new Sms();
-  const notifier = new SmsNotifier(sms, DUTCH_SHOP.warehousePhone);
-  stopPacking(notifier)(anOrder());
+  stopPacking(sms, DUTCH_SHOP)(anOrder());
   assert.deepEqual(sms.outbox, [
     { to: '+44 7700 900200', text: 'Do not pack SF-00007' },
   ]);

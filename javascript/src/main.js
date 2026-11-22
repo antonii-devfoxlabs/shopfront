@@ -8,7 +8,6 @@ import {
   emailParcelSent,
   emailShopper,
   expectReturn,
-  SmsNotifier,
   stopPacking,
   textWarehouse,
   trackOrder,
@@ -99,7 +98,7 @@ events.on(REFUNDED, expectReturn(sms, shop));
 // follow the parcel.
 events.on(DISPATCHED, emailParcelSent(mailer, shop));
 // The support page cancels orders: the warehouse hears not to pack.
-events.on(CANCELLED, stopPacking(new SmsNotifier(sms, shop.warehousePhone)));
+events.on(CANCELLED, stopPacking(sms, shop));
 // Every step of an order, in order, behind one call. main still
 // decides what is timed, and hands the checkout the timed parts.
 const checkout = new Checkout({

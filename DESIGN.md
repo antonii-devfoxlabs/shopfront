@@ -26,8 +26,6 @@ changes shape then, not before.
   `taxes.CachedRates` is round the tax service.
 - **Something to do when an order is placed**: a listener in
   `listeners`, subscribed to `orders.OrderEvents` in `main`.
-- **A way to tell the warehouse**: a notifier beside
-  `listeners.SmsNotifier`, handed to the listener that tells it.
 - **A part of an order**: a step on `orders.OrderBuilder`.
 - **A status of an order**: a row in `orders.STATUSES`, which says
   whether it is a sale, can be sent back, dispatched or cancelled.

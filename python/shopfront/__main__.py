@@ -9,7 +9,6 @@ from shopfront.catalog_file import CatalogError, load_catalog
 from shopfront.checkout import Checkout
 from shopfront.gateways import TimedGateway
 from shopfront.listeners import (
-    SmsNotifier,
     email_parcel_sent,
     email_shopper,
     expect_return,
@@ -90,9 +89,7 @@ def main() -> None:
     # follow the parcel.
     events.dispatched.subscribe(email_parcel_sent(mailer, shop))
     # The support page cancels orders: the warehouse hears not to pack.
-    events.cancelled.subscribe(
-        stop_packing(SmsNotifier(sms, shop.warehouse_phone))
-    )
+    events.cancelled.subscribe(stop_packing(sms, shop))
     # Every step of an order, in order, behind one call. main still
     # decides what is timed, and hands the checkout the timed parts.
     checkout = Checkout(

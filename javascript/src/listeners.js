@@ -93,39 +93,16 @@ export function emailParcelSent(mailer, shop) {
 }
 
 /**
- * Whatever tells the warehouse something. Text messages fill it today;
- * email or a chat app can fill it later, and no listener changes.
- * @typedef {object} Notifier
- * @property {(text: string) => void} send
- */
-
-// Tells by text message, to one phone number.
-export class SmsNotifier {
-  #sms;
-  #phone;
-
-  /**
-   * @param {import('./vendor/sms.js').Sms} sms
-   * @param {string} phone
-   */
-  constructor(sms, phone) {
-    this.#sms = sms;
-    this.#phone = phone;
-  }
-
-  /** @param {string} text */
-  send(text) {
-    this.#sms.send({ to: this.#phone, text });
-  }
-}
-
-/**
- * Tell the warehouse not to pack a cancelled order.
- * @param {Notifier} notifier
+ * Text the shop's warehouse not to pack a cancelled order.
+ * @param {import('./vendor/sms.js').Sms} sms
+ * @param {import('./settings.js').Settings} shop
  * @returns {OrderListener}
  */
-export function stopPacking(notifier) {
+export function stopPacking(sms, shop) {
   return (order) => {
-    notifier.send(`Do not pack ${order.orderId}`);
+    sms.send({
+      to: shop.warehousePhone,
+      text: `Do not pack ${order.orderId}`,
+    });
   };
 }

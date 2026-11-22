@@ -2,8 +2,6 @@
 refunded or cancelled: each maker gives back a listener, a function that
 is told the order."""
 
-from typing import Protocol
-
 from shopfront.money import format_money
 from shopfront.orders import Order, OrderListener
 from shopfront.packing import packing_slip
@@ -88,29 +86,12 @@ def email_parcel_sent(mailer: Mailer, shop: Settings) -> OrderListener:
     return send_email
 
 
-class Notifier(Protocol):
-    """Whatever tells the warehouse something. Text messages fill it
-    today; email or a chat app can fill it later, and no listener
-    changes."""
-
-    def send(self, text: str) -> None: ...
-
-
-class SmsNotifier:
-    """Tells by text message, to one phone number."""
-
-    def __init__(self, sms: Sms, phone: str) -> None:
-        self._sms = sms
-        self._phone = phone
-
-    def send(self, text: str) -> None:
-        self._sms.send(to=self._phone, text=text)
-
-
-def stop_packing(notifier: Notifier) -> OrderListener:
-    """Tell the warehouse not to pack a cancelled order."""
+def stop_packing(sms: Sms, shop: Settings) -> OrderListener:
+    """Text the shop's warehouse not to pack a cancelled order."""
 
     def send_text(order: Order) -> None:
-        notifier.send(f"Do not pack {order.order_id}")
+        sms.send(
+            to=shop.warehouse_phone, text=f"Do not pack {order.order_id}"
+        )
 
     return send_text
