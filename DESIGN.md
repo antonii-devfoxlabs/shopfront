@@ -23,6 +23,10 @@ says.
 - **A part of an order**: a step on `orders.OrderBuilder`.
 - **A status of an order**: a row in `orders.STATUSES`, which says
   whether it is a sale, can be sent back, or can be dispatched.
+- **An exchange**, a product sent back for the same one: in
+  `returns.Exchange`, which gives no money back and marks the order
+  exchanged. It is not a kind of `returns.Return`: the rest of the
+  store reads a returned order as money paid back.
 - **A courier**: a constant beside `parcels.PARCELNOW`. A parcel
   makes its own tracking link, in `parcels.Parcel`; the rest of the
   store asks an order for its link and never builds one.
