@@ -214,6 +214,7 @@ test('the status table says what exchanged means', () => {
     sale: true,
     returnable: true,
     dispatchable: true,
+    cancellable: false,
   });
 });
 
@@ -224,6 +225,7 @@ test('the status table says what dispatched means', () => {
     sale: true,
     returnable: true,
     dispatchable: false,
+    cancellable: false,
   });
 });
 

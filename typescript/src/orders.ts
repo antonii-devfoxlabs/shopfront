@@ -19,6 +19,18 @@ export function nextOrderId(): string {
   return `SF-${String(lastOrderNumber).padStart(5, '0')}`;
 }
 
+export class DispatchRefusedError extends Error {
+  override name = 'DispatchRefusedError';
+}
+
+export class CancelRefusedError extends Error {
+  override name = 'CancelRefusedError';
+}
+
+export class ReturnRefusedError extends Error {
+  override name = 'ReturnRefusedError';
+}
+
 export class Order {
   readonly orderId: string;
   readonly customerEmail: string;
@@ -92,6 +104,45 @@ export class Order {
     return this.#parcel.trackingLink();
   }
 
+  // The order's moves: the only code that changes its status. Each
+  // refuses a move its status's row in STATUSES does not allow.
+
+  // Its parcel has left the warehouse with a courier.
+  markDispatched(parcel: Parcel): void {
+    if (!statusOf(this).dispatchable) {
+      throw new DispatchRefusedError(`${this.orderId} is ${this.#status}`);
+    }
+    this.#parcel = parcel;
+    this.#status = 'dispatched';
+  }
+
+  // The shopper no longer wants it, and it has not left yet.
+  markCancelled(): void {
+    if (!statusOf(this).cancellable) {
+      throw new CancelRefusedError(`${this.orderId} is ${this.#status}`);
+    }
+    this.#status = 'cancelled';
+  }
+
+  // Refuse a return before any money goes back for it.
+  checkReturnable(): void {
+    if (!statusOf(this).returnable) {
+      throw new ReturnRefusedError(`${this.orderId} is ${this.#status}`);
+    }
+  }
+
+  // It came back, and its money went back.
+  markReturned(): void {
+    this.checkReturnable();
+    this.#status = 'returned';
+  }
+
+  // It came back for the same product again.
+  markExchanged(): void {
+    this.checkReturnable();
+    this.#status = 'exchanged';
+  }
+
   get totalCents(): number {
     return (
       this.subtotalCents -
@@ -110,18 +161,45 @@ export type Status = {
   readonly returnable: boolean;
   // Can still leave the warehouse.
   readonly dispatchable: boolean;
+  // Can still be cancelled: it has never left the warehouse.
+  readonly cancellable: boolean;
 };
 
 // Every status an order can have, and what it means. A new status is a
 // new row: the code that asks what a status means reads it here.
 const STATUSES: Readonly<Record<OrderStatus, Status>> = Object.freeze({
-  placed: { sale: true, returnable: true, dispatchable: true },
-  dispatched: { sale: true, returnable: true, dispatchable: false },
-  cancelled: { sale: false, returnable: false, dispatchable: false },
-  returned: { sale: false, returnable: false, dispatchable: false },
+  placed: {
+    sale: true,
+    returnable: true,
+    dispatchable: true,
+    cancellable: true,
+  },
+  dispatched: {
+    sale: true,
+    returnable: true,
+    dispatchable: false,
+    cancellable: false,
+  },
+  cancelled: {
+    sale: false,
+    returnable: false,
+    dispatchable: false,
+    cancellable: false,
+  },
+  returned: {
+    sale: false,
+    returnable: false,
+    dispatchable: false,
+    cancellable: false,
+  },
   // Sent back for the same product again: the sale stands, and the new one
   // has still to leave the warehouse.
-  exchanged: { sale: true, returnable: true, dispatchable: true },
+  exchanged: {
+    sale: true,
+    returnable: true,
+    dispatchable: true,
+    cancellable: false,
+  },
 });
 
 // What the order's status means: its row in STATUSES.
@@ -320,10 +398,6 @@ export function placeOrder(
   events.emit('placed', order);
 }
 
-export class DispatchRefusedError extends Error {
-  override name = 'DispatchRefusedError';
-}
-
 // Mark an order dispatched: its parcel has left the warehouse with a
 // courier. Then announce it.
 export function dispatch(
@@ -331,10 +405,6 @@ export function dispatch(
   parcel: Parcel,
   events: OrderEvents,
 ): void {
-  if (!statusOf(order).dispatchable) {
-    throw new DispatchRefusedError(`${order.orderId} is ${order.status}`);
-  }
-  order.parcel = parcel;
-  order.status = 'dispatched';
+  order.markDispatched(parcel);
   events.emit('dispatched', order);
 }

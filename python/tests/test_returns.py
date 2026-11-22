@@ -6,11 +6,12 @@ from shopfront.orders import (
     Order,
     OrderBuilder,
     OrderEvents,
+    ReturnRefusedError,
     dispatch,
     place_order,
 )
 from shopfront.parcels import PARCELNOW, Parcel
-from shopfront.returns import Exchange, Refunds, Return, ReturnRefusedError
+from shopfront.returns import Exchange, Refunds, Return
 from shopfront.settings import GERMAN_SHOP
 from shopfront.vendor.mailer import Mailer
 

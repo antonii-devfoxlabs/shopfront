@@ -1,19 +1,10 @@
 // Orders sent back, and the money that goes back with them.
 
 import { formatMoney } from './money.ts';
-import {
-  type Order,
-  type OrderBook,
-  type OrderEvents,
-  statusOf,
-} from './orders.ts';
+import type { Order, OrderBook, OrderEvents } from './orders.ts';
 import { refund, type Gateway, type PaymentDetails } from './payments.ts';
 import type { Settings } from './settings.ts';
 import type { Mailer } from './vendor/mailer.ts';
-
-export class ReturnRefusedError extends Error {
-  override name = 'ReturnRefusedError';
-}
 
 // An order sent back. Its money goes back to the way to pay named to:
 // the way the order was paid, unless the caller names another.
@@ -37,18 +28,14 @@ export class Return {
 
   // Give the money back once, and mark the order returned.
   process(): string {
-    if (!statusOf(this.order).returnable) {
-      throw new ReturnRefusedError(
-        `${this.order.orderId} is ${this.order.status}`,
-      );
-    }
+    this.order.checkReturnable();
     const refundId = refund(
       this.to,
       this.order.totalCents,
       this.details,
       this.gateway,
     );
-    this.order.status = 'returned';
+    this.order.markReturned();
     return refundId;
   }
 }
@@ -64,12 +51,7 @@ export class Exchange {
 
   // Take the product back, and mark the order exchanged.
   process(): void {
-    if (!statusOf(this.order).returnable) {
-      throw new ReturnRefusedError(
-        `${this.order.orderId} is ${this.order.status}`,
-      );
-    }
-    this.order.status = 'exchanged';
+    this.order.markExchanged();
   }
 }
 

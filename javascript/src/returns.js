@@ -1,12 +1,8 @@
 // Orders sent back, and the money that goes back with them.
 
 import { formatMoney } from './money.js';
-import { REFUNDED, statusOf } from './orders.js';
+import { REFUNDED } from './orders.js';
 import { refund } from './payments.js';
-
-export class ReturnRefusedError extends Error {
-  name = 'ReturnRefusedError';
-}
 
 // An order sent back. Its money goes back to the way to pay named to:
 // the way the order was paid, unless the caller names another.
@@ -20,18 +16,14 @@ export class Return {
 
   // Give the money back once, and mark the order returned.
   process() {
-    if (!statusOf(this.order).returnable) {
-      throw new ReturnRefusedError(
-        `${this.order.orderId} is ${this.order.status}`,
-      );
-    }
+    this.order.checkReturnable();
     const refundId = refund(
       this.to,
       this.order.totalCents,
       this.details,
       this.gateway,
     );
-    this.order.status = 'returned';
+    this.order.markReturned();
     return refundId;
   }
 }
@@ -45,12 +37,7 @@ export class Exchange {
 
   // Take the product back, and mark the order exchanged.
   process() {
-    if (!statusOf(this.order).returnable) {
-      throw new ReturnRefusedError(
-        `${this.order.orderId} is ${this.order.status}`,
-      );
-    }
-    this.order.status = 'exchanged';
+    this.order.markExchanged();
   }
 }
 

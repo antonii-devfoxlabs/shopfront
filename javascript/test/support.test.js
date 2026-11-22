@@ -76,3 +76,18 @@ test('a cancelled order is not cancelled again', () => {
     message: 'SF-00001 is cancelled',
   });
 });
+
+test('a dispatched order is not cancelled', () => {
+  const book = new OrderBook();
+  const order = aPlacedOrder(book);
+  dispatch(
+    order,
+    new Parcel({ courier: SWIFTSHIP, number: 'SW-0072' }),
+    new OrderEvents(),
+  );
+  assert.throws(() => cancel('SF-00001', book), {
+    name: 'CancelRefusedError',
+    message: 'SF-00001 is dispatched',
+  });
+  assert.equal(order.status, 'dispatched');
+});

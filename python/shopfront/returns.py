@@ -3,19 +3,10 @@
 from dataclasses import dataclass
 
 from shopfront.money import format_money
-from shopfront.orders import (
-    Order,
-    OrderBook,
-    OrderEvents,
-    status_of,
-)
+from shopfront.orders import Order, OrderBook, OrderEvents
 from shopfront.payments import Gateway, refund
 from shopfront.settings import Settings
 from shopfront.vendor.mailer import Mailer
-
-
-class ReturnRefusedError(Exception):
-    pass
 
 
 class Return:
@@ -36,14 +27,11 @@ class Return:
 
     def process(self) -> str:
         """Give the money back once, and mark the order returned."""
-        if not status_of(self.order).returnable:
-            raise ReturnRefusedError(
-                f"{self.order.order_id} is {self.order.status}"
-            )
+        self.order.check_returnable()
         refund_id = refund(
             self.to, self.order.total_cents, self.details, self.gateway
         )
-        self.order.status = "returned"
+        self.order.mark_returned()
         return refund_id
 
 
@@ -56,11 +44,7 @@ class Exchange:
 
     def process(self) -> None:
         """Take the product back, and mark the order exchanged."""
-        if not status_of(self.order).returnable:
-            raise ReturnRefusedError(
-                f"{self.order.order_id} is {self.order.status}"
-            )
-        self.order.status = "exchanged"
+        self.order.mark_exchanged()
 
 
 @dataclass(frozen=True, kw_only=True)

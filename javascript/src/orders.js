@@ -9,6 +9,18 @@ export function nextOrderId() {
   return `SF-${String(lastOrderNumber).padStart(5, '0')}`;
 }
 
+export class DispatchRefusedError extends Error {
+  name = 'DispatchRefusedError';
+}
+
+export class CancelRefusedError extends Error {
+  name = 'CancelRefusedError';
+}
+
+export class ReturnRefusedError extends Error {
+  name = 'ReturnRefusedError';
+}
+
 export class Order {
   #lines;
   #status = 'placed';
@@ -73,6 +85,48 @@ export class Order {
     return this.#parcel.trackingLink();
   }
 
+  // The order's moves: the only code that changes its status. Each
+  // refuses a move its status's row in STATUSES does not allow.
+
+  /**
+   * Its parcel has left the warehouse with a courier.
+   * @param {import('./parcels.js').Parcel} parcel
+   */
+  markDispatched(parcel) {
+    if (!statusOf(this).dispatchable) {
+      throw new DispatchRefusedError(`${this.orderId} is ${this.#status}`);
+    }
+    this.#parcel = parcel;
+    this.#status = 'dispatched';
+  }
+
+  // The shopper no longer wants it, and it has not left yet.
+  markCancelled() {
+    if (!statusOf(this).cancellable) {
+      throw new CancelRefusedError(`${this.orderId} is ${this.#status}`);
+    }
+    this.#status = 'cancelled';
+  }
+
+  // Refuse a return before any money goes back for it.
+  checkReturnable() {
+    if (!statusOf(this).returnable) {
+      throw new ReturnRefusedError(`${this.orderId} is ${this.#status}`);
+    }
+  }
+
+  // It came back, and its money went back.
+  markReturned() {
+    this.checkReturnable();
+    this.#status = 'returned';
+  }
+
+  // It came back for the same product again.
+  markExchanged() {
+    this.checkReturnable();
+    this.#status = 'exchanged';
+  }
+
   get totalCents() {
     return (
       this.subtotalCents -
@@ -94,6 +148,8 @@ export class UnknownStatusError extends Error {
  *   accountant's sales files.
  * @property {boolean} returnable Can still be sent back for its money.
  * @property {boolean} dispatchable Can still leave the warehouse.
+ * @property {boolean} cancellable Can still be cancelled: it has never
+ *   left the warehouse.
  */
 
 /**
@@ -102,13 +158,38 @@ export class UnknownStatusError extends Error {
  * @type {ReadonlyMap<string, Status>}
  */
 const STATUSES = new Map([
-  ['placed', { sale: true, returnable: true, dispatchable: true }],
-  ['dispatched', { sale: true, returnable: true, dispatchable: false }],
-  ['cancelled', { sale: false, returnable: false, dispatchable: false }],
-  ['returned', { sale: false, returnable: false, dispatchable: false }],
+  [
+    'placed',
+    { sale: true, returnable: true, dispatchable: true, cancellable: true },
+  ],
+  [
+    'dispatched',
+    { sale: true, returnable: true, dispatchable: false, cancellable: false },
+  ],
+  [
+    'cancelled',
+    {
+      sale: false,
+      returnable: false,
+      dispatchable: false,
+      cancellable: false,
+    },
+  ],
+  [
+    'returned',
+    {
+      sale: false,
+      returnable: false,
+      dispatchable: false,
+      cancellable: false,
+    },
+  ],
   // Sent back for the same product again: the sale stands, and the new one
   // has still to leave the warehouse.
-  ['exchanged', { sale: true, returnable: true, dispatchable: true }],
+  [
+    'exchanged',
+    { sale: true, returnable: true, dispatchable: true, cancellable: false },
+  ],
 ]);
 
 /**
@@ -327,10 +408,6 @@ export function placeOrder(order, catalog, book, events) {
   events.emit(PLACED, order);
 }
 
-export class DispatchRefusedError extends Error {
-  name = 'DispatchRefusedError';
-}
-
 /**
  * Mark an order dispatched: its parcel has left the warehouse with a
  * courier. Then announce it.
@@ -339,10 +416,6 @@ export class DispatchRefusedError extends Error {
  * @param {OrderEvents} events
  */
 export function dispatch(order, parcel, events) {
-  if (!statusOf(order).dispatchable) {
-    throw new DispatchRefusedError(`${order.orderId} is ${order.status}`);
-  }
-  order.parcel = parcel;
-  order.status = 'dispatched';
+  order.markDispatched(parcel);
   events.emit(DISPATCHED, order);
 }

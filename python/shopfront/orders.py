@@ -16,6 +16,18 @@ def next_order_id() -> str:
     return f"SF-{_last_order_number:05d}"
 
 
+class DispatchRefusedError(Exception):
+    pass
+
+
+class CancelRefusedError(Exception):
+    pass
+
+
+class ReturnRefusedError(Exception):
+    pass
+
+
 class Order:
     def __init__(
         self,
@@ -69,6 +81,37 @@ class Order:
             return None
         return self.parcel.tracking_link()
 
+    # The order's moves: the only code that changes its status. Each
+    # refuses a move its status's row in STATUSES does not allow.
+
+    def mark_dispatched(self, parcel: Parcel) -> None:
+        """Its parcel has left the warehouse with a courier."""
+        if not status_of(self).dispatchable:
+            raise DispatchRefusedError(f"{self.order_id} is {self.status}")
+        self.parcel = parcel
+        self.status = "dispatched"
+
+    def mark_cancelled(self) -> None:
+        """The shopper no longer wants it, and it has not left yet."""
+        if not status_of(self).cancellable:
+            raise CancelRefusedError(f"{self.order_id} is {self.status}")
+        self.status = "cancelled"
+
+    def check_returnable(self) -> None:
+        """Refuse a return before any money goes back for it."""
+        if not status_of(self).returnable:
+            raise ReturnRefusedError(f"{self.order_id} is {self.status}")
+
+    def mark_returned(self) -> None:
+        """It came back, and its money went back."""
+        self.check_returnable()
+        self.status = "returned"
+
+    def mark_exchanged(self) -> None:
+        """It came back for the same product again."""
+        self.check_returnable()
+        self.status = "exchanged"
+
 
 class UnknownStatusError(Exception):
     pass
@@ -84,19 +127,37 @@ class Status:
     returnable: bool
     # Can still leave the warehouse.
     dispatchable: bool
+    # Can still be cancelled: it has never left the warehouse.
+    cancellable: bool
 
 
 # Every status an order can have, and what it means. A new status is a
 # new row: the code that asks what a status means reads it here.
 STATUSES: Mapping[str, Status] = MappingProxyType(
     {
-        "placed": Status(sale=True, returnable=True, dispatchable=True),
-        "dispatched": Status(sale=True, returnable=True, dispatchable=False),
-        "cancelled": Status(sale=False, returnable=False, dispatchable=False),
-        "returned": Status(sale=False, returnable=False, dispatchable=False),
+        "placed": Status(
+            sale=True, returnable=True, dispatchable=True, cancellable=True
+        ),
+        "dispatched": Status(
+            sale=True, returnable=True, dispatchable=False, cancellable=False
+        ),
+        "cancelled": Status(
+            sale=False,
+            returnable=False,
+            dispatchable=False,
+            cancellable=False,
+        ),
+        "returned": Status(
+            sale=False,
+            returnable=False,
+            dispatchable=False,
+            cancellable=False,
+        ),
         # Sent back for the same product again: the sale stands, and the
         # new one has still to leave the warehouse.
-        "exchanged": Status(sale=True, returnable=True, dispatchable=True),
+        "exchanged": Status(
+            sale=True, returnable=True, dispatchable=True, cancellable=False
+        ),
     }
 )
 
@@ -314,15 +375,8 @@ def place_order(
     events.placed.notify(order)
 
 
-class DispatchRefusedError(Exception):
-    pass
-
-
 def dispatch(order: Order, parcel: Parcel, events: OrderEvents) -> None:
     """Mark an order dispatched: its parcel has left the warehouse with a
     courier. Then announce it."""
-    if not status_of(order).dispatchable:
-        raise DispatchRefusedError(f"{order.order_id} is {order.status}")
-    order.parcel = parcel
-    order.status = "dispatched"
+    order.mark_dispatched(parcel)
     events.dispatched.notify(order)

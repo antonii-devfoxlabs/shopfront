@@ -194,7 +194,7 @@ def test_the_status_table_says_what_dispatched_means():
     order = an_order()
     order.status = "dispatched"
     assert status_of(order) == Status(
-        sale=True, returnable=True, dispatchable=False
+        sale=True, returnable=True, dispatchable=False, cancellable=False
     )
 
 
@@ -202,7 +202,7 @@ def test_the_status_table_says_what_exchanged_means():
     order = an_order()
     order.status = "exchanged"
     assert status_of(order) == Status(
-        sale=True, returnable=True, dispatchable=True
+        sale=True, returnable=True, dispatchable=True, cancellable=False
     )
 
 
