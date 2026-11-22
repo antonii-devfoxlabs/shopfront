@@ -42,11 +42,13 @@ says.
   written down, and one function runs them all.
 - **A collection to walk**: a cursor, as `catalog.Catalog` has.
 - **An export format**: a subclass of `exports.OrderExport`.
-- **Something many parts share**, such as the order book: registered
-  once by name in `services`, in `main`; a part gets it with
-  `services.get`.
 
 ## Dropped
+
+The order book's Singleton, in `orders`, and the lookup by name that
+came after it: `main` makes the store's one `orders.OrderBook` and
+hands it to every part that keeps or finds orders, as it hands them
+the shop and the gateway.
 
 Factory Method, in `returns`: a gift's return differed from any
 other only in where its money went. A `returns.Return` is handed

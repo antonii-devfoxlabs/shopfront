@@ -4,7 +4,6 @@ import sys
 from datetime import date
 from pathlib import Path
 
-from shopfront import services
 from shopfront.cart import Cart
 from shopfront.catalog_file import CatalogError, load_catalog
 from shopfront.checkout import Checkout
@@ -43,7 +42,6 @@ def main() -> None:
     # The store's one order book, handed to every part that keeps or
     # finds orders.
     book = OrderBook()
-    services.register("order_book", book)
     # Every call to the payment gateway is timed and logged.
     gateway = TimedGateway(PaymentGateway(merchant=shop.merchant_id), print)
     # Every shipping quote is timed and logged, and so is the whole cost.

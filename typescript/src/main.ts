@@ -20,7 +20,6 @@ import {
   parcelNowQuote,
   swiftShipQuote,
 } from './providers.ts';
-import * as services from './services.ts';
 import { GERMAN_SHOP } from './settings.ts';
 import { Shipping, offerFor } from './shipping.ts';
 import { CachedRates, TimedRates } from './taxes.ts';
@@ -38,7 +37,6 @@ const shop = GERMAN_SHOP;
 // The store's one order book, handed to every part that keeps or finds
 // orders.
 const book = new OrderBook();
-services.register('order_book', book);
 // Every call to the payment gateway is timed and logged.
 const gateway = new TimedGateway(
   new PaymentGateway({ merchant: shop.merchantId }),

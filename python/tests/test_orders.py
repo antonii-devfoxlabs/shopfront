@@ -176,11 +176,6 @@ def test_an_unknown_order_number_is_refused(book):
         book.find("SF-99999")
 
 
-def test_every_test_starts_with_an_empty_order_book(book):
-    with pytest.raises(UnknownOrderError, match="SF-00007"):
-        book.find("SF-00007")
-
-
 def test_every_test_starts_with_order_number_one():
     assert next_order_id() == "SF-00001"
 

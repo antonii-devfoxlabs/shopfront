@@ -25,7 +25,6 @@ import {
   parcelNowQuote,
   swiftShipQuote,
 } from './providers.js';
-import * as services from './services.js';
 import { GERMAN_SHOP } from './settings.js';
 import { Shipping, offerFor } from './shipping.js';
 import { CachedRates, TimedRates } from './taxes.js';
@@ -43,7 +42,6 @@ const shop = GERMAN_SHOP;
 // The store's one order book, handed to every part that keeps or finds
 // orders.
 const book = new OrderBook();
-services.register('order_book', book);
 // Every call to the payment gateway is timed and logged.
 const gateway = new TimedGateway(
   new PaymentGateway({ merchant: shop.merchantId }),

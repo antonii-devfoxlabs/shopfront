@@ -181,13 +181,6 @@ test('an unknown order number is refused', () => {
   assert.throws(() => book.find('SF-99999'), UnknownOrderError);
 });
 
-test('every test starts with an empty order book', () => {
-  const book = new OrderBook();
-  assert.throws(() => book.find('SF-00007'), {
-    message: 'SF-00007',
-  });
-});
-
 test('every test starts with order number one', () => {
   assert.equal(nextOrderId(), 'SF-00001');
 });
