@@ -53,6 +53,24 @@ export class Return {
   }
 }
 
+// A product sent back and the same one sent again: no money moves.
+export class Exchange extends Return {
+  constructor(order: Order, gateway: Gateway) {
+    super(order, {}, gateway);
+  }
+
+  // Take the product back and mark the order returned: no refund.
+  override process(): string {
+    if (!statusOf(this.order).returnable) {
+      throw new ReturnRefusedError(
+        `${this.order.orderId} is ${this.order.status}`,
+      );
+    }
+    this.order.status = 'returned';
+    return '';
+  }
+}
+
 // The parts main hands the refunds once.
 export type RefundParts = {
   gateway: Gateway;

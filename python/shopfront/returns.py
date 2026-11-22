@@ -47,6 +47,22 @@ class Return:
         return refund_id
 
 
+class Exchange(Return):
+    """A product sent back and the same one sent again: no money moves."""
+
+    def __init__(self, order: Order, gateway: Gateway) -> None:
+        super().__init__(order, {}, gateway)
+
+    def process(self) -> str:
+        """Take the product back and mark the order returned: no refund."""
+        if not status_of(self.order).returnable:
+            raise ReturnRefusedError(
+                f"{self.order.order_id} is {self.order.status}"
+            )
+        self.order.status = "returned"
+        return ""
+
+
 @dataclass(frozen=True, kw_only=True)
 class Refunds:
     """One call that gives an order's money back, and tells the shopper.

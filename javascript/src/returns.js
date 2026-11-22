@@ -36,6 +36,24 @@ export class Return {
   }
 }
 
+// A product sent back and the same one sent again: no money moves.
+export class Exchange extends Return {
+  constructor(order, gateway) {
+    super(order, {}, gateway);
+  }
+
+  // Take the product back and mark the order returned: no refund.
+  process() {
+    if (!statusOf(this.order).returnable) {
+      throw new ReturnRefusedError(
+        `${this.order.orderId} is ${this.order.status}`,
+      );
+    }
+    this.order.status = 'returned';
+    return '';
+  }
+}
+
 // One call that gives an order's money back, and tells the shopper.
 // The return page builds it once with its parts and calls refund().
 export class Refunds {

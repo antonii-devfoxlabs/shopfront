@@ -9,7 +9,7 @@ from shopfront.orders import (
     place_order,
 )
 from shopfront.parcels import PARCELNOW, Parcel
-from shopfront.returns import Refunds, Return, ReturnRefusedError
+from shopfront.returns import Exchange, Refunds, Return, ReturnRefusedError
 from shopfront.settings import GERMAN_SHOP
 from shopfront.vendor.mailer import Mailer
 
@@ -40,6 +40,13 @@ def test_a_return_refunds_the_way_the_shopper_paid(gateway):
         "amount": 3_168,
         "detail": None,
     }
+    assert order.status == "returned"
+
+
+def test_an_exchange_gives_no_money_back(gateway):
+    order = a_card_order()
+    Exchange(order, gateway).process()
+    assert gateway.refunds == []
     assert order.status == "returned"
 
 

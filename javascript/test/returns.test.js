@@ -10,7 +10,7 @@ import {
   placeOrder,
 } from '../src/orders.js';
 import { PARCELNOW, Parcel } from '../src/parcels.js';
-import { Refunds, Return } from '../src/returns.js';
+import { Exchange, Refunds, Return } from '../src/returns.js';
 import { GERMAN_SHOP } from '../src/settings.js';
 import { Mailer } from '../src/vendor/mailer.js';
 import { PaymentGateway } from '../src/vendor/paymentGateway.js';
@@ -46,6 +46,14 @@ test('a return refunds the way the shopper paid', () => {
     amount: 3_168,
     detail: null,
   });
+  assert.equal(order.status, 'returned');
+});
+
+test('an exchange gives no money back', () => {
+  const gateway = aGateway();
+  const order = aCardOrder();
+  new Exchange(order, gateway).process();
+  assert.deepEqual(gateway.refunds, []);
   assert.equal(order.status, 'returned');
 });
 
