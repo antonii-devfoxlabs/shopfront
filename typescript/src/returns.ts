@@ -64,27 +64,6 @@ export class GoodwillRefusedError extends Error {
   override name = 'GoodwillRefusedError';
 }
 
-// A reason to refuse a goodwill credit: check throws, or passes.
-export interface GoodwillCheck {
-  check(order: Order): void;
-}
-
-export class HasLeft implements GoodwillCheck {
-  check(order: Order): void {
-    if (order.parcel === null) {
-      throw new GoodwillRefusedError(`${order.orderId} is ${order.status}`);
-    }
-  }
-}
-
-export class StillASale implements GoodwillCheck {
-  check(order: Order): void {
-    if (!statusOf(order).sale) {
-      throw new GoodwillRefusedError(`${order.orderId} is ${order.status}`);
-    }
-  }
-}
-
 // The part of an order's total the support team gives back, in percent,
 // by what went wrong with the parcel.
 export const GOODWILL_PERCENT: ReadonlyMap<string, number> = new Map([
@@ -93,17 +72,11 @@ export const GOODWILL_PERCENT: ReadonlyMap<string, number> = new Map([
   ['lost', 100],
 ]);
 
-// The checks every goodwill credit must pass, in this order.
-export const GOODWILL_CHECKS: GoodwillCheck[] = [
-  new HasLeft(),
-  new StillASale(),
-];
-
 // What the store gives back for a parcel that went wrong: only for an
 // order that has left, and is still a sale.
 export function goodwillCents(order: Order, reason: string): number {
-  for (const goodwillCheck of GOODWILL_CHECKS) {
-    goodwillCheck.check(order);
+  if (order.parcel === null || !statusOf(order).sale) {
+    throw new GoodwillRefusedError(`${order.orderId} is ${order.status}`);
   }
   const percent = GOODWILL_PERCENT.get(reason);
   if (percent === undefined) {

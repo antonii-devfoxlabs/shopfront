@@ -1,7 +1,6 @@
 """Orders sent back, and the money that goes back with them."""
 
 from dataclasses import dataclass
-from typing import Protocol
 
 from shopfront.money import format_money
 from shopfront.orders import Order, OrderBook, OrderEvents, status_of
@@ -52,37 +51,16 @@ class GoodwillRefusedError(Exception):
     pass
 
 
-class GoodwillCheck(Protocol):
-    """A reason to refuse a goodwill credit: check raises, or passes."""
-
-    def check(self, order: Order) -> None: ...
-
-
-class HasLeft:
-    def check(self, order: Order) -> None:
-        if order.parcel is None:
-            raise GoodwillRefusedError(f"{order.order_id} is {order.status}")
-
-
-class StillASale:
-    def check(self, order: Order) -> None:
-        if not status_of(order).sale:
-            raise GoodwillRefusedError(f"{order.order_id} is {order.status}")
-
-
 # The part of an order's total the support team gives back, in percent,
 # by what went wrong with the parcel.
 GOODWILL_PERCENT = {"late": 10, "damaged": 50, "lost": 100}
-
-# The checks every goodwill credit must pass, in this order.
-GOODWILL_CHECKS: list[GoodwillCheck] = [HasLeft(), StillASale()]
 
 
 def goodwill_cents(order: Order, reason: str) -> int:
     """What the store gives back for a parcel that went wrong: only for
     an order that has left, and is still a sale."""
-    for goodwill_check in GOODWILL_CHECKS:
-        goodwill_check.check(order)
+    if order.parcel is None or not status_of(order).sale:
+        raise GoodwillRefusedError(f"{order.order_id} is {order.status}")
     percent = GOODWILL_PERCENT.get(reason)
     if percent is None:
         raise GoodwillRefusedError(f"no goodwill for {reason}")
