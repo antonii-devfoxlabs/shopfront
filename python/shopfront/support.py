@@ -9,6 +9,5 @@ def where_is(order_id: str) -> str:
     if order.parcel is None:
         return f"{order.order_id} is {order.status}"
     return (
-        f"{order.order_id} is {order.status}: "
-        f"{order.parcel.courier.tracking_page}{order.parcel.number}"
+        f"{order.order_id} is {order.status}: {order.parcel.tracking_link()}"
     )

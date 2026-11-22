@@ -76,8 +76,7 @@ def email_parcel_sent(mailer: Mailer, shop: Settings) -> OrderListener:
             subject=f"{shop.store_name}: {order.order_id} is on its way",
             body=(
                 f"Hi {order.customer_name}, your parcel is on its way. "
-                "Follow it at "
-                f"{order.parcel.courier.tracking_page}{order.parcel.number}"
+                f"Follow it at {order.parcel.tracking_link()}"
             ),
         )
 

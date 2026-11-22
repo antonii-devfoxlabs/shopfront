@@ -19,6 +19,11 @@ export class Parcel {
     this.number = number;
     Object.freeze(this);
   }
+
+  // Where anyone can follow the parcel: the courier's page for it.
+  trackingLink() {
+    return `${this.courier.trackingPage}${this.number}`;
+  }
 }
 
 /** @type {Courier} */

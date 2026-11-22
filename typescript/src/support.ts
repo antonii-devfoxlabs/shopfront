@@ -9,7 +9,6 @@ export function whereIs(orderId: string): string {
     return `${order.orderId} is ${order.status}`;
   }
   return (
-    `${order.orderId} is ${order.status}: ` +
-    `${order.parcel.courier.trackingPage}${order.parcel.number}`
+    `${order.orderId} is ${order.status}: ` + order.parcel.trackingLink()
   );
 }

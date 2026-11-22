@@ -85,8 +85,7 @@ export function emailParcelSent(mailer, shop) {
       subject: `${shop.storeName}: ${order.orderId} is on its way`,
       body:
         `Hi ${order.customerName}, your parcel is on its way. ` +
-        'Follow it at ' +
-        `${order.parcel.courier.trackingPage}${order.parcel.number}`,
+        `Follow it at ${order.parcel.trackingLink()}`,
     });
   };
 }

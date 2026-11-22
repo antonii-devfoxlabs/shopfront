@@ -20,6 +20,10 @@ class Parcel:
     # The courier's own number for the parcel.
     number: str
 
+    def tracking_link(self) -> str:
+        """Where anyone can follow the parcel: the courier's page for it."""
+        return f"{self.courier.tracking_page}{self.number}"
+
 
 PARCELNOW = Courier(
     name="ParcelNow", tracking_page="https://parcelnow.example/track/"
