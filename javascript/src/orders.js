@@ -267,7 +267,7 @@ export class OrderBook {
   }
 }
 
-// For tests only: no orders, and numbers from SF-00001 again.
+// For tests only: order numbers from SF-00001 again.
 export function reset() {
   lastOrderNumber = 0;
 }

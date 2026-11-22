@@ -244,7 +244,7 @@ class OrderBook:
 
 
 def reset() -> None:
-    """For tests only: no orders, and numbers from SF-00001 again."""
+    """For tests only: order numbers from SF-00001 again."""
     global _last_order_number
     _last_order_number = 0
 
