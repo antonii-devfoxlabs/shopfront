@@ -3,7 +3,7 @@
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import type { Order } from './orders.ts';
+import { type Order, statusOf } from './orders.ts';
 
 const COLUMNS = ['order_id', 'email', 'country', 'payment', 'total'];
 
@@ -13,11 +13,7 @@ export type Selection = (orders: Order[]) => Order[];
 
 // The orders the accountant counts as sales, oldest first.
 export function sales(orders: Order[]): Order[] {
-  // Placed and dispatched orders are sales: a returned one gave its
-  // money back.
-  return orders
-    .filter((order) => ['placed', 'dispatched'].includes(order.status))
-    .sort(byOrderId);
+  return orders.filter((order) => statusOf(order).sale).sort(byOrderId);
 }
 
 // The orders the shoppers sent back, oldest first.

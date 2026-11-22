@@ -3,6 +3,8 @@
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { statusOf } from './orders.js';
+
 const COLUMNS = ['order_id', 'email', 'country', 'payment', 'total'];
 
 /**
@@ -15,11 +17,7 @@ const COLUMNS = ['order_id', 'email', 'country', 'payment', 'total'];
 
 // The orders the accountant counts as sales, oldest first.
 export function sales(orders) {
-  // Placed and dispatched orders are sales: a returned one gave its
-  // money back.
-  return orders
-    .filter((order) => ['placed', 'dispatched'].includes(order.status))
-    .sort(byOrderId);
+  return orders.filter((order) => statusOf(order).sale).sort(byOrderId);
 }
 
 // The orders the shoppers sent back, oldest first.

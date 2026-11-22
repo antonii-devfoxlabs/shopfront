@@ -21,6 +21,8 @@ says.
 - **Something to do when an order is placed**: a listener in
   `listeners`, subscribed to `orders.OrderEvents` in `main`.
 - **A part of an order**: a step on `orders.OrderBuilder`.
+- **A status of an order**: a row in `orders.STATUSES`, which says
+  whether it is a sale, can be sent back, or can be dispatched.
 - **A step of buying a cart**: in `checkout.Checkout`, which runs
   the steps in their order.
 - **A cart edit**: a kind in `edits`, and its case in `edits.apply`.

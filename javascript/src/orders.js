@@ -343,7 +343,7 @@ export class DispatchRefusedError extends Error {
 
 // Mark an order dispatched: its parcel has left the warehouse.
 export function dispatch(order) {
-  if (order.status !== 'placed') {
+  if (!statusOf(order).dispatchable) {
     throw new DispatchRefusedError(`${order.orderId} is ${order.status}`);
   }
   order.status = 'dispatched';
@@ -354,7 +354,7 @@ export function salesReport(orders, shop) {
   let count = 0;
   let takings = 0;
   for (const order of orders) {
-    if (!['placed', 'dispatched'].includes(order.status)) continue;
+    if (!statusOf(order).sale) continue;
     count += 1;
     takings += order.totalCents;
   }

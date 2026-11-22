@@ -334,7 +334,7 @@ class DispatchRefusedError(Exception):
 
 def dispatch(order: Order) -> None:
     """Mark an order dispatched: its parcel has left the warehouse."""
-    if order.status != "placed":
+    if not status_of(order).dispatchable:
         raise DispatchRefusedError(f"{order.order_id} is {order.status}")
     order.status = "dispatched"
 
@@ -344,7 +344,7 @@ def sales_report(orders: Iterable[Order], shop: Settings) -> str:
     count = 0
     takings = 0
     for order in orders:
-        if order.status in ("placed", "dispatched"):
+        if status_of(order).sale:
             count += 1
             takings += order.total_cents
     return f"Orders: {count}, takings: {format_money(takings, shop)}"

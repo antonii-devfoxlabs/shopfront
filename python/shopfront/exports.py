@@ -6,7 +6,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import final
 
-from shopfront.orders import Order
+from shopfront.orders import Order, status_of
 
 COLUMNS = ("order_id", "email", "country", "payment", "total")
 
@@ -17,12 +17,8 @@ Selection = Callable[[list[Order]], list[Order]]
 
 def sales(orders: list[Order]) -> list[Order]:
     """The orders the accountant counts as sales, oldest first."""
-    # Placed and dispatched orders are sales: a returned one gave its
-    # money back.
-    placed = [
-        order for order in orders if order.status in ("placed", "dispatched")
-    ]
-    return sorted(placed, key=lambda order: order.order_id)
+    sold = [order for order in orders if status_of(order).sale]
+    return sorted(sold, key=lambda order: order.order_id)
 
 
 def returns(orders: list[Order]) -> list[Order]:

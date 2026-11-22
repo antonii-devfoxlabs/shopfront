@@ -5,6 +5,7 @@ import {
   OrderBook,
   type OrderEvents,
   formatMoney,
+  statusOf,
 } from './orders.ts';
 import { refund, type Gateway, type PaymentDetails } from './payments.ts';
 import type { Settings } from './settings.ts';
@@ -36,7 +37,7 @@ export class Return {
 
   // Give the money back once, and mark the order returned.
   process(): string {
-    if (!['placed', 'dispatched'].includes(this.order.status)) {
+    if (!statusOf(this.order).returnable) {
       throw new ReturnRefusedError(
         `${this.order.orderId} is ${this.order.status}`,
       );

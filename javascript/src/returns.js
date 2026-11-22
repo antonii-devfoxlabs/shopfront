@@ -1,6 +1,6 @@
 // Orders sent back, and the money that goes back with them.
 
-import { OrderBook, REFUNDED, formatMoney } from './orders.js';
+import { OrderBook, REFUNDED, formatMoney, statusOf } from './orders.js';
 import { refund } from './payments.js';
 
 export class ReturnRefusedError extends Error {
@@ -19,7 +19,7 @@ export class Return {
 
   // Give the money back once, and mark the order returned.
   process() {
-    if (!['placed', 'dispatched'].includes(this.order.status)) {
+    if (!statusOf(this.order).returnable) {
       throw new ReturnRefusedError(
         `${this.order.orderId} is ${this.order.status}`,
       );

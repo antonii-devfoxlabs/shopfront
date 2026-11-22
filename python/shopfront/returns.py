@@ -2,7 +2,13 @@
 
 from dataclasses import dataclass
 
-from shopfront.orders import Order, OrderBook, OrderEvents, format_money
+from shopfront.orders import (
+    Order,
+    OrderBook,
+    OrderEvents,
+    format_money,
+    status_of,
+)
 from shopfront.payments import Gateway, refund
 from shopfront.settings import Settings
 from shopfront.vendor.mailer import Mailer
@@ -30,7 +36,7 @@ class Return:
 
     def process(self) -> str:
         """Give the money back once, and mark the order returned."""
-        if self.order.status not in ("placed", "dispatched"):
+        if not status_of(self.order).returnable:
             raise ReturnRefusedError(
                 f"{self.order.order_id} is {self.order.status}"
             )
