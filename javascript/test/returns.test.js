@@ -4,11 +4,12 @@ import { test } from 'node:test';
 import { starterCatalog } from '../src/catalog.js';
 import { returns, sales } from '../src/exports.js';
 import {
+  dispatch,
+  OrderBook,
   OrderBuilder,
   OrderEvents,
-  REFUNDED,
-  dispatch,
   placeOrder,
+  REFUNDED,
 } from '../src/orders.js';
 import { PARCELNOW, Parcel } from '../src/parcels.js';
 import { Exchange, Refunds, Return } from '../src/returns.js';
@@ -79,12 +80,14 @@ test('a dispatched order can be sent back', () => {
 });
 
 test('a refund gives the money back and tells the shopper', () => {
+  const book = new OrderBook();
   const gateway = aGateway();
   const order = aCardOrder();
-  placeOrder(order, starterCatalog(), new OrderEvents());
+  placeOrder(order, starterCatalog(), book, new OrderEvents());
   const mailer = new Mailer();
   const refunds = new Refunds({
     gateway,
+    book,
     mailer,
     shop: GERMAN_SHOP,
     events: new OrderEvents(),
@@ -120,11 +123,13 @@ test('a gift return refunds onto a gift card', () => {
 });
 
 test('a gift sent back to the desk is refunded onto a gift card', () => {
+  const book = new OrderBook();
   const gateway = aGateway();
   const order = aCardOrder();
-  placeOrder(order, starterCatalog(), new OrderEvents());
+  placeOrder(order, starterCatalog(), book, new OrderEvents());
   const refunds = new Refunds({
     gateway,
+    book,
     mailer: new Mailer(),
     shop: GERMAN_SHOP,
     events: new OrderEvents(),
@@ -156,14 +161,16 @@ for (const [to, details, onto] of EVERY_RETURN) {
 }
 
 test('a refund is announced once the money is back', () => {
+  const book = new OrderBook();
   const gateway = aGateway();
   const order = aCardOrder();
   const events = new OrderEvents();
-  placeOrder(order, starterCatalog(), events);
+  placeOrder(order, starterCatalog(), book, events);
   const told = [];
   events.on(REFUNDED, (refunded) => told.push(refunded.status));
   const refunds = new Refunds({
     gateway,
+    book,
     mailer: new Mailer(),
     shop: GERMAN_SHOP,
     events,

@@ -4,6 +4,7 @@ import { Cart } from './cart.ts';
 import type { Catalog } from './catalog.ts';
 import {
   type Order,
+  type OrderBook,
   OrderBuilder,
   OrderEvents,
   nextOrderId,
@@ -23,6 +24,8 @@ export type CheckoutParts = {
     paidCents: number,
   ) => number;
   catalog: Catalog;
+  // The store's one order book, where a placed order is kept.
+  book: OrderBook;
   gateway: Gateway;
   // Who hears of a placed order: main subscribes them, and they may
   // leave and come back while the shop runs.
@@ -81,7 +84,7 @@ export class Checkout {
       .paidBy(paidBy)
       .transaction(transactionId)
       .build();
-    placeOrder(order, parts.catalog, parts.events);
+    placeOrder(order, parts.catalog, parts.book, parts.events);
     return order;
   }
 }

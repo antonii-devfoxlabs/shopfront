@@ -12,7 +12,12 @@ import {
 } from '../src/catalog.ts';
 import { Checkout, buyAgain } from '../src/checkout.ts';
 import { emailShopper, textWarehouse, trackOrder } from '../src/listeners.ts';
-import { OrderBuilder, OrderEvents, nextOrderId } from '../src/orders.ts';
+import {
+  nextOrderId,
+  OrderBook,
+  OrderBuilder,
+  OrderEvents,
+} from '../src/orders.ts';
 import type { Gateway } from '../src/payments.ts';
 import { packingSlip } from '../src/packing.ts';
 import { PriceCalculator, type QuoteOptions } from '../src/pricing.ts';
@@ -81,6 +86,7 @@ function checkoutFor(
       paidCents: number,
     ) => shipping.cost(cart, catalog, country, paidCents),
     catalog,
+    book: new OrderBook(),
     gateway,
     events,
   });

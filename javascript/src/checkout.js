@@ -10,7 +10,8 @@ export class Checkout {
   #parts;
 
   // The parts, by name: quote and shippingCost (the functions it calls,
-  // timed or not, as main chooses), catalog, gateway, and events: who
+  // timed or not, as main chooses), catalog, book (the store's one order
+  // book, where a placed order is kept), gateway, and events: who
   // hears of a placed order. main subscribes them, and they may leave and
   // come back while the shop runs.
   constructor(parts) {
@@ -46,7 +47,7 @@ export class Checkout {
       .paidBy(paidBy)
       .transaction(transactionId)
       .build();
-    placeOrder(order, parts.catalog, parts.events);
+    placeOrder(order, parts.catalog, parts.book, parts.events);
     return order;
   }
 }

@@ -40,8 +40,10 @@ from shopfront.vendor.tax_service import TaxService
 def main() -> None:
     # The one place that picks the shop, and hands it to every part.
     shop = GERMAN_SHOP
-    # Every part finds the order book here, by name.
-    services.register("order_book", OrderBook())
+    # The store's one order book, handed to every part that keeps or
+    # finds orders.
+    book = OrderBook()
+    services.register("order_book", book)
     # Every call to the payment gateway is timed and logged.
     gateway = TimedGateway(PaymentGateway(merchant=shop.merchant_id), print)
     # Every shipping quote is timed and logged, and so is the whole cost.
@@ -95,6 +97,7 @@ def main() -> None:
         quote=timed("price quote", calculator.quote, print),
         shipping_cost=timed("shipping cost", shipping.cost, print),
         catalog=catalog,
+        book=book,
         gateway=gateway,
         events=events,
     )

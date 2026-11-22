@@ -77,7 +77,7 @@ def test_the_return_listener_texts_what_comes_back():
     ]
 
 
-def test_a_closed_warehouse_gets_no_text_until_it_opens_again():
+def test_a_closed_warehouse_gets_no_text_until_it_opens_again(book):
     sms, catalog = Sms(), starter_catalog()
     warehouse = text_warehouse(sms, GERMAN_SHOP)
     events = OrderEvents()
@@ -85,10 +85,10 @@ def test_a_closed_warehouse_gets_no_text_until_it_opens_again():
     # The staff page may press Close, or Open, twice: no harm either way.
     events.placed.unsubscribe(warehouse)
     events.placed.unsubscribe(warehouse)
-    place_order(an_order("SF-00001"), catalog, events)
+    place_order(an_order("SF-00001"), catalog, book, events)
     events.placed.subscribe(warehouse)
     events.placed.subscribe(warehouse)
-    place_order(an_order("SF-00002"), catalog, events)
+    place_order(an_order("SF-00002"), catalog, book, events)
     assert [text["text"] for text in sms.outbox] == [
         "Pack SF-00002: 2 x MUG-01"
     ]

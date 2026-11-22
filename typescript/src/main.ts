@@ -35,8 +35,10 @@ import { TaxService } from './vendor/taxService.ts';
 
 // The one place that picks the shop, and hands it to every part.
 const shop = GERMAN_SHOP;
-// Every part finds the order book here, by name.
-services.register('order_book', new OrderBook());
+// The store's one order book, handed to every part that keeps or finds
+// orders.
+const book = new OrderBook();
+services.register('order_book', book);
 // Every call to the payment gateway is timed and logged.
 const gateway = new TimedGateway(
   new PaymentGateway({ merchant: shop.merchantId }),
@@ -108,6 +110,7 @@ const checkout = new Checkout({
     console.log,
   ),
   catalog,
+  book,
   gateway,
   events,
 });

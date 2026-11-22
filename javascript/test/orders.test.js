@@ -3,21 +3,21 @@ import { test } from 'node:test';
 
 import { OutOfStockError, starterCatalog } from '../src/catalog.js';
 import {
+  dispatch,
   DISPATCHED,
   DispatchRefusedError,
+  nextOrderId,
+  OrderBook,
   OrderBuilder,
   OrderEvents,
   PLACED,
-  UnknownOrderError,
-  UnknownStatusError,
-  dispatch,
-  nextOrderId,
   placeOrder,
   reorder,
   statusOf,
+  UnknownOrderError,
+  UnknownStatusError,
 } from '../src/orders.js';
 import { PARCELNOW, Parcel } from '../src/parcels.js';
-import * as services from '../src/services.js';
 
 function anOrder(lines = [['MUG-01', 2]], orderId = 'SF-00007') {
   return new OrderBuilder(orderId)
@@ -115,11 +115,13 @@ test('order ids count up', () => {
 });
 
 test('placing an order takes stock and tells every listener in turn', () => {
+  const book = new OrderBook();
   const catalog = starterCatalog();
   const told = [];
   placeOrder(
     anOrder(),
     catalog,
+    book,
     eventsOf(
       (order) => told.push(`first ${order.orderId}`),
       (order) => told.push(`second ${order.orderId}`),
@@ -130,57 +132,58 @@ test('placing an order takes stock and tells every listener in turn', () => {
 });
 
 test('a listener is told once the order is in the book', () => {
+  const book = new OrderBook();
   const order = anOrder();
   const found = [];
   placeOrder(
     order,
     starterCatalog(),
-    eventsOf((placed) =>
-      found.push(services.get('order_book').find(placed.orderId)),
-    ),
+    book,
+    eventsOf((placed) => found.push(book.find(placed.orderId))),
   );
   assert.deepEqual(found, [order]);
 });
 
 test('a placed order is in the order book', () => {
+  const book = new OrderBook();
   const order = anOrder();
-  placeOrder(order, starterCatalog(), new OrderEvents());
-  assert.equal(services.get('order_book').find('SF-00007'), order);
+  placeOrder(order, starterCatalog(), book, new OrderEvents());
+  assert.equal(book.find('SF-00007'), order);
 });
 
 test('the book lists its orders in the order placed', () => {
+  const book = new OrderBook();
   const first = anOrder(undefined, 'SF-00001');
   const second = anOrder(undefined, 'SF-00002');
   const catalog = starterCatalog();
   for (const order of [first, second]) {
-    placeOrder(order, catalog, new OrderEvents());
+    placeOrder(order, catalog, book, new OrderEvents());
   }
-  assert.deepEqual(services.get('order_book').orders(), [first, second]);
+  assert.deepEqual(book.orders(), [first, second]);
 });
 
 test('the staff page shows the newest orders first', () => {
+  const book = new OrderBook();
   const first = anOrder(undefined, 'SF-00001');
   const second = anOrder(undefined, 'SF-00002');
   const third = anOrder(undefined, 'SF-00003');
   const catalog = starterCatalog();
   for (const order of [first, second, third]) {
-    placeOrder(order, catalog, new OrderEvents());
+    placeOrder(order, catalog, book, new OrderEvents());
   }
-  const book = services.get('order_book');
   assert.deepEqual(book.cursor().take(2).toArray(), [third, second]);
   assert.deepEqual(book.cursor().drop(2).take(2).toArray(), [first]);
   assert.deepEqual(book.cursor().drop(4).take(2).toArray(), []);
 });
 
 test('an unknown order number is refused', () => {
-  assert.throws(
-    () => services.get('order_book').find('SF-99999'),
-    UnknownOrderError,
-  );
+  const book = new OrderBook();
+  assert.throws(() => book.find('SF-99999'), UnknownOrderError);
 });
 
 test('every test starts with an empty order book', () => {
-  assert.throws(() => services.get('order_book').find('SF-00007'), {
+  const book = new OrderBook();
+  assert.throws(() => book.find('SF-00007'), {
     message: 'SF-00007',
   });
 });
@@ -190,6 +193,7 @@ test('every test starts with order number one', () => {
 });
 
 test('an order with a short line takes nothing and tells nobody', () => {
+  const book = new OrderBook();
   const catalog = starterCatalog();
   const told = [];
   const order = anOrder([
@@ -201,6 +205,7 @@ test('an order with a short line takes nothing and tells nobody', () => {
       placeOrder(
         order,
         catalog,
+        book,
         eventsOf((placed) => told.push(placed)),
       ),
     OutOfStockError,

@@ -3,7 +3,6 @@
 import { formatMoney } from './money.js';
 import { REFUNDED, statusOf } from './orders.js';
 import { refund } from './payments.js';
-import * as services from './services.js';
 
 export class ReturnRefusedError extends Error {
   name = 'ReturnRefusedError';
@@ -60,8 +59,9 @@ export class Exchange {
 export class Refunds {
   #parts;
 
-  // The parts, by name: gateway, mailer, shop, and events: who hears of a
-  // refund. main subscribes them.
+  // The parts, by name: gateway, mailer, shop, book (the store's one order
+  // book, where the order is found), and events: who hears of a refund.
+  // main subscribes them.
   constructor(parts) {
     this.#parts = parts;
   }
@@ -69,8 +69,8 @@ export class Refunds {
   // Give an order's money back, tell the shopper, then announce it.
   // to, if given: the way to pay the money goes back to, as Return takes it.
   refund(orderId, details, to) {
-    const { gateway, mailer, shop, events } = this.#parts;
-    const order = services.get('order_book').find(orderId);
+    const { gateway, mailer, shop, book, events } = this.#parts;
+    const order = book.find(orderId);
     const refundId = new Return(order, details, gateway, to).process();
     mailer.send({
       from: shop.storeEmail,

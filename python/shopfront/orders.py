@@ -4,7 +4,6 @@ from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
 
-from shopfront import services
 from shopfront.catalog import Catalog
 from shopfront.parcels import Parcel
 
@@ -210,7 +209,8 @@ class UnknownOrderError(Exception):
 class OrderBook:
     """Every order the store has placed, found by its number.
 
-    main registers the store's book in services, as "order_book".
+    main makes the store's one book and hands it to every part that
+    keeps or finds orders.
     """
 
     def __init__(self) -> None:
@@ -304,10 +304,12 @@ class OrderEvents:
         self.dispatched = Listeners()
 
 
-def place_order(order: Order, catalog: Catalog, events: OrderEvents) -> None:
-    """Take the stock and keep the order, then announce it."""
+def place_order(
+    order: Order, catalog: Catalog, book: OrderBook, events: OrderEvents
+) -> None:
+    """Take the stock and keep the order in the book, then announce it."""
     catalog.take_all_from_stock(order.lines)
-    services.get("order_book").add(order)
+    book.add(order)
     # The order is placed: now tell everyone subscribed at this moment.
     events.placed.notify(order)
 

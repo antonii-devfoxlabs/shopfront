@@ -8,6 +8,7 @@ from shopfront.cart import Cart
 from shopfront.catalog import Catalog
 from shopfront.orders import (
     Order,
+    OrderBook,
     OrderBuilder,
     OrderEvents,
     next_order_id,
@@ -27,6 +28,8 @@ class Checkout:
     quote: Callable[..., PriceQuote]
     shipping_cost: Callable[..., int]
     catalog: Catalog
+    # The store's one order book, where a placed order is kept.
+    book: OrderBook
     gateway: Gateway
     # Who hears of a placed order: main subscribes them, and they may
     # leave and come back while the shop runs.
@@ -70,7 +73,7 @@ class Checkout:
             .transaction(transaction_id)
             .build()
         )
-        place_order(order, self.catalog, self.events)
+        place_order(order, self.catalog, self.book, self.events)
         return order
 
 

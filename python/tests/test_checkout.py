@@ -11,6 +11,7 @@ from shopfront.catalog import Catalog, OutOfStockError, starter_catalog
 from shopfront.checkout import Checkout, buy_again
 from shopfront.listeners import email_shopper, text_warehouse, track_order
 from shopfront.orders import (
+    OrderBook,
     OrderBuilder,
     OrderEvents,
     next_order_id,
@@ -68,6 +69,7 @@ def checkout_for(
         quote=PriceCalculator(catalog, TaxService(), shop).quote,
         shipping_cost=shipping_for(shop).cost,
         catalog=catalog,
+        book=OrderBook(),
         gateway=gateway,
         events=events,
     )

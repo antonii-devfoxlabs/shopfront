@@ -2,8 +2,6 @@
 
 import { EventEmitter } from 'node:events';
 
-import * as services from './services.js';
-
 let lastOrderNumber = 0;
 
 export function nextOrderId() {
@@ -232,8 +230,8 @@ export class UnknownOrderError extends Error {
   name = 'UnknownOrderError';
 }
 
-// Every order the store has placed, found by its number. main registers
-// the store's book in services, as 'order_book'.
+// Every order the store has placed, found by its number. main makes the
+// store's one book and hands it to every part that keeps or finds orders.
 export class OrderBook {
   #orders = [];
   #byId = new Map();
@@ -316,14 +314,15 @@ export class OrderEvents extends EventEmitter {
 }
 
 /**
- * Take the stock and keep the order, then announce it.
+ * Take the stock and keep the order in the book, then announce it.
  * @param {Order} order
  * @param {import('./catalog.js').Catalog} catalog
+ * @param {OrderBook} book
  * @param {OrderEvents} events
  */
-export function placeOrder(order, catalog, events) {
+export function placeOrder(order, catalog, book, events) {
   catalog.takeAllFromStock(order.lines);
-  services.get('order_book').add(order);
+  book.add(order);
   // The order is placed: now tell everyone subscribed at this moment.
   events.emit(PLACED, order);
 }

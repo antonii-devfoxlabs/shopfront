@@ -1,4 +1,3 @@
-from shopfront import services
 from shopfront.catalog import starter_catalog
 from shopfront.orders import (
     Order,
@@ -54,19 +53,19 @@ def test_the_sales_report_counts_dispatched_orders():
     assert report == "Orders: 2, takings: 63.36 EUR, average: 31.68 EUR"
 
 
-def test_the_sales_report_walks_the_order_book_itself():
+def test_the_sales_report_walks_the_order_book_itself(book):
     catalog = starter_catalog()
     for order_id in ("SF-00001", "SF-00002"):
-        place_order(an_order(order_id=order_id), catalog, OrderEvents())
-    report = sales_report(services.get("order_book"), GERMAN_SHOP)
+        place_order(an_order(order_id=order_id), catalog, book, OrderEvents())
+    report = sales_report(book, GERMAN_SHOP)
     assert report == "Orders: 2, takings: 63.36 EUR, average: 31.68 EUR"
 
 
-def test_the_sales_report_walks_a_cursor_once():
+def test_the_sales_report_walks_a_cursor_once(book):
     catalog = starter_catalog()
     for order_id in ("SF-00001", "SF-00002"):
-        place_order(an_order(order_id=order_id), catalog, OrderEvents())
-    report = sales_report(services.get("order_book").cursor(), GERMAN_SHOP)
+        place_order(an_order(order_id=order_id), catalog, book, OrderEvents())
+    report = sales_report(book.cursor(), GERMAN_SHOP)
     assert report == "Orders: 2, takings: 63.36 EUR, average: 31.68 EUR"
 
 

@@ -4,7 +4,6 @@ import { EventEmitter } from 'node:events';
 
 import type { Catalog } from './catalog.ts';
 import type { Parcel } from './parcels.ts';
-import * as services from './services.ts';
 
 export type OrderStatus =
   | 'placed'
@@ -236,8 +235,8 @@ export class UnknownOrderError extends Error {
   override name = 'UnknownOrderError';
 }
 
-// Every order the store has placed, found by its number. main registers
-// the store's book in services, as 'order_book'.
+// Every order the store has placed, found by its number. main makes the
+// store's one book and hands it to every part that keeps or finds orders.
 export class OrderBook {
   readonly #orders: Order[] = [];
   readonly #byId: Map<string, Order> = new Map();
@@ -308,14 +307,15 @@ export class OrderEvents extends EventEmitter<OrderEventMap> {
   }
 }
 
-// Take the stock and keep the order, then announce it.
+// Take the stock and keep the order in the book, then announce it.
 export function placeOrder(
   order: Order,
   catalog: Catalog,
+  book: OrderBook,
   events: OrderEvents,
 ): void {
   catalog.takeAllFromStock(order.lines);
-  services.get<OrderBook>('order_book').add(order);
+  book.add(order);
   // The order is placed: now tell everyone subscribed at this moment.
   events.emit('placed', order);
 }

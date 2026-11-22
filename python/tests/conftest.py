@@ -15,6 +15,12 @@ def fresh_store():
 
 
 @pytest.fixture
+def book() -> OrderBook:
+    """A new, empty order book, for one test."""
+    return OrderBook()
+
+
+@pytest.fixture
 def gateway() -> PaymentGateway:
     """A new payment gateway of the German shop, for one test."""
     return PaymentGateway(merchant=GERMAN_SHOP.merchant_id)

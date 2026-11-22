@@ -68,12 +68,16 @@ def test_a_dispatched_order_can_be_sent_back(gateway):
     assert order.status == "returned"
 
 
-def test_a_refund_gives_the_money_back_and_tells_the_shopper(gateway):
+def test_a_refund_gives_the_money_back_and_tells_the_shopper(gateway, book):
     order = a_card_order()
-    place_order(order, starter_catalog(), OrderEvents())
+    place_order(order, starter_catalog(), book, OrderEvents())
     mailer = Mailer()
     refunds = Refunds(
-        gateway=gateway, mailer=mailer, shop=GERMAN_SHOP, events=OrderEvents()
+        gateway=gateway,
+        mailer=mailer,
+        shop=GERMAN_SHOP,
+        events=OrderEvents(),
+        book=book,
     )
 
     refund_id = refunds.refund("SF-00007", {"card_token": "tok-4242"})
@@ -104,13 +108,16 @@ def test_a_gift_return_refunds_onto_a_gift_card(gateway):
     assert order.status == "returned"
 
 
-def test_a_gift_sent_back_to_the_desk_is_refunded_onto_a_gift_card(gateway):
+def test_a_gift_sent_back_to_the_desk_is_refunded_onto_a_gift_card(
+    gateway, book
+):
     order = a_card_order()
-    place_order(order, starter_catalog(), OrderEvents())
+    place_order(order, starter_catalog(), book, OrderEvents())
     refunds = Refunds(
         gateway=gateway,
         mailer=Mailer(),
         shop=GERMAN_SHOP,
+        book=book,
         events=OrderEvents(),
     )
 
@@ -136,14 +143,18 @@ def test_an_order_is_returned_once(to, details, gateway):
     assert len(gateway.refunds) == refunds_before
 
 
-def test_a_refund_is_announced_once_the_money_is_back(gateway):
+def test_a_refund_is_announced_once_the_money_is_back(gateway, book):
     order = a_card_order()
     events = OrderEvents()
-    place_order(order, starter_catalog(), events)
+    place_order(order, starter_catalog(), book, events)
     told: list[str] = []
     events.refunded.subscribe(lambda refunded: told.append(refunded.status))
     refunds = Refunds(
-        gateway=gateway, mailer=Mailer(), shop=GERMAN_SHOP, events=events
+        gateway=gateway,
+        mailer=Mailer(),
+        shop=GERMAN_SHOP,
+        events=events,
+        book=book,
     )
 
     refunds.refund("SF-00007", {"card_token": "tok-4242"})

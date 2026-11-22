@@ -2,7 +2,6 @@ from itertools import islice
 
 import pytest
 
-from shopfront import services
 from shopfront.catalog import OutOfStockError, starter_catalog
 from shopfront.orders import (
     DispatchRefusedError,
@@ -118,11 +117,12 @@ def test_order_ids_count_up():
     assert int(second[3:]) == int(first[3:]) + 1
 
 
-def test_placing_an_order_takes_stock_and_tells_every_listener_in_turn():
+def test_placing_an_order_takes_stock_and_tells_every_listener_in_turn(book):
     catalog, told = starter_catalog(), []
     place_order(
         an_order(),
         catalog,
+        book,
         events_of(
             lambda order: told.append(f"first {order.order_id}"),
             lambda order: told.append(f"second {order.order_id}"),
@@ -132,68 +132,65 @@ def test_placing_an_order_takes_stock_and_tells_every_listener_in_turn():
     assert told == ["first SF-00007", "second SF-00007"]
 
 
-def test_a_listener_is_told_once_the_order_is_in_the_book():
+def test_a_listener_is_told_once_the_order_is_in_the_book(book):
     order, found = an_order(), []
     place_order(
         order,
         starter_catalog(),
-        events_of(
-            lambda placed: found.append(
-                services.get("order_book").find(placed.order_id)
-            )
-        ),
+        book,
+        events_of(lambda placed: found.append(book.find(placed.order_id))),
     )
     assert found == [order]
 
 
-def test_a_placed_order_is_in_the_order_book():
+def test_a_placed_order_is_in_the_order_book(book):
     order = an_order()
-    place_order(order, starter_catalog(), OrderEvents())
-    assert services.get("order_book").find("SF-00007") is order
+    place_order(order, starter_catalog(), book, OrderEvents())
+    assert book.find("SF-00007") is order
 
 
-def test_the_book_lists_its_orders_in_the_order_placed():
+def test_the_book_lists_its_orders_in_the_order_placed(book):
     first = an_order(order_id="SF-00001")
     second = an_order(order_id="SF-00002")
     catalog = starter_catalog()
     for order in (first, second):
-        place_order(order, catalog, OrderEvents())
-    assert services.get("order_book").orders() == [first, second]
+        place_order(order, catalog, book, OrderEvents())
+    assert book.orders() == [first, second]
 
 
-def test_the_staff_page_shows_the_newest_orders_first():
+def test_the_staff_page_shows_the_newest_orders_first(book):
     first = an_order(order_id="SF-00001")
     second = an_order(order_id="SF-00002")
     third = an_order(order_id="SF-00003")
     catalog = starter_catalog()
     for order in (first, second, third):
-        place_order(order, catalog, OrderEvents())
-    cursor = services.get("order_book").cursor()
+        place_order(order, catalog, book, OrderEvents())
+    cursor = book.cursor()
     assert list(islice(cursor, 2)) == [third, second]
     assert list(islice(cursor, 2)) == [first]
     assert list(islice(cursor, 2)) == []
 
 
-def test_an_unknown_order_number_is_refused():
+def test_an_unknown_order_number_is_refused(book):
     with pytest.raises(UnknownOrderError, match="SF-99999"):
-        services.get("order_book").find("SF-99999")
+        book.find("SF-99999")
 
 
-def test_every_test_starts_with_an_empty_order_book():
+def test_every_test_starts_with_an_empty_order_book(book):
     with pytest.raises(UnknownOrderError, match="SF-00007"):
-        services.get("order_book").find("SF-00007")
+        book.find("SF-00007")
 
 
 def test_every_test_starts_with_order_number_one():
     assert next_order_id() == "SF-00001"
 
 
-def test_an_order_with_a_short_line_takes_nothing_and_tells_nobody():
+def test_an_order_with_a_short_line_takes_nothing_and_tells_nobody(book):
     catalog = starter_catalog()
     told: list[Order] = []
     order = an_order({"MUG-01": 2, "KTL-03": 9})
     with pytest.raises(OutOfStockError):
-        place_order(order, catalog, events_of(told.append))
+        place_order(order, catalog, book, events_of(told.append))
     assert catalog.find("MUG-01").stock == 40
     assert told == []
 

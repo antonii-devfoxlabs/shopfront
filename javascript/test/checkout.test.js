@@ -9,10 +9,11 @@ import { OutOfStockError, starterCatalog } from '../src/catalog.js';
 import { Checkout, buyAgain } from '../src/checkout.js';
 import { emailShopper, textWarehouse, trackOrder } from '../src/listeners.js';
 import {
+  nextOrderId,
+  OrderBook,
   OrderBuilder,
   OrderEvents,
   PLACED,
-  nextOrderId,
 } from '../src/orders.js';
 import { packingSlip } from '../src/packing.js';
 import { PriceCalculator } from '../src/pricing.js';
@@ -72,6 +73,7 @@ function checkoutFor(shop, catalog, gateway, mailer) {
     shippingCost: (cart, catalog, country, paidCents) =>
       shipping.cost(cart, catalog, country, paidCents),
     catalog,
+    book: new OrderBook(),
     gateway,
     events,
   });

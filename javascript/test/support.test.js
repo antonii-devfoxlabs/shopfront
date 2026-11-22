@@ -10,10 +10,9 @@ import {
   placeOrder,
 } from '../src/orders.js';
 import { Parcel, SWIFTSHIP } from '../src/parcels.js';
-import * as services from '../src/services.js';
 import { whereIs } from '../src/support.js';
 
-function aPlacedOrder() {
+function aPlacedOrder(book) {
   const order = new OrderBuilder('SF-00001')
     .email('ada@example.com')
     .name('Ada')
@@ -26,32 +25,35 @@ function aPlacedOrder() {
     .paidBy('card')
     .transaction('txn-0001')
     .build();
-  placeOrder(order, starterCatalog(), new OrderEvents());
+  placeOrder(order, starterCatalog(), book, new OrderEvents());
   return order;
 }
 
 test('where is a placed order', () => {
-  aPlacedOrder();
-  assert.equal(whereIs('SF-00001'), 'SF-00001 is placed');
+  const book = new OrderBook();
+  aPlacedOrder(book);
+  assert.equal(whereIs('SF-00001', book), 'SF-00001 is placed');
 });
 
 test('where is a dispatched order links its parcel', () => {
-  const order = aPlacedOrder();
+  const book = new OrderBook();
+  const order = aPlacedOrder(book);
   dispatch(
     order,
     new Parcel({ courier: SWIFTSHIP, number: 'SW-0072' }),
     new OrderEvents(),
   );
   assert.equal(
-    whereIs('SF-00001'),
+    whereIs('SF-00001', book),
     'SF-00001 is dispatched: https://swiftship.example/t/SW-0072',
   );
 });
 
-test('the support page finds an order in a book of its own', () => {
+test('the support page reads the book it is handed', () => {
   const book = new OrderBook();
-  services.register('order_book', book);
-  const order = aPlacedOrder();
-  assert.equal(book.find('SF-00001'), order);
-  assert.equal(whereIs('SF-00001'), 'SF-00001 is placed');
+  aPlacedOrder(book);
+  assert.throws(() => whereIs('SF-00001', new OrderBook()), {
+    name: 'UnknownOrderError',
+    message: 'SF-00001',
+  });
 });

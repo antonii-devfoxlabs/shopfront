@@ -10,11 +10,12 @@ import {
   trackOrder,
 } from '../src/listeners.js';
 import {
+  dispatch,
   DISPATCHED,
+  OrderBook,
   OrderBuilder,
   OrderEvents,
   PLACED,
-  dispatch,
   placeOrder,
 } from '../src/orders.js';
 import { PARCELNOW, Parcel } from '../src/parcels.js';
@@ -81,6 +82,7 @@ test('the return listener texts what comes back', () => {
 });
 
 test('a closed warehouse gets no text until it opens again', () => {
+  const book = new OrderBook();
   const sms = new Sms();
   const catalog = starterCatalog();
   const warehouse = textWarehouse(sms, GERMAN_SHOP);
@@ -91,10 +93,10 @@ test('a closed warehouse gets no text until it opens again', () => {
   // every time, so Open takes the warehouse off first.
   events.off(PLACED, warehouse);
   events.off(PLACED, warehouse);
-  placeOrder(anOrder('SF-00001'), catalog, events);
+  placeOrder(anOrder('SF-00001'), catalog, book, events);
   events.off(PLACED, warehouse).on(PLACED, warehouse);
   events.off(PLACED, warehouse).on(PLACED, warehouse);
-  placeOrder(anOrder('SF-00002'), catalog, events);
+  placeOrder(anOrder('SF-00002'), catalog, book, events);
   assert.deepEqual(
     sms.outbox.map((text) => text.text),
     ['Pack SF-00002: 2 x MUG-01'],
