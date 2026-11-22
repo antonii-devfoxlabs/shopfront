@@ -1,6 +1,7 @@
 """The office's live sales board: every order as it comes in."""
 
-from shopfront.orders import Order, OrderEvents, format_money
+from shopfront.money import format_money
+from shopfront.orders import Order, OrderEvents
 from shopfront.settings import Settings
 
 

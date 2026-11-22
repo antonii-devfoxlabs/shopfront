@@ -15,7 +15,8 @@ from shopfront.listeners import (
     text_warehouse,
     track_order,
 )
-from shopfront.orders import OrderEvents, format_money
+from shopfront.money import format_money
+from shopfront.orders import OrderEvents
 from shopfront.pricing import PriceCalculator
 from shopfront.providers import (
     boxroute_quote,

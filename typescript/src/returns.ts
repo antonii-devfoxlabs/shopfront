@@ -1,10 +1,10 @@
 // Orders sent back, and the money that goes back with them.
 
+import { formatMoney } from './money.ts';
 import {
   type Order,
   OrderBook,
   type OrderEvents,
-  formatMoney,
   statusOf,
 } from './orders.ts';
 import { refund, type Gateway, type PaymentDetails } from './payments.ts';

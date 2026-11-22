@@ -11,13 +11,8 @@ import {
   textWarehouse,
   trackOrder,
 } from './listeners.js';
-import {
-  DISPATCHED,
-  OrderEvents,
-  PLACED,
-  REFUNDED,
-  formatMoney,
-} from './orders.js';
+import { formatMoney } from './money.js';
+import { DISPATCHED, OrderEvents, PLACED, REFUNDED } from './orders.js';
 import { PriceCalculator } from './pricing.js';
 import {
   boxRouteQuote,

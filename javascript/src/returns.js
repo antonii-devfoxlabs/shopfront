@@ -1,6 +1,7 @@
 // Orders sent back, and the money that goes back with them.
 
-import { OrderBook, REFUNDED, formatMoney, statusOf } from './orders.js';
+import { formatMoney } from './money.js';
+import { OrderBook, REFUNDED, statusOf } from './orders.js';
 import { refund } from './payments.js';
 
 export class ReturnRefusedError extends Error {

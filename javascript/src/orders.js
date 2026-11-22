@@ -2,6 +2,8 @@
 
 import { EventEmitter } from 'node:events';
 
+import { formatMoney } from './money.js';
+
 let lastOrderNumber = 0;
 
 export function nextOrderId() {
@@ -393,12 +395,4 @@ export function salesReport(orders, shop) {
     `Orders: ${count}, takings: ${formatMoney(takings, shop)}, ` +
     `average: ${formatMoney(average, shop)}`
   );
-}
-
-export function formatMoney(cents, shop) {
-  const sign = cents < 0 ? '-' : '';
-  // A comma between thousands, so the accountant reads 1,250.00 at once.
-  const euros = Math.floor(Math.abs(cents) / 100).toLocaleString('en-US');
-  const rest = String(Math.abs(cents) % 100).padStart(2, '0');
-  return `${sign}${euros}.${rest} ${shop.currency}`;
 }

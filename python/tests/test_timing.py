@@ -3,7 +3,7 @@ import re
 
 import pytest
 
-from shopfront.orders import format_money
+from shopfront.money import format_money
 from shopfront.providers import boxroute_quote
 from shopfront.settings import GERMAN_SHOP
 from shopfront.shipping import NoShippingError

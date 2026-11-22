@@ -1,11 +1,7 @@
 // The office's live sales board: every order as it comes in.
 
-import {
-  type Cancel,
-  type Order,
-  type OrderEvents,
-  formatMoney,
-} from './orders.ts';
+import { formatMoney } from './money.ts';
+import { type Cancel, type Order, type OrderEvents } from './orders.ts';
 import type { Settings } from './settings.ts';
 
 // One screen's rows: the orders placed since it was opened. Staff open a

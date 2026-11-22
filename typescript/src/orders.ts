@@ -3,6 +3,7 @@
 import { EventEmitter } from 'node:events';
 
 import type { Catalog } from './catalog.ts';
+import { formatMoney } from './money.ts';
 import type { Parcel } from './parcels.ts';
 import type { Settings } from './settings.ts';
 
@@ -377,12 +378,4 @@ export function salesReport(orders: Iterable<Order>, shop: Settings): string {
     `Orders: ${count}, takings: ${formatMoney(takings, shop)}, ` +
     `average: ${formatMoney(average, shop)}`
   );
-}
-
-export function formatMoney(cents: number, shop: Settings): string {
-  const sign = cents < 0 ? '-' : '';
-  // A comma between thousands, so the accountant reads 1,250.00 at once.
-  const euros = Math.floor(Math.abs(cents) / 100).toLocaleString('en-US');
-  const rest = String(Math.abs(cents) % 100).padStart(2, '0');
-  return `${sign}${euros}.${rest} ${shop.currency}`;
 }

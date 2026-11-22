@@ -2,7 +2,8 @@
 // refunded: each maker gives back a listener, a function that is told the
 // order.
 
-import { type OrderListener, formatMoney, packingSlip } from './orders.ts';
+import { formatMoney } from './money.ts';
+import { type OrderListener, packingSlip } from './orders.ts';
 import type { Settings } from './settings.ts';
 import type { Analytics } from './vendor/analytics.ts';
 import type { Mailer } from './vendor/mailer.ts';

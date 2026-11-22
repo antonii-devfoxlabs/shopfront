@@ -12,7 +12,8 @@ import {
   textWarehouse,
   trackOrder,
 } from './listeners.ts';
-import { OrderEvents, formatMoney } from './orders.ts';
+import { formatMoney } from './money.ts';
+import { OrderEvents } from './orders.ts';
 import { PriceCalculator, type QuoteOptions } from './pricing.ts';
 import {
   boxRouteQuote,

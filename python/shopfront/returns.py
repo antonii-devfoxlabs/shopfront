@@ -2,11 +2,11 @@
 
 from dataclasses import dataclass
 
+from shopfront.money import format_money
 from shopfront.orders import (
     Order,
     OrderBook,
     OrderEvents,
-    format_money,
     status_of,
 )
 from shopfront.payments import Gateway, refund

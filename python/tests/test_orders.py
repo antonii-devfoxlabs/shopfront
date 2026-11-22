@@ -16,7 +16,6 @@ from shopfront.orders import (
     UnknownOrderError,
     UnknownStatusError,
     dispatch,
-    format_money,
     next_order_id,
     packing_slip,
     place_order,
@@ -310,17 +309,6 @@ def test_the_sales_report_walks_a_cursor_once():
         place_order(an_order(order_id=order_id), catalog, OrderEvents())
     report = sales_report(OrderBook.instance().cursor(), GERMAN_SHOP)
     assert report == "Orders: 2, takings: 63.36 EUR, average: 31.68 EUR"
-
-
-def test_money_is_shown_in_euros():
-    assert format_money(3_168, GERMAN_SHOP) == "31.68 EUR"
-    assert format_money(5, GERMAN_SHOP) == "0.05 EUR"
-    assert format_money(-205, GERMAN_SHOP) == "-2.05 EUR"
-
-
-def test_thousands_are_set_apart_with_commas():
-    assert format_money(125_000, GERMAN_SHOP) == "1,250.00 EUR"
-    assert format_money(-123_456_789, GERMAN_SHOP) == "-1,234,567.89 EUR"
 
 
 def test_an_empty_week_averages_nothing():

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { formatMoney } from '../src/orders.ts';
+import { formatMoney } from '../src/money.ts';
 import { boxRouteQuote } from '../src/providers.ts';
 import { GERMAN_SHOP } from '../src/settings.ts';
 import { NoShippingError } from '../src/shipping.ts';

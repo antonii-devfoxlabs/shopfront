@@ -2,7 +2,8 @@
 // refunded: each maker gives back a listener, a function that is told the
 // order.
 
-import { formatMoney, packingSlip } from './orders.js';
+import { formatMoney } from './money.js';
+import { packingSlip } from './orders.js';
 
 /** @typedef {import('./orders.js').OrderListener} OrderListener */
 

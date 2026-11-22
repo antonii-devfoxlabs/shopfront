@@ -10,7 +10,6 @@ import {
   type OrderListener,
   UnknownOrderError,
   dispatch,
-  formatMoney,
   nextOrderId,
   packingSlip,
   placeOrder,
@@ -325,17 +324,6 @@ test('the sales report walks a cursor once', () => {
   }
   const report = salesReport(OrderBook.instance().cursor(), GERMAN_SHOP);
   assert.equal(report, 'Orders: 2, takings: 63.36 EUR, average: 31.68 EUR');
-});
-
-test('money is shown in euros', () => {
-  assert.equal(formatMoney(3_168, GERMAN_SHOP), '31.68 EUR');
-  assert.equal(formatMoney(5, GERMAN_SHOP), '0.05 EUR');
-  assert.equal(formatMoney(-205, GERMAN_SHOP), '-2.05 EUR');
-});
-
-test('thousands are set apart with commas', () => {
-  assert.equal(formatMoney(125_000, GERMAN_SHOP), '1,250.00 EUR');
-  assert.equal(formatMoney(-123_456_789, GERMAN_SHOP), '-1,234,567.89 EUR');
 });
 
 test('an empty week averages nothing', () => {

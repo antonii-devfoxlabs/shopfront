@@ -6,6 +6,7 @@ from types import MappingProxyType
 from typing import ClassVar
 
 from shopfront.catalog import Catalog
+from shopfront.money import format_money
 from shopfront.parcels import Parcel
 from shopfront.settings import Settings
 
@@ -371,10 +372,3 @@ def sales_report(orders: Iterable[Order], shop: Settings) -> str:
         f"Orders: {count}, takings: {format_money(takings, shop)}, "
         f"average: {format_money(average, shop)}"
     )
-
-
-def format_money(cents: int, shop: Settings) -> str:
-    sign = "-" if cents < 0 else ""
-    euros, rest = divmod(abs(cents), 100)
-    # A comma between thousands, so the accountant reads 1,250.00 at once.
-    return f"{sign}{euros:,}.{rest:02d} {shop.currency}"

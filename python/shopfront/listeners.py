@@ -2,7 +2,8 @@
 refunded: each maker gives back a listener, a function that is told the
 order."""
 
-from shopfront.orders import Order, OrderListener, format_money, packing_slip
+from shopfront.money import format_money
+from shopfront.orders import Order, OrderListener, packing_slip
 from shopfront.settings import Settings
 from shopfront.vendor.analytics import Analytics
 from shopfront.vendor.mailer import Mailer

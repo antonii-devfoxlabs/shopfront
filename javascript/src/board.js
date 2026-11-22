@@ -1,6 +1,7 @@
 // The office's live sales board: every order as it comes in.
 
-import { PLACED, formatMoney } from './orders.js';
+import { formatMoney } from './money.js';
+import { PLACED } from './orders.js';
 
 /**
  * One screen's rows: the orders placed since it was opened. Staff open a
