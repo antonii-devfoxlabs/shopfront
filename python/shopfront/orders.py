@@ -206,8 +206,11 @@ SAMPLE_FROM_CENTS = 4_000
 
 
 def packing_slip(order: Order) -> list[str]:
-    """What goes into the parcel, one line per product."""
-    slip = [f"{quantity} x {sku}" for sku, quantity in order.lines.items()]
+    """What goes into the parcel, one line per product, in SKU order: the
+    order the shelves are in, so the warehouse walks them once."""
+    slip = [
+        f"{quantity} x {sku}" for sku, quantity in sorted(order.lines.items())
+    ]
     if order.total_cents >= SAMPLE_FROM_CENTS:
         slip.append(f"1 x {SAMPLE}")
     return slip
@@ -355,17 +358,23 @@ def dispatch(order: Order, parcel: Parcel, events: OrderEvents) -> None:
 
 
 def sales_report(orders: Iterable[Order], shop: Settings) -> str:
-    """The owner's Monday line: the orders kept, and what they took."""
+    """The owner's Monday line: the orders kept, what they took, and the
+    average order, rounded down to the cent."""
     count = 0
     takings = 0
     for order in orders:
         if status_of(order).sale:
             count += 1
             takings += order.total_cents
-    return f"Orders: {count}, takings: {format_money(takings, shop)}"
+    average = takings // count if count else 0
+    return (
+        f"Orders: {count}, takings: {format_money(takings, shop)}, "
+        f"average: {format_money(average, shop)}"
+    )
 
 
 def format_money(cents: int, shop: Settings) -> str:
     sign = "-" if cents < 0 else ""
     euros, rest = divmod(abs(cents), 100)
-    return f"{sign}{euros}.{rest:02d} {shop.currency}"
+    # A comma between thousands, so the accountant reads 1,250.00 at once.
+    return f"{sign}{euros:,}.{rest:02d} {shop.currency}"

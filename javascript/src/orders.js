@@ -227,11 +227,12 @@ export function reorder(previous, orderId) {
 const SAMPLE = 'TEA-SAMPLE';
 const SAMPLE_FROM_CENTS = 4_000;
 
-// What goes into the parcel, one line per product.
+// What goes into the parcel, one line per product, in SKU order: the order
+// the shelves are in, so the warehouse walks them once.
 export function packingSlip(order) {
-  const slip = [...order.lines].map(
-    ([sku, quantity]) => `${quantity} x ${sku}`,
-  );
+  const slip = [...order.lines]
+    .sort(([first], [second]) => (first < second ? -1 : 1))
+    .map(([sku, quantity]) => `${quantity} x ${sku}`);
   if (order.totalCents >= SAMPLE_FROM_CENTS) {
     slip.push(`1 x ${SAMPLE}`);
   }
@@ -377,7 +378,8 @@ export function dispatch(order, parcel, events) {
   events.emit(DISPATCHED, order);
 }
 
-// The owner's Monday line: the orders kept, and what they took.
+// The owner's Monday line: the orders kept, what they took, and the
+// average order, rounded down to the cent.
 export function salesReport(orders, shop) {
   let count = 0;
   let takings = 0;
@@ -386,12 +388,17 @@ export function salesReport(orders, shop) {
     count += 1;
     takings += order.totalCents;
   }
-  return `Orders: ${count}, takings: ${formatMoney(takings, shop)}`;
+  const average = count === 0 ? 0 : Math.floor(takings / count);
+  return (
+    `Orders: ${count}, takings: ${formatMoney(takings, shop)}, ` +
+    `average: ${formatMoney(average, shop)}`
+  );
 }
 
 export function formatMoney(cents, shop) {
   const sign = cents < 0 ? '-' : '';
-  const euros = Math.floor(Math.abs(cents) / 100);
+  // A comma between thousands, so the accountant reads 1,250.00 at once.
+  const euros = Math.floor(Math.abs(cents) / 100).toLocaleString('en-US');
   const rest = String(Math.abs(cents) % 100).padStart(2, '0');
   return `${sign}${euros}.${rest} ${shop.currency}`;
 }

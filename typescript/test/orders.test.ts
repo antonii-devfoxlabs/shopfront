@@ -219,6 +219,19 @@ test('a packing slip lists every line', () => {
   assert.deepEqual(packingSlip(anOrder()), ['2 x MUG-01']);
 });
 
+test('a packing slip lists the products in SKU order', () => {
+  const order = anOrder([
+    ['TEA-02', 1],
+    ['KTL-03', 1],
+    ['MUG-01', 2],
+  ]);
+  assert.deepEqual(packingSlip(order), [
+    '1 x KTL-03',
+    '2 x MUG-01',
+    '1 x TEA-02',
+  ]);
+});
+
 test('a parcel of 40 EUR or more gets a free sample', () => {
   const order = reorder(anOrder(), 'SF-00011')
     .lines([['MUG-01', 4]])
@@ -248,7 +261,7 @@ test('the sales report counts only the orders kept', () => {
 
   const report = salesReport([kept, sentBack], GERMAN_SHOP);
 
-  assert.equal(report, 'Orders: 1, takings: 31.68 EUR');
+  assert.equal(report, 'Orders: 1, takings: 31.68 EUR, average: 31.68 EUR');
 });
 
 test('the sales report counts dispatched orders', () => {
@@ -258,7 +271,7 @@ test('the sales report counts dispatched orders', () => {
 
   const report = salesReport([placed, dispatched], GERMAN_SHOP);
 
-  assert.equal(report, 'Orders: 2, takings: 63.36 EUR');
+  assert.equal(report, 'Orders: 2, takings: 63.36 EUR, average: 31.68 EUR');
 });
 
 test('a placed order is dispatched once', () => {
@@ -302,7 +315,7 @@ test('the sales report walks the order book itself', () => {
     placeOrder(anOrder(undefined, orderId), catalog, new OrderEvents());
   }
   const report = salesReport(OrderBook.instance(), GERMAN_SHOP);
-  assert.equal(report, 'Orders: 2, takings: 63.36 EUR');
+  assert.equal(report, 'Orders: 2, takings: 63.36 EUR, average: 31.68 EUR');
 });
 
 test('the sales report walks a cursor once', () => {
@@ -311,13 +324,25 @@ test('the sales report walks a cursor once', () => {
     placeOrder(anOrder(undefined, orderId), catalog, new OrderEvents());
   }
   const report = salesReport(OrderBook.instance().cursor(), GERMAN_SHOP);
-  assert.equal(report, 'Orders: 2, takings: 63.36 EUR');
+  assert.equal(report, 'Orders: 2, takings: 63.36 EUR, average: 31.68 EUR');
 });
 
 test('money is shown in euros', () => {
   assert.equal(formatMoney(3_168, GERMAN_SHOP), '31.68 EUR');
   assert.equal(formatMoney(5, GERMAN_SHOP), '0.05 EUR');
   assert.equal(formatMoney(-205, GERMAN_SHOP), '-2.05 EUR');
+});
+
+test('thousands are set apart with commas', () => {
+  assert.equal(formatMoney(125_000, GERMAN_SHOP), '1,250.00 EUR');
+  assert.equal(formatMoney(-123_456_789, GERMAN_SHOP), '-1,234,567.89 EUR');
+});
+
+test('an empty week averages nothing', () => {
+  assert.equal(
+    salesReport([], GERMAN_SHOP),
+    'Orders: 0, takings: 0.00 EUR, average: 0.00 EUR',
+  );
 });
 
 test('cancelling takes the listener off the list', () => {

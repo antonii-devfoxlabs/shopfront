@@ -212,6 +212,11 @@ def test_a_packing_slip_lists_every_line():
     assert packing_slip(an_order()) == ["2 x MUG-01"]
 
 
+def test_a_packing_slip_lists_the_products_in_sku_order():
+    order = an_order({"TEA-02": 1, "KTL-03": 1, "MUG-01": 2})
+    assert packing_slip(order) == ["1 x KTL-03", "2 x MUG-01", "1 x TEA-02"]
+
+
 def test_a_parcel_of_40_eur_or_more_gets_a_free_sample():
     order = (
         reorder(an_order(), "SF-00011")
@@ -248,7 +253,7 @@ def test_the_sales_report_counts_only_the_orders_kept():
 
     report = sales_report([kept, sent_back], GERMAN_SHOP)
 
-    assert report == "Orders: 1, takings: 31.68 EUR"
+    assert report == "Orders: 1, takings: 31.68 EUR, average: 31.68 EUR"
 
 
 def test_the_sales_report_counts_dispatched_orders():
@@ -258,7 +263,7 @@ def test_the_sales_report_counts_dispatched_orders():
 
     report = sales_report([placed, dispatched], GERMAN_SHOP)
 
-    assert report == "Orders: 2, takings: 63.36 EUR"
+    assert report == "Orders: 2, takings: 63.36 EUR, average: 31.68 EUR"
 
 
 def test_a_placed_order_is_dispatched_once():
@@ -296,7 +301,7 @@ def test_the_sales_report_walks_the_order_book_itself():
     for order_id in ("SF-00001", "SF-00002"):
         place_order(an_order(order_id=order_id), catalog, OrderEvents())
     report = sales_report(OrderBook.instance(), GERMAN_SHOP)
-    assert report == "Orders: 2, takings: 63.36 EUR"
+    assert report == "Orders: 2, takings: 63.36 EUR, average: 31.68 EUR"
 
 
 def test_the_sales_report_walks_a_cursor_once():
@@ -304,13 +309,24 @@ def test_the_sales_report_walks_a_cursor_once():
     for order_id in ("SF-00001", "SF-00002"):
         place_order(an_order(order_id=order_id), catalog, OrderEvents())
     report = sales_report(OrderBook.instance().cursor(), GERMAN_SHOP)
-    assert report == "Orders: 2, takings: 63.36 EUR"
+    assert report == "Orders: 2, takings: 63.36 EUR, average: 31.68 EUR"
 
 
 def test_money_is_shown_in_euros():
     assert format_money(3_168, GERMAN_SHOP) == "31.68 EUR"
     assert format_money(5, GERMAN_SHOP) == "0.05 EUR"
     assert format_money(-205, GERMAN_SHOP) == "-2.05 EUR"
+
+
+def test_thousands_are_set_apart_with_commas():
+    assert format_money(125_000, GERMAN_SHOP) == "1,250.00 EUR"
+    assert format_money(-123_456_789, GERMAN_SHOP) == "-1,234,567.89 EUR"
+
+
+def test_an_empty_week_averages_nothing():
+    assert sales_report([], GERMAN_SHOP) == (
+        "Orders: 0, takings: 0.00 EUR, average: 0.00 EUR"
+    )
 
 
 def test_every_subscriber_is_told_in_the_order_they_subscribed():
