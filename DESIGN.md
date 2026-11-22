@@ -31,6 +31,10 @@ says.
   `returns.Exchange`, which gives no money back and marks the order
   exchanged. It is not a kind of `returns.Return`: the rest of the
   store reads a returned order as money paid back.
+- **A goodwill credit**, part of an order's money given back for a
+  parcel that went wrong: a row in `returns.GOODWILL_PERCENT`, given
+  by its own call on `returns.Refunds`, beside the refund. It runs
+  none of a return's steps: it marks nothing and announces nothing.
 - **A courier**: a constant beside `parcels.PARCELNOW`. A parcel
   makes its own tracking link, in `parcels.Parcel`; the rest of the
   store asks an order for its link and never builds one.
