@@ -15,7 +15,7 @@ from shopfront.orders import (
 from shopfront.parcels import SWIFTSHIP, Parcel
 from shopfront.returns import GoodwillRefusedError, Refunds
 from shopfront.settings import GERMAN_SHOP
-from shopfront.support import cancel, make_good, where_is
+from shopfront.support import cancel, goodwill_choices, make_good, where_is
 from shopfront.vendor.mailer import Mailer
 from shopfront.vendor.payment_gateway import PaymentGateway
 
@@ -111,6 +111,27 @@ def test_the_support_page_makes_good_on_a_damaged_parcel(book, gateway):
     assert mailer.outbox[-1]["body"] == (
         "Hi Ada, sorry about your parcel: we have refunded 15.84 EUR."
     )
+
+
+def test_a_lost_parcel_gives_the_whole_order_back(book, gateway):
+    order = a_placed_order(book)
+    dispatch(
+        order, Parcel(courier=SWIFTSHIP, number="SW-0072"), OrderEvents()
+    )
+    refunds = refunds_for(book, gateway, Mailer())
+
+    make_good("SF-00001", "lost", {"card_token": "tok-4242"}, refunds)
+
+    assert gateway.refunds[-1]["amount"] == 3_168
+    assert order.status == "dispatched"
+
+
+def test_the_goodwill_form_lists_every_reason():
+    assert goodwill_choices() == [
+        "late: 10 % back",
+        "damaged: 50 % back",
+        "lost: 100 % back",
+    ]
 
 
 def test_no_goodwill_for_an_order_that_has_not_left(book, gateway):

@@ -2,7 +2,7 @@
 
 import type { OrderBook } from './orders.ts';
 import type { PaymentDetails } from './payments.ts';
-import type { Refunds } from './returns.ts';
+import { GOODWILL_RULES, type Refunds } from './returns.ts';
 
 // The support page's answer to "where is my order?", from the store's
 // order book.
@@ -22,7 +22,7 @@ export function cancel(orderId: string, book: OrderBook): void {
 }
 
 // The support page gives part of the money back for a parcel that was
-// late or arrived damaged. The order stays as it is.
+// late, arrived damaged or never arrived. The order stays as it is.
 export function makeGood(
   orderId: string,
   reason: string,
@@ -30,4 +30,10 @@ export function makeGood(
   refunds: Refunds,
 ): string {
   return refunds.makeGood(orderId, reason, details);
+}
+
+// The lines the support page's goodwill form shows, one per reason the
+// support team can pick.
+export function goodwillChoices(): string[] {
+  return [...GOODWILL_RULES.values()].map((rule) => rule.label());
 }

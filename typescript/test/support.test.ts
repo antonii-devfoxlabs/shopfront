@@ -13,7 +13,12 @@ import {
 import { Parcel, SWIFTSHIP } from '../src/parcels.ts';
 import { Refunds } from '../src/returns.ts';
 import { GERMAN_SHOP } from '../src/settings.ts';
-import { cancel, makeGood, whereIs } from '../src/support.ts';
+import {
+  cancel,
+  goodwillChoices,
+  makeGood,
+  whereIs,
+} from '../src/support.ts';
 import { Mailer } from '../src/vendor/mailer.ts';
 import { PaymentGateway } from '../src/vendor/paymentGateway.ts';
 
@@ -130,6 +135,31 @@ test('the support page makes good on a damaged parcel', () => {
     mailer.outbox.at(-1)?.body,
     'Hi Ada, sorry about your parcel: we have refunded 15.84 EUR.',
   );
+});
+
+test('a lost parcel gives the whole order back', () => {
+  const book = new OrderBook();
+  const order = aPlacedOrder(book);
+  dispatch(
+    order,
+    new Parcel({ courier: SWIFTSHIP, number: 'SW-0072' }),
+    new OrderEvents(),
+  );
+  const gateway = new PaymentGateway({ merchant: GERMAN_SHOP.merchantId });
+  const refunds = refundsFor(book, gateway, new Mailer());
+
+  makeGood('SF-00001', 'lost', { cardToken: 'tok-4242' }, refunds);
+
+  assert.equal(gateway.refunds.at(-1)?.amount, 3_168);
+  assert.equal(order.status, 'dispatched');
+});
+
+test('the goodwill form lists every reason', () => {
+  assert.deepEqual(goodwillChoices(), [
+    'late: 10 % back',
+    'damaged: 50 % back',
+    'lost: 100 % back',
+  ]);
 });
 
 test('no goodwill for an order that has not left', () => {

@@ -1,7 +1,7 @@
 """What the support team's page asks Shopfront."""
 
 from shopfront.orders import OrderBook
-from shopfront.returns import Refunds
+from shopfront.returns import GOODWILL_RULES, Refunds
 
 
 def where_is(order_id: str, book: OrderBook) -> str:
@@ -24,5 +24,11 @@ def make_good(
     order_id: str, reason: str, details: dict, refunds: Refunds
 ) -> str:
     """The support page gives part of the money back for a parcel that
-    was late or arrived damaged. The order stays as it is."""
+    was late, arrived damaged or never arrived. The order stays as it is."""
     return refunds.make_good(order_id, reason, details)
+
+
+def goodwill_choices() -> list[str]:
+    """The lines the support page's goodwill form shows, one per reason
+    the support team can pick."""
+    return [rule.label() for rule in GOODWILL_RULES.values()]
