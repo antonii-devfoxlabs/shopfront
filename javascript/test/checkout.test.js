@@ -13,8 +13,8 @@ import {
   OrderEvents,
   PLACED,
   nextOrderId,
-  packingSlip,
 } from '../src/orders.js';
+import { packingSlip } from '../src/packing.js';
 import { PriceCalculator } from '../src/pricing.js';
 import {
   boxRouteQuote,

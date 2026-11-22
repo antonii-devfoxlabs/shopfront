@@ -3,7 +3,7 @@
 // order.
 
 import { formatMoney } from './money.js';
-import { packingSlip } from './orders.js';
+import { packingSlip } from './packing.js';
 
 /** @typedef {import('./orders.js').OrderListener} OrderListener */
 

@@ -14,8 +14,8 @@ from shopfront.orders import (
     OrderBuilder,
     OrderEvents,
     next_order_id,
-    packing_slip,
 )
+from shopfront.packing import packing_slip
 from shopfront.payments import Gateway
 from shopfront.pricing import PriceCalculator
 from shopfront.providers import (

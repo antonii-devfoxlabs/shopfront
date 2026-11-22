@@ -13,7 +13,6 @@ import {
   UnknownStatusError,
   dispatch,
   nextOrderId,
-  packingSlip,
   placeOrder,
   reorder,
   salesReport,
@@ -215,35 +214,6 @@ test('an order with a short line takes nothing and tells nobody', () => {
   );
   assert.equal(catalog.find('MUG-01').stock, 40);
   assert.deepEqual(told, []);
-});
-
-test('a packing slip lists every line', () => {
-  assert.deepEqual(packingSlip(anOrder()), ['2 x MUG-01']);
-});
-
-test('a packing slip lists the products in SKU order', () => {
-  const order = anOrder([
-    ['TEA-02', 1],
-    ['KTL-03', 1],
-    ['MUG-01', 2],
-  ]);
-  assert.deepEqual(packingSlip(order), [
-    '1 x KTL-03',
-    '2 x MUG-01',
-    '1 x TEA-02',
-  ]);
-});
-
-test('a parcel of 40 EUR or more gets a free sample', () => {
-  const order = reorder(anOrder(), 'SF-00011')
-    .lines([['MUG-01', 4]])
-    .subtotal(5_000)
-    .tax(950)
-    .shipping(0)
-    .paidBy('card')
-    .transaction('txn-0003')
-    .build();
-  assert.deepEqual(packingSlip(order), ['4 x MUG-01', '1 x TEA-SAMPLE']);
 });
 
 test('the status table says what dispatched means', () => {

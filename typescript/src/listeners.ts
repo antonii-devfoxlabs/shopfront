@@ -3,7 +3,8 @@
 // order.
 
 import { formatMoney } from './money.ts';
-import { type OrderListener, packingSlip } from './orders.ts';
+import type { OrderListener } from './orders.ts';
+import { packingSlip } from './packing.ts';
 import type { Settings } from './settings.ts';
 import type { Analytics } from './vendor/analytics.ts';
 import type { Mailer } from './vendor/mailer.ts';

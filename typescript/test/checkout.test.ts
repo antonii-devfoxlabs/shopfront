@@ -12,13 +12,9 @@ import {
 } from '../src/catalog.ts';
 import { Checkout, buyAgain } from '../src/checkout.ts';
 import { emailShopper, textWarehouse, trackOrder } from '../src/listeners.ts';
-import {
-  OrderBuilder,
-  OrderEvents,
-  nextOrderId,
-  packingSlip,
-} from '../src/orders.ts';
+import { OrderBuilder, OrderEvents, nextOrderId } from '../src/orders.ts';
 import type { Gateway } from '../src/payments.ts';
+import { packingSlip } from '../src/packing.ts';
 import { PriceCalculator, type QuoteOptions } from '../src/pricing.ts';
 import {
   boxRouteQuote,
