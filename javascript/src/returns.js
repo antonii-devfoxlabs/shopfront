@@ -8,33 +8,23 @@ import { goodwillCents } from './support.js';
 // An order sent back. Its money goes back to the way to pay named to:
 // the way the order was paid, unless the caller names another.
 export class Return {
-  constructor(
-    order,
-    details,
-    gateway,
-    to = order.paymentMethod,
-    cents = null,
-  ) {
+  constructor(order, details, gateway, to = order.paymentMethod) {
     this.order = order;
     this.details = details;
     this.gateway = gateway;
     this.to = to;
-    // A goodwill credit gives back only part of the money, and the order
-    // is not sent back.
-    this.cents = cents;
   }
 
   // Give the money back once, and mark the order returned.
   process() {
-    let cents = this.cents;
-    if (this.cents === null) {
-      this.order.checkReturnable();
-      cents = this.order.totalCents;
-    }
-    const refundId = refund(this.to, cents, this.details, this.gateway);
-    if (this.cents === null) {
-      this.order.markReturned();
-    }
+    this.order.checkReturnable();
+    const refundId = refund(
+      this.to,
+      this.order.totalCents,
+      this.details,
+      this.gateway,
+    );
+    this.order.markReturned();
     return refundId;
   }
 }
@@ -52,8 +42,9 @@ export class Exchange {
   }
 }
 
-// One call that gives an order's money back, and tells the shopper.
-// The return page builds it once with its parts and calls refund().
+// The calls that give an order's money back, and tell the shopper.
+// The return page builds it once with its parts and calls refund(); the
+// support page calls makeGood().
 export class Refunds {
   #parts;
 
@@ -66,33 +57,38 @@ export class Refunds {
 
   // Give an order's money back, tell the shopper, then announce it.
   // to, if given: the way to pay the money goes back to, as Return takes it.
-  // reason, if given: what went wrong with the parcel, for a goodwill
-  // credit.
-  refund(orderId, details, to = undefined, reason = null) {
+  refund(orderId, details, to) {
     const { gateway, mailer, shop, book, events } = this.#parts;
     const order = book.find(orderId);
-    let cents = null;
-    if (reason !== null) {
-      cents = goodwillCents(order, reason);
-    }
-    const refundId = new Return(order, details, gateway, to, cents).process();
-    let body;
-    if (cents === null) {
-      body =
-        `Hi ${order.customerName}, we have refunded ` +
-        `${formatMoney(order.totalCents, shop)}.`;
-    } else {
-      body =
-        `Hi ${order.customerName}, sorry about your parcel: we have ` +
-        `refunded ${formatMoney(cents, shop)}.`;
-    }
+    const refundId = new Return(order, details, gateway, to).process();
     mailer.send({
       from: shop.storeEmail,
       to: order.customerEmail,
       subject: `${shop.storeName}: refund for ${order.orderId}`,
-      body,
+      body:
+        `Hi ${order.customerName}, we have refunded ` +
+        `${formatMoney(order.totalCents, shop)}.`,
     });
     events.emit(REFUNDED, order);
+    return refundId;
+  }
+
+  // Give part of an order's money back for a parcel that went wrong, and
+  // tell the shopper. The order stays as it is, and nothing is announced:
+  // nothing comes back to the warehouse.
+  makeGood(orderId, reason, details) {
+    const { gateway, mailer, shop, book } = this.#parts;
+    const order = book.find(orderId);
+    const cents = goodwillCents(order, reason);
+    const refundId = refund(order.paymentMethod, cents, details, gateway);
+    mailer.send({
+      from: shop.storeEmail,
+      to: order.customerEmail,
+      subject: `${shop.storeName}: refund for ${order.orderId}`,
+      body:
+        `Hi ${order.customerName}, sorry about your parcel: we have ` +
+        `refunded ${formatMoney(cents, shop)}.`,
+    });
     return refundId;
   }
 }

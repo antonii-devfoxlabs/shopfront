@@ -49,5 +49,5 @@ export function goodwillCents(order, reason) {
  * @param {import('./returns.js').Refunds} refunds
  */
 export function makeGood(orderId, reason, details, refunds) {
-  return refunds.refund(orderId, details, undefined, reason);
+  return refunds.makeGood(orderId, reason, details);
 }

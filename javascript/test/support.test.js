@@ -9,6 +9,7 @@ import {
   OrderEvents,
   dispatch,
   placeOrder,
+  REFUNDED,
 } from '../src/orders.js';
 import { Parcel, SWIFTSHIP } from '../src/parcels.js';
 import { Refunds } from '../src/returns.js';
@@ -138,4 +139,30 @@ test('no goodwill for an order that has not left', () => {
     { name: 'GoodwillRefusedError', message: 'SF-00001 is placed' },
   );
   assert.deepEqual(gateway.refunds, []);
+});
+
+test('a goodwill credit is not announced as a refund', () => {
+  const book = new OrderBook();
+  const order = aPlacedOrder(book);
+  dispatch(
+    order,
+    new Parcel({ courier: SWIFTSHIP, number: 'SW-0072' }),
+    new OrderEvents(),
+  );
+  const gateway = new PaymentGateway({ merchant: GERMAN_SHOP.merchantId });
+  const events = new OrderEvents();
+  const told = [];
+  events.on(REFUNDED, (refunded) => told.push(refunded.orderId));
+  const refunds = new Refunds({
+    gateway,
+    mailer: new Mailer(),
+    shop: GERMAN_SHOP,
+    book,
+    events,
+  });
+
+  makeGood('SF-00001', 'late', { cardToken: 'tok-4242' }, refunds);
+
+  assert.equal(gateway.refunds.at(-1)?.amount, 316);
+  assert.deepEqual(told, []);
 });

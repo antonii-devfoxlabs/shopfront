@@ -53,5 +53,5 @@ export function makeGood(
   details: PaymentDetails,
   refunds: Refunds,
 ): string {
-  return refunds.refund(orderId, details, undefined, reason);
+  return refunds.makeGood(orderId, reason, details);
 }

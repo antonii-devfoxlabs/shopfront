@@ -143,3 +143,29 @@ test('no goodwill for an order that has not left', () => {
   );
   assert.deepEqual(gateway.refunds, []);
 });
+
+test('a goodwill credit is not announced as a refund', () => {
+  const book = new OrderBook();
+  const order = aPlacedOrder(book);
+  dispatch(
+    order,
+    new Parcel({ courier: SWIFTSHIP, number: 'SW-0072' }),
+    new OrderEvents(),
+  );
+  const gateway = new PaymentGateway({ merchant: GERMAN_SHOP.merchantId });
+  const events = new OrderEvents();
+  const told: string[] = [];
+  events.on('refunded', (refunded) => told.push(refunded.orderId));
+  const refunds = new Refunds({
+    gateway,
+    mailer: new Mailer(),
+    shop: GERMAN_SHOP,
+    book,
+    events,
+  });
+
+  makeGood('SF-00001', 'late', { cardToken: 'tok-4242' }, refunds);
+
+  assert.equal(gateway.refunds.at(-1)?.amount, 316);
+  assert.deepEqual(told, []);
+});

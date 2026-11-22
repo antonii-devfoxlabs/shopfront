@@ -45,4 +45,4 @@ def make_good(
 ) -> str:
     """The support page gives part of the money back for a parcel that
     was late or arrived damaged. The order stays as it is."""
-    return refunds.refund(order_id, details, reason=reason)
+    return refunds.make_good(order_id, reason, details)

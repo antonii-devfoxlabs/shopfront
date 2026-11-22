@@ -19,26 +19,19 @@ class Return:
         details: dict,
         gateway: Gateway,
         to: str | None = None,
-        cents: int | None = None,
     ) -> None:
         self.order = order
         self.details = details
         self.gateway = gateway
         self.to = order.payment_method if to is None else to
-        # A goodwill credit gives back only part of the money, and the
-        # order is not sent back.
-        self.cents = cents
 
     def process(self) -> str:
         """Give the money back once, and mark the order returned."""
-        if self.cents is None:
-            self.order.check_returnable()
-            cents = self.order.total_cents
-        else:
-            cents = self.cents
-        refund_id = refund(self.to, cents, self.details, self.gateway)
-        if self.cents is None:
-            self.order.mark_returned()
+        self.order.check_returnable()
+        refund_id = refund(
+            self.to, self.order.total_cents, self.details, self.gateway
+        )
+        self.order.mark_returned()
         return refund_id
 
 
@@ -56,9 +49,10 @@ class Exchange:
 
 @dataclass(frozen=True, kw_only=True)
 class Refunds:
-    """One call that gives an order's money back, and tells the shopper.
+    """The calls that give an order's money back, and tell the shopper.
 
-    The return page builds it once with its parts and calls refund().
+    The return page builds it once with its parts and calls refund(); the
+    support page calls make_good().
     """
 
     gateway: Gateway
@@ -70,38 +64,41 @@ class Refunds:
     events: OrderEvents
 
     def refund(
-        self,
-        order_id: str,
-        details: dict,
-        to: str | None = None,
-        reason: str | None = None,
+        self, order_id: str, details: dict, to: str | None = None
     ) -> str:
         """Give an order's money back, tell the shopper, then announce it.
-        to: the way to pay the money goes back to, as Return takes it.
-        reason: what went wrong with the parcel, for a goodwill credit."""
+        to: the way to pay the money goes back to, as Return takes it."""
         order = self.book.find(order_id)
-        cents = None
-        if reason is not None:
-            # Here, not at the top: support imports this module.
-            from shopfront.support import goodwill_cents
-
-            cents = goodwill_cents(order, reason)
-        refund_id = Return(order, details, self.gateway, to, cents).process()
-        if cents is None:
-            body = (
-                f"Hi {order.customer_name}, we have refunded "
-                f"{format_money(order.total_cents, self.shop)}."
-            )
-        else:
-            body = (
-                f"Hi {order.customer_name}, sorry about your parcel: we "
-                f"have refunded {format_money(cents, self.shop)}."
-            )
+        refund_id = Return(order, details, self.gateway, to).process()
         self.mailer.send(
             sender=self.shop.store_email,
             to=order.customer_email,
             subject=f"{self.shop.store_name}: refund for {order.order_id}",
-            body=body,
+            body=(
+                f"Hi {order.customer_name}, we have refunded "
+                f"{format_money(order.total_cents, self.shop)}."
+            ),
         )
         self.events.refunded.notify(order)
+        return refund_id
+
+    def make_good(self, order_id: str, reason: str, details: dict) -> str:
+        """Give part of an order's money back for a parcel that went
+        wrong, and tell the shopper. The order stays as it is, and nothing
+        is announced: nothing comes back to the warehouse."""
+        # Here, not at the top: support imports this module.
+        from shopfront.support import goodwill_cents
+
+        order = self.book.find(order_id)
+        cents = goodwill_cents(order, reason)
+        refund_id = refund(order.payment_method, cents, details, self.gateway)
+        self.mailer.send(
+            sender=self.shop.store_email,
+            to=order.customer_email,
+            subject=f"{self.shop.store_name}: refund for {order.order_id}",
+            body=(
+                f"Hi {order.customer_name}, sorry about your parcel: we "
+                f"have refunded {format_money(cents, self.shop)}."
+            ),
+        )
         return refund_id

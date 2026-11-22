@@ -124,3 +124,25 @@ def test_no_goodwill_for_an_order_that_has_not_left(book, gateway):
     with pytest.raises(GoodwillRefusedError, match="SF-00001 is placed"):
         make_good("SF-00001", "late", {"card_token": "tok-4242"}, refunds)
     assert gateway.refunds == []
+
+
+def test_a_goodwill_credit_is_not_announced_as_a_refund(book, gateway):
+    order = a_placed_order(book)
+    dispatch(
+        order, Parcel(courier=SWIFTSHIP, number="SW-0072"), OrderEvents()
+    )
+    events = OrderEvents()
+    told: list[str] = []
+    events.refunded.subscribe(lambda refunded: told.append(refunded.order_id))
+    refunds = Refunds(
+        gateway=gateway,
+        mailer=Mailer(),
+        shop=GERMAN_SHOP,
+        book=book,
+        events=events,
+    )
+
+    make_good("SF-00001", "late", {"card_token": "tok-4242"}, refunds)
+
+    assert gateway.refunds[-1]["amount"] == 316
+    assert told == []
