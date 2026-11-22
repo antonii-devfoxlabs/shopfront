@@ -5,7 +5,12 @@ import { EventEmitter } from 'node:events';
 import type { Catalog } from './catalog.ts';
 import type { Parcel } from './parcels.ts';
 
-export type OrderStatus = 'placed' | 'dispatched' | 'cancelled' | 'returned';
+export type OrderStatus =
+  | 'placed'
+  | 'dispatched'
+  | 'cancelled'
+  | 'returned'
+  | 'exchanged';
 
 let lastOrderNumber = 0;
 
@@ -114,6 +119,9 @@ const STATUSES: Readonly<Record<OrderStatus, Status>> = Object.freeze({
   dispatched: { sale: true, returnable: true, dispatchable: false },
   cancelled: { sale: false, returnable: false, dispatchable: false },
   returned: { sale: false, returnable: false, dispatchable: false },
+  // Sent back for the same product again: the sale stands, and the new one
+  // has still to leave the warehouse.
+  exchanged: { sale: true, returnable: true, dispatchable: true },
 });
 
 // What the order's status means: its row in STATUSES.

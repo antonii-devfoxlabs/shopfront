@@ -95,6 +95,9 @@ STATUSES: Mapping[str, Status] = MappingProxyType(
         "dispatched": Status(sale=True, returnable=True, dispatchable=False),
         "cancelled": Status(sale=False, returnable=False, dispatchable=False),
         "returned": Status(sale=False, returnable=False, dispatchable=False),
+        # Sent back for the same product again: the sale stands, and the
+        # new one has still to leave the warehouse.
+        "exchanged": Status(sale=True, returnable=True, dispatchable=True),
     }
 )
 

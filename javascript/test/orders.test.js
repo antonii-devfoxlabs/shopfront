@@ -214,6 +214,16 @@ test('an order with a short line takes nothing and tells nobody', () => {
   assert.deepEqual(told, []);
 });
 
+test('the status table says what exchanged means', () => {
+  const order = anOrder();
+  order.status = 'exchanged';
+  assert.deepEqual(statusOf(order), {
+    sale: true,
+    returnable: true,
+    dispatchable: true,
+  });
+});
+
 test('the status table says what dispatched means', () => {
   const order = anOrder();
   order.status = 'dispatched';

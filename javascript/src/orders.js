@@ -106,6 +106,9 @@ const STATUSES = new Map([
   ['dispatched', { sale: true, returnable: true, dispatchable: false }],
   ['cancelled', { sale: false, returnable: false, dispatchable: false }],
   ['returned', { sale: false, returnable: false, dispatchable: false }],
+  // Sent back for the same product again: the sale stands, and the new one
+  // has still to leave the warehouse.
+  ['exchanged', { sale: true, returnable: true, dispatchable: true }],
 ]);
 
 /**
