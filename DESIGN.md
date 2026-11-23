@@ -25,9 +25,12 @@ added with the case that needs it, never for one nobody has asked for.
   providers `main` hands `shipping.Shipping`.
 - **A job round a service** (a timer, a cache): a wrapper, as
   `taxes.CachedRates` is round the tax service.
-- **A slow service**: every part that calls one asks again when it
-  fails, up to three times, as `taxes.RetriedRates`,
-  `pricing.PriceCalculator` and `checkout.Checkout` do.
+- **A service that may not answer in time**: one wrapper round it asks
+  again, as `taxes.RetriedRates` does round the tax service, and only
+  after a timeout, the failure that asking again can fix. `main` sets
+  how many tries and how long each may wait, side by side, so that all
+  of them fit inside the time the shop's web page waits. No other part
+  asks again: tries in two layers multiply.
 - **Something to do when an order is placed, dispatched, refunded or
   cancelled**: a listener in `listeners`, subscribed to
   `orders.OrderEvents` in `main`. A new way to tell someone is one more
