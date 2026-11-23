@@ -5,6 +5,7 @@ object that fills it, its inner one. It does its own job and passes
 the question on, so neither pricing nor the tax service changes.
 """
 
+import contextlib
 import time
 from collections.abc import Callable
 
@@ -46,24 +47,14 @@ class RetriedRates:
     """Asks the inner rates again when the tax service does not answer
     in time, up to tries times in all. Any other failure, such as a
     country with no rate, is passed on at once: asking again would not
-    change it. on_retry, if given, hears each failed try, so a shop can
-    count them one day."""
+    change it."""
 
-    def __init__(
-        self,
-        inner: TaxRates,
-        tries: int,
-        on_retry: Callable[[TaxServiceTimeoutError], None] | None = None,
-    ) -> None:
+    def __init__(self, inner: TaxRates, tries: int) -> None:
         self.inner = inner
         self.tries = tries
-        self.on_retry = on_retry
 
     def rate_for(self, country: str) -> int:
         for _ in range(self.tries - 1):
-            try:
+            with contextlib.suppress(TaxServiceTimeoutError):
                 return self.inner.rate_for(country)
-            except TaxServiceTimeoutError as error:
-                if self.on_retry is not None:
-                    self.on_retry(error)
         return self.inner.rate_for(country)

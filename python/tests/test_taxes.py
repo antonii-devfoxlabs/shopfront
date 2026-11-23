@@ -117,9 +117,3 @@ def test_a_missing_rate_is_not_asked_again():
     with pytest.raises(TaxServiceError):
         RetriedRates(tax_service, tries=2).rate_for("US")
     assert tax_service.lookups == 1
-
-
-def test_retried_rates_tell_on_retry_of_each_failed_try():
-    failures: list[TaxServiceTimeoutError] = []
-    RetriedRates(SlowOnce(), tries=2, on_retry=failures.append).rate_for("DE")
-    assert [str(error) for error in failures] == ["No answer in 10.0 s"]

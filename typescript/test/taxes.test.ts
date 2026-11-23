@@ -125,14 +125,3 @@ test('a missing rate is not asked again', () => {
   );
   assert.equal(taxService.lookups, 1);
 });
-
-test('retried rates tell onRetry of each failed try', () => {
-  const failures: TaxServiceTimeoutError[] = [];
-  new RetriedRates(new SlowOnce(), 2, (error) =>
-    failures.push(error),
-  ).rateFor('DE');
-  assert.deepEqual(
-    failures.map((error) => error.message),
-    ['No answer in 10000 ms'],
-  );
-});

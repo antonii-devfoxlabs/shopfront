@@ -51,18 +51,14 @@ export class CachedRates {
 // Asks the inner rates again when the tax service does not answer in
 // time, up to tries times in all. Any other failure, such as a country
 // with no rate, is passed on at once: asking again would not change it.
-// onRetry, if given, hears each failed try, so a shop can count them one
-// day.
 export class RetriedRates {
   /**
    * @param {TaxRates} inner
    * @param {number} tries
-   * @param {(error: TaxServiceTimeoutError) => void} [onRetry]
    */
-  constructor(inner, tries, onRetry = undefined) {
+  constructor(inner, tries) {
     this.inner = inner;
     this.tries = tries;
-    this.onRetry = onRetry;
   }
 
   rateFor(country) {
@@ -71,7 +67,6 @@ export class RetriedRates {
         return this.inner.rateFor(country);
       } catch (error) {
         if (!(error instanceof TaxServiceTimeoutError)) throw error;
-        this.onRetry?.(error);
       }
     }
     return this.inner.rateFor(country);
