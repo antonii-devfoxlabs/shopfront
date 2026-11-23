@@ -20,7 +20,11 @@ import {
 } from '../src/orders.ts';
 import type { Gateway } from '../src/payments.ts';
 import { packingSlip } from '../src/packing.ts';
-import { PriceCalculator, type QuoteOptions } from '../src/pricing.ts';
+import {
+  PriceCalculator,
+  type QuoteOptions,
+  type TaxRates,
+} from '../src/pricing.ts';
 import {
   boxRouteQuote,
   parcelNowQuote,
@@ -28,13 +32,17 @@ import {
 } from '../src/providers.ts';
 import { DUTCH_SHOP, GERMAN_SHOP, type Settings } from '../src/settings.ts';
 import { Shipping, offerFor, type ShippingQuote } from '../src/shipping.ts';
+import { CachedRates, RetriedRates } from '../src/taxes.ts';
 import { Analytics } from '../src/vendor/analytics.ts';
 import { Mailer } from '../src/vendor/mailer.ts';
 import { ParcelNowClient } from '../src/vendor/parcelnow.ts';
 import { PaymentGateway } from '../src/vendor/paymentGateway.ts';
 import { Sms } from '../src/vendor/sms.ts';
 import { SwiftShip } from '../src/vendor/swiftship.ts';
-import { TaxService } from '../src/vendor/taxService.ts';
+import {
+  TaxService,
+  TaxServiceTimeoutError,
+} from '../src/vendor/taxService.ts';
 
 // Every shipping provider, with the shop's ParcelNow account.
 function providersFor(shop: Settings): ShippingQuote[] {
@@ -195,38 +203,67 @@ test('two shops in one run', async () => {
   assert.deepEqual(both, [0, 0]);
 });
 
-test('a sale is tried again when a step fails', () => {
+// A checkout of the German shop, with the test's own tax rates and news.
+function checkoutWith(
+  taxes: TaxRates,
+  gateway: Gateway,
+  events: OrderEvents,
+): Checkout {
   const shop = GERMAN_SHOP;
   const catalog = starterCatalog();
-  const quotes = new PriceCalculator(catalog, new TaxService(), shop);
-  const asked: string[] = [];
-  const checkout = new Checkout({
-    quote: (cart: Cart, country: string, options: QuoteOptions) => {
-      asked.push('quote');
-      if (asked.length === 1)
-        throw new Error('the price did not come in time');
-      return quotes.quote(cart, country, options);
-    },
+  const calculator = new PriceCalculator(catalog, taxes, shop);
+  const shipping = shippingFor(shop);
+  return new Checkout({
+    quote: (cart: Cart, country: string, options: QuoteOptions) =>
+      calculator.quote(cart, country, options),
     shippingCost: (
       cart: Cart,
       inCatalog: Catalog,
       country: string,
       paidCents: number,
-    ) => shippingFor(shop).cost(cart, inCatalog, country, paidCents),
+    ) => shipping.cost(cart, inCatalog, country, paidCents),
     catalog,
     book: new OrderBook(),
-    gateway: aGateway(),
-    events: new OrderEvents(),
+    gateway,
+    events,
   });
+}
+
+function buyAMug(checkout: Checkout): void {
   const cart = new Cart();
   cart.add('MUG-01');
-  const order = checkout.buy(cart, 'DE', {
+  checkout.buy(cart, 'DE', {
     email: 'ada@example.com',
     name: 'Ada',
     paidBy: 'card',
     details: { cardToken: 'tok-4242' },
     today: A_MONDAY,
   });
-  assert.equal(order.orderId, 'SF-00001');
-  assert.deepEqual(asked, ['quote', 'quote']);
+}
+
+test('a slow tax service is asked as often as its one retry says', () => {
+  // Only the wrapper round the tax service asks again: a part above it
+  // that asked again too would multiply its tries.
+  const gateway = aGateway();
+  const taxService = new TaxService({ timeoutMilliseconds: 10 });
+  const taxes = new CachedRates(new RetriedRates(taxService, 2));
+  assert.throws(
+    () => buyAMug(checkoutWith(taxes, gateway, new OrderEvents())),
+    TaxServiceTimeoutError,
+  );
+  assert.equal(taxService.lookups, 2);
+  assert.deepEqual(gateway.charges, []);
+});
+
+test('a sale that fails after the charge charges once', () => {
+  const gateway = aGateway();
+  const events = new OrderEvents();
+  events.on('placed', () => {
+    throw new Error('the mail provider hung up');
+  });
+  assert.throws(
+    () => buyAMug(checkoutWith(new TaxService(), gateway, events)),
+    /the mail provider hung up/,
+  );
+  assert.equal(gateway.charges.length, 1);
 });

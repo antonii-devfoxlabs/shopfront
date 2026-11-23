@@ -1,6 +1,5 @@
 """Selling a cart: what the store's pages call to take an order."""
 
-import contextlib
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date
@@ -50,41 +49,32 @@ class Checkout:
     ) -> Order:
         """Check the stock, price the cart, ship it, take the money, then
         place the order."""
+        # Never charge a card for an order the store cannot send.
+        self.catalog.check_stock(cart.lines)
+        quote = self.quote(cart, country, today=today, coupon=coupon)
+        paid_cents = quote.subtotal_cents - quote.discount_cents
+        shipping_cents = self.shipping_cost(
+            cart, self.catalog, country, paid_cents
+        )
+        total_cents = paid_cents + quote.tax_cents + shipping_cents
 
-        def sell() -> Order:
-            # Never charge a card for an order the store cannot send.
-            self.catalog.check_stock(cart.lines)
-            quote = self.quote(cart, country, today=today, coupon=coupon)
-            paid_cents = quote.subtotal_cents - quote.discount_cents
-            shipping_cents = self.shipping_cost(
-                cart, self.catalog, country, paid_cents
-            )
-            total_cents = paid_cents + quote.tax_cents + shipping_cents
-
-            transaction_id = pay(paid_by, total_cents, details, self.gateway)
-            order = (
-                OrderBuilder(next_order_id())
-                .email(email)
-                .name(name)
-                .lines(cart.lines)
-                .subtotal(quote.subtotal_cents)
-                .discount(quote.discount_cents)
-                .tax(quote.tax_cents)
-                .shipping(shipping_cents)
-                .country(country)
-                .paid_by(paid_by)
-                .transaction(transaction_id)
-                .build()
-            )
-            place_order(order, self.catalog, self.book, self.events)
-            return order
-
-        # A sale that fails half-way is tried again, up to three times in
-        # all: a slow service should not lose the shopper's order.
-        for _ in range(2):
-            with contextlib.suppress(Exception):
-                return sell()
-        return sell()
+        transaction_id = pay(paid_by, total_cents, details, self.gateway)
+        order = (
+            OrderBuilder(next_order_id())
+            .email(email)
+            .name(name)
+            .lines(cart.lines)
+            .subtotal(quote.subtotal_cents)
+            .discount(quote.discount_cents)
+            .tax(quote.tax_cents)
+            .shipping(shipping_cents)
+            .country(country)
+            .paid_by(paid_by)
+            .transaction(transaction_id)
+            .build()
+        )
+        place_order(order, self.catalog, self.book, self.events)
+        return order
 
 
 def buy_again(

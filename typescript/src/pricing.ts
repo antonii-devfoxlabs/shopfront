@@ -109,21 +109,8 @@ export class PriceCalculator {
   }
 
   tax(amountCents: number, country: string): number {
-    const rate = this.#rate(country);
+    const rate = this.taxService.rateFor(country);
     return Math.floor((amountCents * rate + 50) / 100);
-  }
-
-  // The tax service is slow some days: ask it up to three times before
-  // the quote fails.
-  #rate(country: string): number {
-    for (let tried = 1; tried < 3; tried += 1) {
-      try {
-        return this.taxService.rateFor(country);
-      } catch {
-        // Any failure: ask again.
-      }
-    }
-    return this.taxService.rateFor(country);
   }
 
   quote(

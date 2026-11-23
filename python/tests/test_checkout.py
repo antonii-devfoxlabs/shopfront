@@ -18,7 +18,7 @@ from shopfront.orders import (
 )
 from shopfront.packing import packing_slip
 from shopfront.payments import Gateway
-from shopfront.pricing import PriceCalculator
+from shopfront.pricing import PriceCalculator, TaxRates
 from shopfront.providers import (
     boxroute_quote,
     parcelnow_quote,
@@ -26,12 +26,13 @@ from shopfront.providers import (
 )
 from shopfront.settings import DUTCH_SHOP, GERMAN_SHOP, Settings
 from shopfront.shipping import Shipping, ShippingQuote, offer_for
+from shopfront.taxes import CachedRates, RetriedRates
 from shopfront.vendor.analytics import Analytics
 from shopfront.vendor.mailer import Mailer
 from shopfront.vendor.parcelnow import ParcelNowClient
 from shopfront.vendor.sms import Sms
 from shopfront.vendor.swiftship import SwiftShip
-from shopfront.vendor.tax_service import TaxService
+from shopfront.vendor.tax_service import TaxService, TaxServiceTimeoutError
 
 
 def providers_for(shop: Settings) -> list[ShippingQuote]:
@@ -176,29 +177,27 @@ def test_two_shops_in_one_run():
     assert asyncio.run(both()) == [0, 0]
 
 
-def test_a_sale_is_tried_again_when_a_step_fails(gateway):
+def checkout_with(
+    taxes: TaxRates, gateway: Gateway, events: OrderEvents
+) -> Checkout:
+    """A checkout of the German shop, with the test's own tax rates and
+    news."""
     shop = GERMAN_SHOP
     catalog = starter_catalog()
-    quotes = PriceCalculator(catalog, TaxService(), shop)
-    asked: list[str] = []
-
-    def slow_once(*args, **kwargs):
-        asked.append("quote")
-        if len(asked) == 1:
-            raise TimeoutError("the price did not come in time")
-        return quotes.quote(*args, **kwargs)
-
-    checkout = Checkout(
-        quote=slow_once,
+    return Checkout(
+        quote=PriceCalculator(catalog, taxes, shop).quote,
         shipping_cost=shipping_for(shop).cost,
         catalog=catalog,
         book=OrderBook(),
         gateway=gateway,
-        events=OrderEvents(),
+        events=events,
     )
+
+
+def buy_a_mug(checkout: Checkout) -> None:
     cart = Cart()
     cart.add("MUG-01")
-    order = checkout.buy(
+    checkout.buy(
         cart,
         "DE",
         email="ada@example.com",
@@ -207,5 +206,27 @@ def test_a_sale_is_tried_again_when_a_step_fails(gateway):
         details={"card_token": "tok-4242"},
         today=A_MONDAY,
     )
-    assert order.order_id == "SF-00001"
-    assert asked == ["quote", "quote"]
+
+
+def test_a_slow_tax_service_is_asked_as_often_as_its_one_retry_says(
+    gateway,
+):
+    # Only the wrapper round the tax service asks again: a part above it
+    # that asked again too would multiply its tries.
+    tax_service = TaxService(timeout_seconds=0.01)
+    taxes = CachedRates(RetriedRates(tax_service, tries=2))
+    with pytest.raises(TaxServiceTimeoutError):
+        buy_a_mug(checkout_with(taxes, gateway, OrderEvents()))
+    assert tax_service.lookups == 2
+    assert gateway.charges == []
+
+
+def test_a_sale_that_fails_after_the_charge_charges_once(gateway):
+    def mail_provider_hangs_up(order):
+        raise ConnectionError("the mail provider hung up")
+
+    events = OrderEvents()
+    events.placed.subscribe(mail_provider_hangs_up)
+    with pytest.raises(ConnectionError):
+        buy_a_mug(checkout_with(TaxService(), gateway, events))
+    assert len(gateway.charges) == 1

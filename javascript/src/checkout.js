@@ -21,47 +21,34 @@ export class Checkout {
   // Check the stock, price the cart, ship it, take the money, then place
   // the order.
   buy(cart, country, { email, name, paidBy, details, today, coupon = null }) {
-    const sell = () => {
-      const parts = this.#parts;
-      // Never charge a card for an order the store cannot send.
-      parts.catalog.checkStock(cart.lines);
-      const quote = parts.quote(cart, country, { today, coupon });
-      const paidCents = quote.subtotalCents - quote.discountCents;
-      const shippingCents = parts.shippingCost(
-        cart,
-        parts.catalog,
-        country,
-        paidCents,
-      );
-      const totalCents = paidCents + quote.taxCents + shippingCents;
+    const parts = this.#parts;
+    // Never charge a card for an order the store cannot send.
+    parts.catalog.checkStock(cart.lines);
+    const quote = parts.quote(cart, country, { today, coupon });
+    const paidCents = quote.subtotalCents - quote.discountCents;
+    const shippingCents = parts.shippingCost(
+      cart,
+      parts.catalog,
+      country,
+      paidCents,
+    );
+    const totalCents = paidCents + quote.taxCents + shippingCents;
 
-      const transactionId = pay(paidBy, totalCents, details, parts.gateway);
-      const order = new OrderBuilder(nextOrderId())
-        .email(email)
-        .name(name)
-        .lines(cart.lines)
-        .subtotal(quote.subtotalCents)
-        .discount(quote.discountCents)
-        .tax(quote.taxCents)
-        .shipping(shippingCents)
-        .country(country)
-        .paidBy(paidBy)
-        .transaction(transactionId)
-        .build();
-      placeOrder(order, parts.catalog, parts.book, parts.events);
-      return order;
-    };
-
-    // A sale that fails half-way is tried again, up to three times in
-    // all: a slow service should not lose the shopper's order.
-    for (let tried = 1; tried < 3; tried += 1) {
-      try {
-        return sell();
-      } catch {
-        // Any failure: try the sale again.
-      }
-    }
-    return sell();
+    const transactionId = pay(paidBy, totalCents, details, parts.gateway);
+    const order = new OrderBuilder(nextOrderId())
+      .email(email)
+      .name(name)
+      .lines(cart.lines)
+      .subtotal(quote.subtotalCents)
+      .discount(quote.discountCents)
+      .tax(quote.taxCents)
+      .shipping(shippingCents)
+      .country(country)
+      .paidBy(paidBy)
+      .transaction(transactionId)
+      .build();
+    placeOrder(order, parts.catalog, parts.book, parts.events);
+    return order;
   }
 }
 
