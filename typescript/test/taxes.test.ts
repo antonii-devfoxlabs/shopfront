@@ -102,24 +102,33 @@ test('the tax service gives up after its timeout', () => {
   assert.throws(() => taxService.rateFor('DE'), TaxServiceTimeoutError);
 });
 
-test('retried rates ask again after a failure', () => {
+test('retried rates ask again after a timeout', () => {
   const slow = new SlowOnce();
-  assert.equal(new RetriedRates(slow).rateFor('DE'), 19);
+  assert.equal(new RetriedRates(slow, 2).rateFor('DE'), 19);
   assert.equal(slow.lookups, 2);
 });
 
-test('retried rates give up after three tries', () => {
+test('retried rates give up after their tries', () => {
   const taxService = new TaxService({ timeoutMilliseconds: 10 });
   assert.throws(
-    () => new RetriedRates(taxService).rateFor('DE'),
+    () => new RetriedRates(taxService, 2).rateFor('DE'),
     TaxServiceTimeoutError,
   );
-  assert.equal(taxService.lookups, 3);
+  assert.equal(taxService.lookups, 2);
+});
+
+test('a missing rate is not asked again', () => {
+  const taxService = new TaxService();
+  assert.throws(
+    () => new RetriedRates(taxService, 2).rateFor('US'),
+    TaxServiceError,
+  );
+  assert.equal(taxService.lookups, 1);
 });
 
 test('retried rates tell onRetry of each failed try', () => {
-  const failures: TaxServiceError[] = [];
-  new RetriedRates(new SlowOnce(), 3, (error) =>
+  const failures: TaxServiceTimeoutError[] = [];
+  new RetriedRates(new SlowOnce(), 2, (error) =>
     failures.push(error),
   ).rateFor('DE');
   assert.deepEqual(

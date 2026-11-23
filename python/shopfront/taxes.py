@@ -9,7 +9,7 @@ import time
 from collections.abc import Callable
 
 from shopfront.pricing import TaxRates
-from shopfront.vendor.tax_service import TaxServiceError
+from shopfront.vendor.tax_service import TaxServiceTimeoutError
 
 
 class TimedRates:
@@ -43,15 +43,17 @@ class CachedRates:
 
 
 class RetriedRates:
-    """Asks the inner rates again when the tax service fails, up to
-    tries times in all. on_retry, if given, hears each failed try, so a
-    shop can count them one day."""
+    """Asks the inner rates again when the tax service does not answer
+    in time, up to tries times in all. Any other failure, such as a
+    country with no rate, is passed on at once: asking again would not
+    change it. on_retry, if given, hears each failed try, so a shop can
+    count them one day."""
 
     def __init__(
         self,
         inner: TaxRates,
-        tries: int = 3,
-        on_retry: Callable[[TaxServiceError], None] | None = None,
+        tries: int,
+        on_retry: Callable[[TaxServiceTimeoutError], None] | None = None,
     ) -> None:
         self.inner = inner
         self.tries = tries
@@ -61,7 +63,7 @@ class RetriedRates:
         for _ in range(self.tries - 1):
             try:
                 return self.inner.rate_for(country)
-            except TaxServiceError as error:
+            except TaxServiceTimeoutError as error:
                 if self.on_retry is not None:
                     self.on_retry(error)
         return self.inner.rate_for(country)

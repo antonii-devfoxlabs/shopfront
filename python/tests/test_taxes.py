@@ -99,20 +99,27 @@ def test_the_tax_service_gives_up_after_its_timeout():
         tax_service.rate_for("DE")
 
 
-def test_retried_rates_ask_again_after_a_failure():
+def test_retried_rates_ask_again_after_a_timeout():
     slow = SlowOnce()
-    assert RetriedRates(slow).rate_for("DE") == 19
+    assert RetriedRates(slow, tries=2).rate_for("DE") == 19
     assert slow.lookups == 2
 
 
-def test_retried_rates_give_up_after_three_tries():
+def test_retried_rates_give_up_after_their_tries():
     tax_service = TaxService(timeout_seconds=0.01)
     with pytest.raises(TaxServiceTimeoutError):
-        RetriedRates(tax_service).rate_for("DE")
-    assert tax_service.lookups == 3
+        RetriedRates(tax_service, tries=2).rate_for("DE")
+    assert tax_service.lookups == 2
+
+
+def test_a_missing_rate_is_not_asked_again():
+    tax_service = TaxService()
+    with pytest.raises(TaxServiceError):
+        RetriedRates(tax_service, tries=2).rate_for("US")
+    assert tax_service.lookups == 1
 
 
 def test_retried_rates_tell_on_retry_of_each_failed_try():
-    failures: list[TaxServiceError] = []
-    RetriedRates(SlowOnce(), on_retry=failures.append).rate_for("DE")
+    failures: list[TaxServiceTimeoutError] = []
+    RetriedRates(SlowOnce(), tries=2, on_retry=failures.append).rate_for("DE")
     assert [str(error) for error in failures] == ["No answer in 10.0 s"]

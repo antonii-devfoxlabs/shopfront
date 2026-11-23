@@ -69,9 +69,15 @@ def main() -> None:
     cart.add("TEA-02")
 
     # The cache is outside the timer, so the log shows each real lookup
-    # of the tax service, and how long the service took. A lookup that
-    # fails is asked again, up to three times.
-    taxes = CachedRates(RetriedRates(TimedRates(TaxService(), print)))
+    # of the tax service, and how long the service took. A lookup with
+    # no answer in 2 s is asked once more: two tries keep a shopper's
+    # wait for a rate near 4 s, inside the 30 s the shop's web page
+    # waits for the store.
+    taxes = CachedRates(
+        RetriedRates(
+            TimedRates(TaxService(timeout_seconds=2), print), tries=2
+        )
+    )
     calculator = PriceCalculator(catalog, taxes, shop)
     mailer = Mailer()
     sms = Sms()
