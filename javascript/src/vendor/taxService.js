@@ -1,6 +1,9 @@
 // The tax service's SDK: the standard VAT rate of a country. A
 // real one answers over the network, so every call takes a moment;
-// this one waits 20 ms to show it, and `lookups` counts the calls.
+// this one waits 20 ms to show it, and `lookups` counts the calls. Like
+// a real one, it waits for an answer at most `timeoutMilliseconds`, then
+// gives up with TaxServiceTimeoutError: a timeout shorter than its
+// 20 ms plays a day the service is too slow to answer.
 
 const STANDARD_RATES = new Map([
   ['DE', 19],
@@ -14,11 +17,26 @@ export class TaxServiceError extends Error {
   name = 'TaxServiceError';
 }
 
+// No answer in time. Asked again, the service may answer.
+export class TaxServiceTimeoutError extends TaxServiceError {
+  name = 'TaxServiceTimeoutError';
+}
+
 export class TaxService {
   lookups = 0;
 
+  constructor({ timeoutMilliseconds = 10_000 } = {}) {
+    this.timeoutMilliseconds = timeoutMilliseconds;
+  }
+
   rateFor(country) {
     this.lookups += 1;
+    if (ANSWER_MILLISECONDS > this.timeoutMilliseconds) {
+      waitFor(this.timeoutMilliseconds);
+      throw new TaxServiceTimeoutError(
+        `No answer in ${this.timeoutMilliseconds} ms`,
+      );
+    }
     waitFor(ANSWER_MILLISECONDS);
     const rate = STANDARD_RATES.get(country);
     if (rate === undefined) {

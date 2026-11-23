@@ -4,6 +4,7 @@
 // the question on, so neither pricing nor the tax service changes.
 
 import type { TaxRates } from './pricing.ts';
+import { TaxServiceError } from './vendor/taxService.ts';
 
 // Logs each rate and how long the inner rates took to answer.
 export class TimedRates implements TaxRates {
@@ -40,5 +41,36 @@ export class CachedRates implements TaxRates {
       this.#known.set(country, rate);
     }
     return rate;
+  }
+}
+
+// Asks the inner rates again when the tax service fails, up to tries
+// times in all. onRetry, if given, hears each failed try, so a shop can
+// count them one day.
+export class RetriedRates implements TaxRates {
+  readonly inner: TaxRates;
+  readonly tries: number;
+  readonly onRetry: ((error: TaxServiceError) => void) | undefined;
+
+  constructor(
+    inner: TaxRates,
+    tries = 3,
+    onRetry?: (error: TaxServiceError) => void,
+  ) {
+    this.inner = inner;
+    this.tries = tries;
+    this.onRetry = onRetry;
+  }
+
+  rateFor(country: string): number {
+    for (let tried = 1; tried < this.tries; tried += 1) {
+      try {
+        return this.inner.rateFor(country);
+      } catch (error) {
+        if (!(error instanceof TaxServiceError)) throw error;
+        this.onRetry?.(error);
+      }
+    }
+    return this.inner.rateFor(country);
   }
 }

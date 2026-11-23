@@ -174,3 +174,38 @@ def test_two_shops_in_one_run():
         )
 
     assert asyncio.run(both()) == [0, 0]
+
+
+def test_a_sale_is_tried_again_when_a_step_fails(gateway):
+    shop = GERMAN_SHOP
+    catalog = starter_catalog()
+    quotes = PriceCalculator(catalog, TaxService(), shop)
+    asked: list[str] = []
+
+    def slow_once(*args, **kwargs):
+        asked.append("quote")
+        if len(asked) == 1:
+            raise TimeoutError("the price did not come in time")
+        return quotes.quote(*args, **kwargs)
+
+    checkout = Checkout(
+        quote=slow_once,
+        shipping_cost=shipping_for(shop).cost,
+        catalog=catalog,
+        book=OrderBook(),
+        gateway=gateway,
+        events=OrderEvents(),
+    )
+    cart = Cart()
+    cart.add("MUG-01")
+    order = checkout.buy(
+        cart,
+        "DE",
+        email="ada@example.com",
+        name="Ada",
+        paid_by="card",
+        details={"card_token": "tok-4242"},
+        today=A_MONDAY,
+    )
+    assert order.order_id == "SF-00001"
+    assert asked == ["quote", "quote"]

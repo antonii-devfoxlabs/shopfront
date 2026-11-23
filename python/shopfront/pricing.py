@@ -1,5 +1,6 @@
 """What a cart costs: the subtotal, the discount and the tax."""
 
+import contextlib
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date
@@ -110,8 +111,16 @@ class PriceCalculator:
         return 0
 
     def tax(self, amount_cents: int, country: str) -> int:
-        rate = self.tax_service.rate_for(country)
+        rate = self._rate(country)
         return (amount_cents * rate + 50) // 100
+
+    def _rate(self, country: str) -> int:
+        # The tax service is slow some days: ask it up to three times
+        # before the quote fails.
+        for _ in range(2):
+            with contextlib.suppress(Exception):
+                return self.tax_service.rate_for(country)
+        return self.tax_service.rate_for(country)
 
     def quote(
         self,

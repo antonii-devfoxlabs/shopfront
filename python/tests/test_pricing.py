@@ -13,7 +13,11 @@ from shopfront.pricing import (
     percent_off,
 )
 from shopfront.settings import GERMAN_SHOP
-from shopfront.vendor.tax_service import TaxService, TaxServiceError
+from shopfront.vendor.tax_service import (
+    TaxService,
+    TaxServiceError,
+    TaxServiceTimeoutError,
+)
 
 A_JUNE_DAY = date(2026, 6, 15)
 A_DECEMBER_DAY = date(2026, 12, 10)
@@ -135,3 +139,17 @@ def test_every_quote_asks_the_tax_service_again():
 def test_a_country_without_a_vat_rate_is_an_error():
     with pytest.raises(TaxServiceError):
         calculator().tax(1_000, "US")
+
+
+def test_a_quote_asks_the_tax_service_again_when_it_fails():
+    class SlowOnce:
+        lookups = 0
+
+        def rate_for(self, country: str) -> int:
+            self.lookups += 1
+            if self.lookups == 1:
+                raise TaxServiceTimeoutError("No answer in 10.0 s")
+            return 19
+
+    prices = PriceCalculator(starter_catalog(), SlowOnce(), GERMAN_SHOP)
+    assert prices.tax(1_000, "DE") == 190

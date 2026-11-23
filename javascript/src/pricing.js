@@ -115,8 +115,21 @@ export class PriceCalculator {
   }
 
   tax(amountCents, country) {
-    const rate = this.taxService.rateFor(country);
+    const rate = this.#rate(country);
     return Math.floor((amountCents * rate + 50) / 100);
+  }
+
+  // The tax service is slow some days: ask it up to three times before
+  // the quote fails.
+  #rate(country) {
+    for (let tried = 1; tried < 3; tried += 1) {
+      try {
+        return this.taxService.rateFor(country);
+      } catch {
+        // Any failure: ask again.
+      }
+    }
+    return this.taxService.rateFor(country);
   }
 
   quote(cart, country, { today, coupon = null, vatId = null }) {

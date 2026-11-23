@@ -7,9 +7,13 @@ from shopfront.cart import Cart
 from shopfront.catalog import starter_catalog
 from shopfront.pricing import PriceCalculator
 from shopfront.settings import GERMAN_SHOP
-from shopfront.taxes import CachedRates, TimedRates
+from shopfront.taxes import CachedRates, RetriedRates, TimedRates
 from shopfront.timing import timed
-from shopfront.vendor.tax_service import TaxService, TaxServiceError
+from shopfront.vendor.tax_service import (
+    TaxService,
+    TaxServiceError,
+    TaxServiceTimeoutError,
+)
 
 
 def test_timed_rates_pass_the_answer_on():
@@ -74,3 +78,41 @@ def test_every_quote_is_timed_and_only_the_real_lookup():
         "price quote",
         "price quote",
     ]
+
+
+class SlowOnce:
+    """Rates that time out on the first lookup, then answer."""
+
+    def __init__(self) -> None:
+        self.lookups = 0
+
+    def rate_for(self, country: str) -> int:
+        self.lookups += 1
+        if self.lookups == 1:
+            raise TaxServiceTimeoutError("No answer in 10.0 s")
+        return 19
+
+
+def test_the_tax_service_gives_up_after_its_timeout():
+    tax_service = TaxService(timeout_seconds=0.01)
+    with pytest.raises(TaxServiceTimeoutError):
+        tax_service.rate_for("DE")
+
+
+def test_retried_rates_ask_again_after_a_failure():
+    slow = SlowOnce()
+    assert RetriedRates(slow).rate_for("DE") == 19
+    assert slow.lookups == 2
+
+
+def test_retried_rates_give_up_after_three_tries():
+    tax_service = TaxService(timeout_seconds=0.01)
+    with pytest.raises(TaxServiceTimeoutError):
+        RetriedRates(tax_service).rate_for("DE")
+    assert tax_service.lookups == 3
+
+
+def test_retried_rates_tell_on_retry_of_each_failed_try():
+    failures: list[TaxServiceError] = []
+    RetriedRates(SlowOnce(), on_retry=failures.append).rate_for("DE")
+    assert [str(error) for error in failures] == ["No answer in 10.0 s"]

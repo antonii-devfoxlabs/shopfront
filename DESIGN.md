@@ -25,6 +25,9 @@ added with the case that needs it, never for one nobody has asked for.
   providers `main` hands `shipping.Shipping`.
 - **A job round a service** (a timer, a cache): a wrapper, as
   `taxes.CachedRates` is round the tax service.
+- **A slow service**: every part that calls one asks again when it
+  fails, up to three times, as `taxes.RetriedRates`,
+  `pricing.PriceCalculator` and `checkout.Checkout` do.
 - **Something to do when an order is placed, dispatched, refunded or
   cancelled**: a listener in `listeners`, subscribed to
   `orders.OrderEvents` in `main`. A new way to tell someone is one more

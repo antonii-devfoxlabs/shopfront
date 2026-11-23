@@ -181,3 +181,35 @@ test('two shops in one run', async () => {
   ]);
   assert.deepEqual(both, [0, 0]);
 });
+
+test('a sale is tried again when a step fails', () => {
+  const shop = GERMAN_SHOP;
+  const catalog = starterCatalog();
+  const quotes = new PriceCalculator(catalog, new TaxService(), shop);
+  const asked = [];
+  const checkout = new Checkout({
+    quote: (cart, country, options) => {
+      asked.push('quote');
+      if (asked.length === 1)
+        throw new Error('the price did not come in time');
+      return quotes.quote(cart, country, options);
+    },
+    shippingCost: (cart, inCatalog, country, paidCents) =>
+      shippingFor(shop).cost(cart, inCatalog, country, paidCents),
+    catalog,
+    book: new OrderBook(),
+    gateway: aGateway(),
+    events: new OrderEvents(),
+  });
+  const cart = new Cart();
+  cart.add('MUG-01');
+  const order = checkout.buy(cart, 'DE', {
+    email: 'ada@example.com',
+    name: 'Ada',
+    paidBy: 'card',
+    details: { cardToken: 'tok-4242' },
+    today: A_MONDAY,
+  });
+  assert.equal(order.orderId, 'SF-00001');
+  assert.deepEqual(asked, ['quote', 'quote']);
+});

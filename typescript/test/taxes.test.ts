@@ -5,9 +5,13 @@ import { Cart } from '../src/cart.ts';
 import { starterCatalog } from '../src/catalog.ts';
 import { PriceCalculator, type QuoteOptions } from '../src/pricing.ts';
 import { GERMAN_SHOP } from '../src/settings.ts';
-import { CachedRates, TimedRates } from '../src/taxes.ts';
+import { CachedRates, RetriedRates, TimedRates } from '../src/taxes.ts';
 import { timed } from '../src/timing.ts';
-import { TaxService, TaxServiceError } from '../src/vendor/taxService.ts';
+import {
+  TaxService,
+  TaxServiceError,
+  TaxServiceTimeoutError,
+} from '../src/vendor/taxService.ts';
 
 test('timed rates pass the answer on', () => {
   const rates = new TimedRates(new TaxService(), () => {});
@@ -77,5 +81,49 @@ test('every quote is timed, and only the real lookup', () => {
   assert.deepEqual(
     lines.map((line) => line.replace(/ in \d+ ms$/, '')),
     ['tax rate for DE: 19%', 'price quote', 'price quote', 'price quote'],
+  );
+});
+
+// Rates that time out on the first lookup, then answer.
+class SlowOnce {
+  lookups = 0;
+
+  rateFor(country: string): number {
+    this.lookups += 1;
+    if (this.lookups === 1) {
+      throw new TaxServiceTimeoutError('No answer in 10000 ms');
+    }
+    return 19;
+  }
+}
+
+test('the tax service gives up after its timeout', () => {
+  const taxService = new TaxService({ timeoutMilliseconds: 10 });
+  assert.throws(() => taxService.rateFor('DE'), TaxServiceTimeoutError);
+});
+
+test('retried rates ask again after a failure', () => {
+  const slow = new SlowOnce();
+  assert.equal(new RetriedRates(slow).rateFor('DE'), 19);
+  assert.equal(slow.lookups, 2);
+});
+
+test('retried rates give up after three tries', () => {
+  const taxService = new TaxService({ timeoutMilliseconds: 10 });
+  assert.throws(
+    () => new RetriedRates(taxService).rateFor('DE'),
+    TaxServiceTimeoutError,
+  );
+  assert.equal(taxService.lookups, 3);
+});
+
+test('retried rates tell onRetry of each failed try', () => {
+  const failures: TaxServiceError[] = [];
+  new RetriedRates(new SlowOnce(), 3, (error) =>
+    failures.push(error),
+  ).rateFor('DE');
+  assert.deepEqual(
+    failures.map((error) => error.message),
+    ['No answer in 10000 ms'],
   );
 });

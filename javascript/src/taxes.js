@@ -5,6 +5,8 @@
 
 /** @import { TaxRates } from './pricing.js' */
 
+import { TaxServiceError } from './vendor/taxService.js';
+
 // Logs each rate and how long the inner rates took to answer.
 export class TimedRates {
   /**
@@ -43,5 +45,33 @@ export class CachedRates {
       this.#known.set(country, rate);
     }
     return rate;
+  }
+}
+
+// Asks the inner rates again when the tax service fails, up to tries
+// times in all. onRetry, if given, hears each failed try, so a shop can
+// count them one day.
+export class RetriedRates {
+  /**
+   * @param {TaxRates} inner
+   * @param {number} [tries]
+   * @param {(error: TaxServiceError) => void} [onRetry]
+   */
+  constructor(inner, tries = 3, onRetry = undefined) {
+    this.inner = inner;
+    this.tries = tries;
+    this.onRetry = onRetry;
+  }
+
+  rateFor(country) {
+    for (let tried = 1; tried < this.tries; tried += 1) {
+      try {
+        return this.inner.rateFor(country);
+      } catch (error) {
+        if (!(error instanceof TaxServiceError)) throw error;
+        this.onRetry?.(error);
+      }
+    }
+    return this.inner.rateFor(country);
   }
 }

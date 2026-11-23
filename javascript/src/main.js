@@ -29,7 +29,7 @@ import {
 } from './providers.js';
 import { GERMAN_SHOP } from './settings.js';
 import { Shipping, offerFor } from './shipping.js';
-import { CachedRates, TimedRates } from './taxes.js';
+import { CachedRates, RetriedRates, TimedRates } from './taxes.js';
 import { timed } from './timing.js';
 import { Analytics } from './vendor/analytics.js';
 import { Mailer } from './vendor/mailer.js';
@@ -78,8 +78,11 @@ cart.add('MUG-01', 2);
 cart.add('TEA-02');
 
 // The cache is outside the timer, so the log shows each real lookup
-// of the tax service, and how long the service took.
-const taxes = new CachedRates(new TimedRates(new TaxService(), console.log));
+// of the tax service, and how long the service took. A lookup that
+// fails is asked again, up to three times.
+const taxes = new CachedRates(
+  new RetriedRates(new TimedRates(new TaxService(), console.log)),
+);
 const calculator = new PriceCalculator(catalog, taxes, shop);
 const mailer = new Mailer();
 const sms = new Sms();

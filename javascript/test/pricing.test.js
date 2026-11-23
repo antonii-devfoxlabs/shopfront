@@ -12,7 +12,11 @@ import {
   percentOff,
 } from '../src/pricing.js';
 import { GERMAN_SHOP } from '../src/settings.js';
-import { TaxService, TaxServiceError } from '../src/vendor/taxService.js';
+import {
+  TaxService,
+  TaxServiceError,
+  TaxServiceTimeoutError,
+} from '../src/vendor/taxService.js';
 
 const A_JUNE_DAY = new Date(2026, 5, 15);
 const A_DECEMBER_DAY = new Date(2026, 11, 10);
@@ -155,4 +159,19 @@ test('every quote asks the tax service again', () => {
 
 test('a country without a VAT rate is an error', () => {
   assert.throws(() => calculator().tax(1_000, 'US'), TaxServiceError);
+});
+
+test('a quote asks the tax service again when it fails', () => {
+  let lookups = 0;
+  const slowOnce = {
+    rateFor() {
+      lookups += 1;
+      if (lookups === 1) {
+        throw new TaxServiceTimeoutError('No answer in 10000 ms');
+      }
+      return 19;
+    },
+  };
+  const prices = new PriceCalculator(starterCatalog(), slowOnce, GERMAN_SHOP);
+  assert.equal(prices.tax(1_000, 'DE'), 190);
 });

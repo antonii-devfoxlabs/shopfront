@@ -26,7 +26,7 @@ from shopfront.providers import (
 )
 from shopfront.settings import GERMAN_SHOP
 from shopfront.shipping import Shipping, ShippingQuote, offer_for
-from shopfront.taxes import CachedRates, TimedRates
+from shopfront.taxes import CachedRates, RetriedRates, TimedRates
 from shopfront.timing import timed
 from shopfront.vendor.analytics import Analytics
 from shopfront.vendor.mailer import Mailer
@@ -69,8 +69,9 @@ def main() -> None:
     cart.add("TEA-02")
 
     # The cache is outside the timer, so the log shows each real lookup
-    # of the tax service, and how long the service took.
-    taxes = CachedRates(TimedRates(TaxService(), print))
+    # of the tax service, and how long the service took. A lookup that
+    # fails is asked again, up to three times.
+    taxes = CachedRates(RetriedRates(TimedRates(TaxService(), print)))
     calculator = PriceCalculator(catalog, taxes, shop)
     mailer = Mailer()
     sms = Sms()
