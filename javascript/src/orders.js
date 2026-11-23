@@ -369,8 +369,9 @@ export const CANCELLED = 'cancelled';
 
 /**
  * Who hears of what happens to an order, by the news's name: PLACED,
- * REFUNDED, DISPATCHED or CANCELLED. Node's EventEmitter keeps a list per name:
- * subscribe with `on`, unsubscribe with `off`, notify with `emit`.
+ * REFUNDED, DISPATCHED or CANCELLED. Node's EventEmitter keeps a list
+ * per name: subscribe with `on`, unsubscribe with `off`, notify with
+ * `emit`.
  */
 export class OrderEvents extends EventEmitter {
   /**

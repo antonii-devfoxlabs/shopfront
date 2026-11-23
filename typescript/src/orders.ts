@@ -366,8 +366,9 @@ export type OrderEventMap = {
 };
 
 // Who hears of what happens to an order, by the news's name: 'placed',
-// 'refunded', 'dispatched' or 'cancelled'. Node's EventEmitter keeps a list per name:
-// subscribe with `on`, unsubscribe with `off`, notify with `emit`.
+// 'refunded', 'dispatched' or 'cancelled'. Node's EventEmitter keeps a
+// list per name: subscribe with `on`, unsubscribe with `off`, notify with
+// `emit`.
 export class OrderEvents extends EventEmitter<OrderEventMap> {
   // Subscribe, and answer the way to cancel: whoever subscribes keeps it.
   subscribe(name: keyof OrderEventMap, listener: OrderListener): Cancel {
